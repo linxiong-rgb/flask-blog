@@ -16,4 +16,4 @@ markdown==3.5.1
 Pygments==2.19.2
 
 # PostgreSQL 数据库（Render 部署使用）
-psycopg2-binary==2.9.9
+psycopg2-binary==2.9.10
