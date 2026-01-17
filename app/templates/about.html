@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}关于 - 我的博客{% endblock %}
+
+{% block content %}
+<div class="typora-container">
+    <article class="typora-article">
+        <!-- 简化的面包屑导航 -->
+        <nav class="typora-breadcrumb">
+            <a href="{{ url_for('main.index') }}">首页</a>
+            <span class="separator">/</span>
+            <span class="current">关于</span>
+        </nav>
+
+        <!-- Typora 风格的文章头部 -->
+        <header class="typora-header">
+            <h1 class="typora-title">关于我</h1>
+        </header>
+
+        <!-- Typora 风格的文章内容 -->
+        <div class="typora-content">
+            <div class="author-profile">
+                <div class="author-avatar-large">
+                    <i class="bi bi-person-circle"></i>
+                </div>
+                <h2 class="author-name">linxiong</h2>
+                <p class="author-tagline">热爱技术，专注于网络安全与渗透测试领域</p>
+            </div>
+
+            <hr style="margin: 2em 0;">
+
+            <h2 id="contact">联系方式</h2>
+            <p>欢迎通过以下方式与我联系：</p>
+            <ul>
+                <li><strong>邮箱：</strong><a href="mailto:3497875641@qq.com">3497875641@qq.com</a></li>
+            </ul>
+
+            <h2 id="about">关于本博客</h2>
+            <p>这是一个基于 Flask 开发的个人技术博客，主要用于记录和分享我在<strong>网络安全</strong>和<strong>渗透测试</strong>领域的学习笔记、实践经验和技术见解。</p>
+
+            <h3 id="features">博客特色</h3>
+            <ul>
+                <li><strong>Typora 风格排版</strong> - 清晰、优雅的阅读体验</li>
+                <li><strong>Markdown 写作</strong> - 专注于内容创作，支持代码高亮</li>
+                <li><strong>智能目录</strong> - 自动生成文章目录，快速定位内容</li>
+                <li><strong>夜间模式</strong> - 护眼的深色主题</li>
+                <li><strong>响应式设计</strong> - 完美适配手机、平板和电脑</li>
+                <li><strong>代码复制</strong> - 一键复制代码块</li>
+                <li><strong>文章导出</strong> - 支持 Markdown 和 HTML 格式导出</li>
+            </ul>
+
+            <h3 id="tech">技术栈</h3>
+            <p>本博客采用现代化技术栈构建：</p>
+            <ul>
+                <li><strong>后端：</strong>Flask 3.0 + SQLAlchemy + SQLite</li>
+                <li><strong>前端：</strong>Bootstrap 5 + 自定义 CSS</li>
+                <li><strong>内容：</strong>Python Markdown + Pygments</li>
+                <li><strong>特性：</strong>用户认证、分类标签、全文搜索、主题切换</li>
+            </ul>
+
+            <h2 id="topics">主要内容</h2>
+            <p>博客主要分享以下主题的内容：</p>
+            <ul>
+                <li>网络安全基础知识</li>
+                <li>渗透测试实战经验</li>
+                <li>漏洞分析与利用</li>
+                <li>安全工具使用教程</li>
+                <li>CTF 竞赛题目解析</li>
+                <li>行业发展趋势分析</li>
+            </ul>
+
+            <h2 id="thanks">致谢</h2>
+            <p>感谢你访问我的博客！如果你有任何问题或建议，欢迎通过邮件与我交流。</p>
+            <p>希望我的分享能对你有所帮助，让我们一起在技术的道路上不断进步！</p>
+
+            <div style="margin-top: 3em; padding: 2em; text-align: center; background: var(--bg-color); border-radius: 8px;">
+                <p style="font-size: 1.1em; color: var(--primary-color);">
+                    <i class="bi bi-heart-fill"></i> 感谢阅读
+                </p>
+            </div>
+
+            <div style="margin-top: 3em;">
+                <a href="{{ url_for('main.index') }}" class="action-btn">
+                    <i class="bi bi-arrow-left"></i> 返回首页
+                </a>
+            </div>
+        </div>
+    </article>
+</div>
+
+<style>
+.author-profile {
+    text-align: center;
+    padding: 3em 0;
+}
+
+.author-avatar-large {
+    font-size: 80px;
+    color: var(--primary-color);
+    margin-bottom: 1em;
+}
+
+.author-name {
+    font-size: 2em;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-bottom: 0.5em;
+}
+
+.author-tagline {
+    font-size: 1.1em;
+    color: var(--text-light);
+    font-style: italic;
+}
+
+.typora-content h2 {
+    margin-top: 2.5em;
+}
+
+.typora-content h3 {
+    margin-top: 2em;
+}
+
+.typora-content ul {
+    padding-left: 1.5em;
+}
+
+.typora-content li {
+    margin-bottom: 0.5em;
+}
+
+.typora-content a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.typora-content a:hover {
+    text-decoration: underline;
+}
+</style>
+{% endblock %}

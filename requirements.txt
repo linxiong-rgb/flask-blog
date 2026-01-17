@@ -1,0 +1,16 @@
+# Flask 核心依赖
+Flask==3.0.0
+Flask-SQLAlchemy==3.1.1
+Flask-Login==0.6.3
+Flask-WTF==1.2.1
+Werkzeug==3.0.1
+
+# 数据验证
+email_validator==2.1.0.post1
+
+# Markdown 和代码高亮
+markdown==3.5.1
+Pygments==2.19.2
+
+# PostgreSQL 数据库（Render 部署使用）
+psycopg2-binary==2.9.9

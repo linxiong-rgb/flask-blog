@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}{% if post %}编辑文章{% else %}新建文章{% endif %} - 我的博客{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="sidebar-widget">
+                <h1 class="mb-4">
+                    <i class="bi bi-{% if post %}pencil{% else %}plus-lg{% endif %}"></i>
+                    {% if post %}编辑文章{% else %}新建文章{% endif %}
+                </h1>
+
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">文章标题 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="title" name="title"
+                               value="{% if post %}{{ post.title }}{% endif %}" required>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="category_id" class="form-label">分类</label>
+                            <select class="form-select" id="category_id" name="category_id">
+                                <option value="">选择分类（可选）</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.id }}"
+                                            {% if post and post.category_id == category.id %}selected{% endif %}>
+                                        {{ category.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="cover_image" class="form-label">封面图片 URL（可选）</label>
+                            <input type="url" class="form-control" id="cover_image" name="cover_image"
+                                   value="{% if post and post.cover_image %}{{ post.cover_image }}{% endif %}"
+                                   placeholder="https://example.com/image.jpg">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="summary" class="form-label">摘要（可选）</label>
+                        <input type="text" class="form-control" id="summary" name="summary"
+                               value="{% if post and post.summary %}{{ post.summary }}{% endif %}"
+                               placeholder="简短描述文章内容，显示在首页（最多300字）">
+                        <div class="form-text">将显示在文章列表中</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="content" class="form-label">
+                            文章内容 <span class="text-danger">*</span>
+                            <small class="text-muted">(支持 Markdown)</small>
+                            <button type="button" class="btn btn-sm btn-outline-success float-end" onclick="document.getElementById('mdFileInput').click()">
+                                <i class="bi bi-file-earmark-markup"></i> 导入 MD 文件
+                            </button>
+                        </label>
+                        <input type="file" id="mdFileInput" accept=".md" style="display: none" onchange="importMarkdown(this)">
+                        <textarea class="form-control" id="content" name="content" rows="15"
+                                  required>{% if post %}{{ post.content }}{% endif %}</textarea>
+                        <div class="form-text">支持 Markdown 格式，可导入 .md 文件</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">标签</label>
+                        <div>
+                            {% for tag in tags %}
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" name="tags" value="{{ tag.id }}" id="tag{{ tag.id }}"
+                                           {% if post and tag in post.tags %}checked{% endif %}>
+                                    <label class="form-check-label badge-tag" for="tag{{ tag.id }}">
+                                        {{ tag.name }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% if tags|length == 0 %}
+                            <small class="text-muted">
+                                还没有标签，在管理后台创建
+                            </small>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4 form-check">
+                        <input type="checkbox" class="form-check-input" id="published" name="published"
+                               {% if post and post.published %}checked{% endif %}
+                               {% if not post %}checked{% endif %}>
+                        <label class="form-check-label" for="published">
+                            <i class="bi bi-globe"></i> 立即发布
+                            <small class="text-muted">(取消勾选将保存为草稿)</small>
+                        </label>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg"></i> 保存
+                        </button>
+                        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg"></i> 取消
+                        </a>
+                        {% if post %}
+                            <a href="{{ url_for('main.post', post_id=post.id) }}" class="btn btn-outline-info ms-auto" target="_blank">
+                                <i class="bi bi-eye"></i> 预览
+                            </a>
+                        {% endif %}
+                    </div>
+                </form>
+
+                <!-- Markdown 语法提示 -->
+                <div class="mt-4 p-4" style="background: var(--bg-color); border-radius: 8px;">
+                    <h6 class="mb-3"><i class="bi bi-code-square"></i> Markdown 快速参考</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small>
+                                <strong>标题:</strong> # 一级标题<br>
+                                <strong>粗体:</strong> **粗体文本**<br>
+                                <strong>斜体:</strong> *斜体文本*<br>
+                                <strong>链接:</strong> [文本](URL)
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <small>
+                                <strong>代码:</strong> `代码` 或 ```代码块```<br>
+                                <strong>列表:</strong> - 项目 或 1. 项目<br>
+                                <strong>引用:</strong> > 引用文本<br>
+                                <strong>图片:</strong> ![alt](URL)
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function importMarkdown(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        let content = e.target.result;
+
+        // 尝试解析标题和内容
+        const lines = content.split('\n');
+        let title = '';
+        let bodyStart = 0;
+
+        // 检查 YAML front matter
+        if (lines[0] && lines[0].trim() === '---') {
+            for (let i = 1; i < lines.length; i++) {
+                if (lines[i].trim() === '---') {
+                    bodyStart = i + 1;
+                    break;
+                }
+                // 提取 title
+                if (lines[i].startsWith('title:')) {
+                    title = lines[i].split(':', 2)[1].trim().stripQuotes();
+                }
+            }
+        } else {
+            // 检查第一个 # 标题
+            if (lines[0] && lines[0].trim().startsWith('#')) {
+                const match = lines[0].match(/^#+\s+(.+)$/);
+                if (match) {
+                    title = match[1].trim();
+                    bodyStart = 1;
+                }
+            }
+        }
+
+        // 提取正文
+        const bodyContent = lines.slice(bodyStart).join('\n').trim();
+
+        // 填充表单
+        if (title && !document.getElementById('title').value) {
+            document.getElementById('title').value = title;
+        }
+
+        // 自动生成摘要
+        if (bodyContent.length > 0 && !document.getElementById('summary').value) {
+            const summary = bodyContent.substring(0, 200) + (bodyContent.length > 200 ? '...' : '');
+            document.getElementById('summary').value = summary;
+        }
+
+        // 填充内容
+        document.getElementById('content').value = bodyContent;
+
+        // 显示成功提示
+        alert('Markdown 文件导入成功！\n\n' +
+              (title ? '标题: ' + title + '\n' : '') +
+              '内容长度: ' + bodyContent.length + ' 字符\n\n' +
+              '请检查并补充其他信息（分类、标签等）后保存。');
+    };
+
+    reader.onerror = function() {
+        alert('读取文件失败，请重试');
+    };
+
+    // 尝试多种编码读取
+    readWithEncoding(file, reader);
+}
+
+function readWithEncoding(file, reader) {
+    // 优先使用 UTF-8
+    reader.readAsText(file, 'UTF-8');
+}
+
+// String.prototype.trim polyfill for old browsers
+if (!String.prototype.stripQuotes) {
+    String.prototype.stripQuotes = function() {
+        return this.replace(/^["']|["']$/g, '');
+    };
+}
+</script>
+{% endblock %}

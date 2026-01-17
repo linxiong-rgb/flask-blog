@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}首页 - 我的博客{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <div class="row">
+        <!-- 主内容区 -->
+        <div class="col-lg-8">
+            <!-- Hero 区域 -->
+            <div class="hero mb-4">
+                <h1>欢迎来到我的博客</h1>
+                <p>分享技术、记录生活、交流想法</p>
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('admin.new_post') }}" class="btn btn-light btn-lg">
+                        <i class="bi bi-plus-lg"></i> 写文章
+                    </a>
+                {% endif %}
+            </div>
+
+            <!-- 文章列表 -->
+            {% if posts.items %}
+                {% for post in posts.items %}
+                    <article class="post-card">
+                        {% if post.cover_image %}
+                            <img src="{{ post.cover_image }}" alt="{{ post.title }}" class="post-card-img">
+                        {% endif %}
+                        <div class="post-card-body">
+                            <div class="post-meta">
+                                {% if post.category %}
+                                    <a href="{{ url_for('main.category', category_id=post.category.id) }}" class="badge-category">
+                                        <i class="bi bi-folder"></i> {{ post.category.name }}
+                                    </a>
+                                {% endif %}
+                                <span>
+                                    <i class="bi bi-calendar3"></i> {{ post.created_at.strftime('%Y-%m-%d') }}
+                                </span>
+                                <span>
+                                    <i class="bi bi-person"></i> {{ post.author.username }}
+                                </span>
+                                <span>
+                                    <i class="bi bi-eye"></i> {{ post.views }}
+                                </span>
+                            </div>
+
+                            <h2 class="post-card-title">
+                                <a href="{{ url_for('main.post', post_id=post.id) }}">{{ post.title }}</a>
+                            </h2>
+
+                            {% if post.summary %}
+                                <p class="post-summary">{{ post.summary }}</p>
+                            {% endif %}
+
+                            {% if post.tags %}
+                                <div class="mb-3">
+                                    {% for tag in post.tags %}
+                                        <a href="{{ url_for('main.tag', tag_id=tag.id) }}" class="badge-tag">
+                                            <i class="bi bi-tag"></i> {{ tag.name }}
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+
+                            <a href="{{ url_for('main.post', post_id=post.id) }}" class="btn btn-outline-primary btn-sm">
+                                阅读全文 <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    </article>
+                {% endfor %}
+
+                <!-- 分页 -->
+                {% if posts.pages > 1 %}
+                    <div class="pagination">
+                        {% if posts.has_prev %}
+                            <a href="{{ url_for('main.index', page=posts.prev_num) }}">
+                                <i class="bi bi-chevron-left"></i> 上一页
+                            </a>
+                        {% endif %}
+
+                        {% for page_num in posts.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                            {% if page_num %}
+                                {% if page_num == posts.page %}
+                                    <span class="active">{{ page_num }}</span>
+                                {% else %}
+                                    <a href="{{ url_for('main.index', page=page_num) }}">{{ page_num }}</a>
+                                {% endif %}
+                            {% else %}
+                                <span>...</span>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if posts.has_next %}
+                            <a href="{{ url_for('main.index', page=posts.next_num) }}">
+                                下一页 <i class="bi bi-chevron-right"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox display-1 text-muted"></i>
+                    <p class="mt-3 text-muted">还没有发布任何文章</p>
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('admin.new_post') }}" class="btn btn-primary">
+                            <i class="bi bi-plus-lg"></i> 创建第一篇文章
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- 侧边栏 -->
+        <div class="col-lg-4">
+            <div class="sidebar">
+                <!-- 搜索框 -->
+                <div class="sidebar-widget">
+                    <h5 class="sidebar-widget-title">
+                        <i class="bi bi-search"></i> 搜索
+                    </h5>
+                    <form action="{{ url_for('main.search') }}" method="GET">
+                        <div class="search-box">
+                            <i class="bi bi-search"></i>
+                            <input type="text" name="q" placeholder="搜索文章...">
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 热门文章 -->
+                {% if hot_posts %}
+                    <div class="sidebar-widget">
+                        <h5 class="sidebar-widget-title">
+                            <i class="bi bi-fire"></i> 热门文章
+                        </h5>
+                        <ul class="hot-posts-list">
+                            {% for hp in hot_posts %}
+                                <li>
+                                    <a href="{{ url_for('main.post', post_id=hp.id) }}">
+                                        {{ hp.title }}
+                                    </a>
+                                    <br>
+                                    <small>
+                                        <i class="bi bi-eye"></i> {{ hp.views }} 次浏览
+                                    </small>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+                <!-- 分类 -->
+                {% if categories %}
+                    <div class="sidebar-widget">
+                        <h5 class="sidebar-widget-title">
+                            <i class="bi bi-folder"></i> 分类
+                        </h5>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for category in categories %}
+                                <a href="{{ url_for('main.category', category_id=category.id) }}" class="badge-category">
+                                    {{ category.name }}
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- 标签云 -->
+                {% if tags %}
+                    <div class="sidebar-widget">
+                        <h5 class="sidebar-widget-title">
+                            <i class="bi bi-tags"></i> 标签
+                        </h5>
+                        <div class="tag-cloud">
+                            {% for tag in tags %}
+                                <a href="{{ url_for('main.tag', tag_id=tag.id) }}" class="badge-tag">
+                                    {{ tag.name }}
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- 统计信息 -->
+                <div class="sidebar-widget">
+                    <h5 class="sidebar-widget-title">
+                        <i class="bi bi-bar-chart"></i> 站点统计
+                    </h5>
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="stats-card">
+                                <div class="stats-number">{{ posts.total }}</div>
+                                <div class="stats-label">文章总数</div>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="stats-card">
+                                <div class="stats-number">{{ categories|length }}</div>
+                                <div class="stats-label">分类数量</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stats-card">
+                                <div class="stats-number">{{ tags|length }}</div>
+                                <div class="stats-label">标签数量</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stats-card">
+                                <div class="stats-number">{{ total_views }}</div>
+                                <div class="stats-label">总浏览量</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

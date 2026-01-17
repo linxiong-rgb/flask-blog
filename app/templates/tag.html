@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tag.name }} - 标签 - 我的博客{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <!-- 面包屑导航 -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}"><i class="bi bi-house-door"></i> 首页</a></li>
+            <li class="breadcrumb-item active">{{ tag.name }}</li>
+        </ol>
+    </nav>
+
+    <!-- 标签标题 -->
+    <div class="hero mb-4" style="padding: 2rem;">
+        <h1 class="mb-2">
+            <i class="bi bi-tag"></i> {{ tag.name }}
+        </h1>
+        <p class="mb-0">包含 {{ posts.total }} 篇文章</p>
+    </div>
+
+    <!-- 文章列表 -->
+    <div class="row">
+        <div class="col-lg-8">
+            {% if posts.items %}
+                {% for post in posts.items %}
+                    <article class="post-card">
+                        <div class="post-card-body">
+                            <div class="post-meta">
+                                {% if post.category %}
+                                    <a href="{{ url_for('main.category', category_id=post.category.id) }}" class="badge-category">
+                                        <i class="bi bi-folder"></i> {{ post.category.name }}
+                                    </a>
+                                {% endif %}
+                                <span>
+                                    <i class="bi bi-calendar3"></i> {{ post.created_at.strftime('%Y-%m-%d') }}
+                                </span>
+                                <span>
+                                    <i class="bi bi-person"></i> {{ post.author.username }}
+                                </span>
+                                <span>
+                                    <i class="bi bi-eye"></i> {{ post.views }}
+                                </span>
+                            </div>
+
+                            <h3 class="post-card-title">
+                                <a href="{{ url_for('main.post', post_id=post.id) }}">{{ post.title }}</a>
+                            </h3>
+
+                            {% if post.summary %}
+                                <p class="post-summary">{{ post.summary }}</p>
+                            {% endif %}
+
+                            {% if post.tags %}
+                                <div class="mb-3">
+                                    {% for t in post.tags %}
+                                        <a href="{{ url_for('main.tag', tag_id=t.id) }}" class="badge-tag">
+                                            <i class="bi bi-tag"></i> {{ t.name }}
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+
+                            <a href="{{ url_for('main.post', post_id=post.id) }}" class="btn btn-outline-primary btn-sm">
+                                阅读全文 <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    </article>
+                {% endfor %}
+
+                <!-- 分页 -->
+                {% if posts.pages > 1 %}
+                    <div class="pagination">
+                        {% if posts.has_prev %}
+                            <a href="{{ url_for('main.tag', tag_id=tag.id, page=posts.prev_num) }}">
+                                <i class="bi bi-chevron-left"></i> 上一页
+                            </a>
+                        {% endif %}
+
+                        {% for page_num in posts.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                            {% if page_num %}
+                                {% if page_num == posts.page %}
+                                    <span class="active">{{ page_num }}</span>
+                                {% else %}
+                                    <a href="{{ url_for('main.tag', tag_id=tag.id, page=page_num) }}">{{ page_num }}</a>
+                                {% endif %}
+                            {% else %}
+                                <span>...</span>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if posts.has_next %}
+                            <a href="{{ url_for('main.tag', tag_id=tag.id, page=posts.next_num) }}">
+                                下一页 <i class="bi bi-chevron-right"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox display-1 text-muted"></i>
+                    <p class="mt-3 text-muted">该标签下还没有文章</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

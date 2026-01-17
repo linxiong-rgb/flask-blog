@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block title %}{{ post.title }} - 我的博客{% endblock %}
+
+{% block content %}
+<div class="typora-container">
+    <div class="article-wrapper">
+        <!-- 左侧目录 -->
+        <aside class="article-toc" id="toc">
+            <div class="toc-header">
+                <span class="toc-title">
+                    <i class="bi bi-list-ul"></i> 目录
+                </span>
+                <button class="toc-toggle" id="tocToggle" title="切换目录">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+            </div>
+            <div class="toc-content" id="tocContent">
+                <div class="toc-loading">正在生成目录...</div>
+            </div>
+        </aside>
+
+        <!-- 主文章区域 -->
+        <article class="typora-article">
+            <!-- 简化的面包屑导航 -->
+            <nav class="typora-breadcrumb">
+                <a href="{{ url_for('main.index') }}">首页</a>
+                {% if post.category %}
+                    <span class="separator">/</span>
+                    <a href="{{ url_for('main.category', category_id=post.category.id) }}">{{ post.category.name }}</a>
+                {% endif %}
+                <span class="separator">/</span>
+                <span class="current">{{ post.title }}</span>
+            </nav>
+
+            <!-- Typora 风格的文章头部 -->
+            <header class="typora-header">
+                <h1 class="typora-title">{{ post.title }}</h1>
+
+                <div class="typora-meta">
+                    <span class="meta-item">
+                        <i class="bi bi-person"></i> {{ post.author.username }}
+                    </span>
+                    <span class="separator">·</span>
+                    <span class="meta-item">
+                        <i class="bi bi-calendar"></i> {{ post.created_at.strftime('%Y-%m-%d') }}
+                    </span>
+                    {% if post.updated_at != post.created_at %}
+                        <span class="separator">·</span>
+                        <span class="meta-item">
+                            更新于 {{ post.updated_at.strftime('%Y-%m-%d') }}
+                        </span>
+                    {% endif %}
+                    <span class="separator">·</span>
+                    <span class="meta-item">
+                        <i class="bi bi-eye"></i> {{ post.views }}
+                    </span>
+                </div>
+
+                {% if post.tags %}
+                    <div class="typora-tags">
+                        {% for tag in post.tags %}
+                            <a href="{{ url_for('main.tag', tag_id=tag.id) }}" class="tag-link">#{{ tag.name }}</a>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </header>
+
+            <!-- 封面图 -->
+            {% if post.cover_image %}
+                <div class="typora-cover">
+                    <img src="{{ post.cover_image }}" alt="{{ post.title }}">
+                </div>
+            {% endif %}
+
+            <!-- Typora 风格的文章内容 -->
+            <div class="typora-content" id="articleContent">
+                {{ post.content_html | safe }}
+            </div>
+
+            <!-- 文章底部操作栏 -->
+            <footer class="typora-footer">
+                <div class="footer-actions">
+                    <a href="{{ url_for('main.index') }}" class="action-btn">
+                        <i class="bi bi-arrow-left"></i> 返回首页
+                    </a>
+
+                    <div class="export-buttons">
+                        <a href="/export/markdown/{{ post.id }}" class="action-btn export-btn">
+                            <i class="bi bi-markdown"></i> 导出 Markdown
+                        </a>
+                        <a href="/export/pdf/{{ post.id }}" class="action-btn export-btn">
+                            <i class="bi bi-file-pdf"></i> 导出 HTML
+                        </a>
+                    </div>
+
+                    {% if current_user.is_authenticated and post.author == current_user %}
+                        <a href="{{ url_for('admin.edit_post', post_id=post.id) }}" class="action-btn edit-btn">
+                            <i class="bi bi-pencil"></i> 编辑
+                        </a>
+                    {% endif %}
+                </div>
+            </footer>
+        </article>
+    </div>
+</div>
+
+<!-- 回顶部按钮 -->
+<button class="back-to-top" id="backToTop" title="返回顶部">
+    <i class="bi bi-arrow-up"></i>
+</button>
+
+<!-- 个人信息模态框 -->
+<div class="modal fade" id="authorModal" tabindex="-1" aria-labelledby="authorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="authorModalLabel">
+                    <i class="bi bi-person-circle"></i> 关于作者
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="author-info">
+                    <div class="author-avatar">
+                        <i class="bi bi-person-circle"></i>
+                    </div>
+                    <h4>{{ post.author.username }}</h4>
+                    <div class="author-details">
+                        <p>
+                            <i class="bi bi-envelope"></i>
+                            <a href="mailto:3497875641@qq.com">3497875641@qq.com</a>
+                        </p>
+                        <p class="author-bio">热爱技术，专注于网络安全与渗透测试领域</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 回顶部功能
+const backToTopBtn = document.getElementById('backToTop');
+
+window.addEventListener('scroll', () => {
+    if (window.pageYOffset > 300) {
+        backToTopBtn.classList.add('show');
+    } else {
+        backToTopBtn.classList.remove('show');
+    }
+});
+
+backToTopBtn.addEventListener('click', () => {
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+});
+
+// 目录功能
+const tocToggle = document.getElementById('tocToggle');
+const tocPanel = document.getElementById('toc');
+const tocContent = document.getElementById('tocContent');
+
+tocToggle.addEventListener('click', () => {
+    tocPanel.classList.toggle('collapsed');
+    const icon = tocToggle.querySelector('i');
+    if (tocPanel.classList.contains('collapsed')) {
+        icon.classList.remove('bi-chevron-left');
+        icon.classList.add('bi-chevron-right');
+    } else {
+        icon.classList.remove('bi-chevron-right');
+        icon.classList.add('bi-chevron-left');
+    }
+});
+
+// 生成目录
+function generateTOC() {
+    const content = document.getElementById('articleContent');
+    const headings = content.querySelectorAll('h1, h2, h3, h4, h5, h6');
+
+    if (headings.length === 0) {
+        tocContent.innerHTML = '<div class="toc-empty">暂无目录</div>';
+        return;
+    }
+
+    let tocHTML = '<ul class="toc-list">';
+    let level = 0;
+
+    headings.forEach((heading, index) => {
+        const headingLevel = parseInt(heading.tagName.substring(1));
+        const headingText = heading.textContent.trim();
+        const headingId = 'heading-' + index;
+
+        heading.id = headingId;
+
+        if (headingLevel > level) {
+            tocHTML += '<ul class="toc-sublist">';
+        } else if (headingLevel < level) {
+            tocHTML += '</ul>'.repeat(level - headingLevel + 1);
+        }
+
+        tocHTML += `
+            <li class="toc-item toc-level-${headingLevel}">
+                <a href="#${headingId}" class="toc-link" data-target="${headingId}">
+                    ${headingText}
+                </a>
+            </li>
+        `;
+
+        level = headingLevel;
+    });
+
+    tocHTML += '</ul>';
+    tocContent.innerHTML = tocHTML;
+
+    // 目录点击事件
+    document.querySelectorAll('.toc-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetId = link.getAttribute('data-target');
+            const targetElement = document.getElementById(targetId);
+
+            if (targetElement) {
+                const offsetTop = targetElement.offsetTop - 80;
+                window.scrollTo({
+                    top: offsetTop,
+                    behavior: 'smooth'
+                });
+
+                // 更新活动状态
+                document.querySelectorAll('.toc-link').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+            }
+        });
+    });
+}
+
+// 页面加载后生成目录
+document.addEventListener('DOMContentLoaded', () => {
+    generateTOC();
+
+    // 滚动时高亮当前目录项
+    const headings = document.querySelectorAll('#articleContent h1, #articleContent h2, #articleContent h3');
+    const tocLinks = document.querySelectorAll('.toc-link');
+
+    window.addEventListener('scroll', () => {
+        let currentHeading = null;
+
+        headings.forEach(heading => {
+            const rect = heading.getBoundingClientRect();
+            if (rect.top <= 100) {
+                currentHeading = heading;
+            }
+        });
+
+        if (currentHeading) {
+            tocLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('data-target') === currentHeading.id) {
+                    link.classList.add('active');
+                }
+            });
+        }
+    });
+});
+
+// 代码块复制功能
+function addCopyButtons() {
+    const codeBlocks = document.querySelectorAll('pre code');
+
+    codeBlocks.forEach((codeBlock, index) => {
+        const pre = codeBlock.parentElement;
+
+        // 创建复制按钮
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'copy-button';
+        copyBtn.innerHTML = '<i class="bi bi-clipboard"></i>';
+        copyBtn.title = '复制代码';
+        copyBtn.dataset.index = index;
+
+        // 添加按钮到代码块
+        pre.style.position = 'relative';
+        pre.appendChild(copyBtn);
+
+        // 复制事件
+        copyBtn.addEventListener('click', async () => {
+            const code = codeBlock.textContent;
+
+            try {
+                await navigator.clipboard.writeText(code);
+                copyBtn.innerHTML = '<i class="bi bi-check"></i>';
+                copyBtn.classList.add('copied');
+
+                setTimeout(() => {
+                    copyBtn.innerHTML = '<i class="bi bi-clipboard"></i>';
+                    copyBtn.classList.remove('copied');
+                }, 2000);
+            } catch (err) {
+                // 降级方案
+                const textarea = document.createElement('textarea');
+                textarea.value = code;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+
+                try {
+                    document.execCommand('copy');
+                    copyBtn.innerHTML = '<i class="bi bi-check"></i>';
+                    copyBtn.classList.add('copied');
+
+                    setTimeout(() => {
+                        copyBtn.innerHTML = '<i class="bi bi-clipboard"></i>';
+                        copyBtn.classList.remove('copied');
+                    }, 2000);
+                } catch (e) {
+                    copyBtn.innerHTML = '<i class="bi bi-x"></i>';
+                    copyBtn.classList.add('error');
+                }
+
+                document.body.removeChild(textarea);
+            }
+        });
+    });
+}
+
+// 页面加载完成后添加复制按钮
+document.addEventListener('DOMContentLoaded', addCopyButtons);
+</script>
+{% endblock %}
