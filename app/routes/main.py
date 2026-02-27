@@ -755,3 +755,48 @@ def init_database():
             'success': False,
             'message': f'初始化失败: {str(e)}'
         }), 500
+
+
+@bp.route('/check-db')
+def check_database():
+    """
+    数据库状态检查路由
+
+    用于检查数据库表和用户状态
+
+    Returns:
+        JSON: 数据库状态信息
+    """
+    from app import db
+    from sqlalchemy import inspect
+
+    try:
+        inspector = inspect(db.engine)
+        tables = inspector.get_table_names()
+
+        # 获取所有用户
+        users = User.query.all()
+        user_list = [{'id': u.id, 'username': u.username, 'email': u.email} for u in users]
+
+        # 检查 admin01 是否存在
+        admin = User.query.filter_by(username='admin01').first()
+
+        return jsonify({
+            'success': True,
+            'tables': tables,
+            'table_count': len(tables),
+            'users': user_list,
+            'user_count': len(users),
+            'admin_exists': admin is not None,
+            'admin_info': {
+                'id': admin.id,
+                'username': admin.username,
+                'email': admin.email,
+                'has_password': bool(admin.password_hash)
+            } if admin else None
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
