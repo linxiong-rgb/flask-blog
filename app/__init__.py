@@ -163,14 +163,11 @@ def _init_database(app):
 
     在应用上下文中创建所有定义的数据库表。
     仅在表不存在时创建，不会丢失已有数据。
-
-    注意：生产环境应使用数据库迁移工具（Flask-Migrate）
     """
-    # 仅在开发环境自动创建表
-    if os.environ.get('DEBUG', 'False') == 'True':
-        try:
-            with app.app_context():
-                db.create_all()
-        except Exception:
-            # 数据库不存在时忽略错误
-            pass
+    try:
+        with app.app_context():
+            db.create_all()
+    except Exception as e:
+        # 表已存在或其他错误，忽略
+        app.logger.debug(f'Database creation info: {e}')
+        pass
