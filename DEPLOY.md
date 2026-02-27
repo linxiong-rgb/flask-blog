@@ -412,7 +412,42 @@ sudo certbot renew --dry-run
 - [ ] 数据库连接字符串是否正确
 - [ ] 日志中是否有具体错误信息
 
-### 2. 数据库连接失败
+### 2. Render 部署后 Internal Server Error
+
+**症状**：应用启动成功，但访问任何页面都返回 500 错误
+
+**原因**：数据库表未创建
+
+**解决方案**：
+1. 访问 `https://你的应用.onrender.com/init-db` 初始化数据库
+2. 访问 `https://你的应用.onrender.com/check-db` 检查状态
+3. 查看 Render 日志确认具体错误
+
+### 3. 登录失败 - "用户名或密码错误"
+
+**症状**：使用正确的用户名密码仍无法登录
+
+**可能原因**：
+- 数据库中用户未创建
+- 密码哈希字段长度不足
+
+**解决方案**：
+1. 访问 `/check-db` 确认用户是否存在
+2. 访问 `/init-db` 重新创建管理员账号
+3. 如果仍失败，查看日志确认密码哈希字段是否为 VARCHAR(255)
+
+### 4. 部署辅助说明端点
+
+**应用内置了以下调试端点**：
+
+| 端点 | 用途 | 说明 |
+|------|------|------|
+| `/init-db` | 初始化数据库 | 创建表和默认管理员 |
+| `/check-db` | 检查数据库状态 | 查看表和用户信息 |
+
+> ⚠️ **安全提示**：生产环境部署完成后，建议删除或保护这些端点
+
+### 5. 数据库连接失败
 
 **PostgreSQL 连接字符串格式**：
 ```
@@ -424,7 +459,7 @@ postgresql://username:password@hostname:5432/database_name
 sqlite:///path/to/database.db
 ```
 
-### 3. 静态文件 404
+### 6. 静态文件 404
 
 **Nginx 配置**：
 ```nginx
@@ -434,22 +469,23 @@ location /static {
 }
 ```
 
-### 4. CSS 样式未加载
+### 7. CSS 样式未加载
 
 确保：
 - [ ] `DEBUG=False` 时静态文件路径正确
 - [ ] Nginx 配置了 `/static` 别名
 - [ ] 文件权限正确（`chmod -R 755`）
 
-### 5. 忘记管理员密码
+### 8. 忘记管理员密码
 
-运行数据库重置脚本：
-
+**本地开发环境**：运行数据库重置脚本
 ```bash
 python reset_database.py
 ```
 
-### 6. 更新代码后未生效
+**生产环境**：访问 `/init-db` 重新创建管理员
+
+### 9. 更新代码后未生效
 
 **手动重启服务**：
 ```bash
@@ -578,10 +614,37 @@ tar -czf uploads_$(date +%Y%m%d).tar.gz app/static/uploads/
 
 ---
 
+## 部署经验总结
+
+### 从首次部署中学习
+
+本项目的首次 Render 部署过程中遇到了一些问题，这些问题及解决方案已整合到项目中：
+
+**问题 1：数据库表未自动创建**
+- **原因**：`db.create_all()` 只在 DEBUG=True 时执行
+- **解决**：添加 `/init-db` HTTP 端点，允许手动初始化
+
+**问题 2：密码哈希字段长度不足**
+- **原因**：werkzeug 生成的 scrypt 哈希为 132 字符，超过 VARCHAR(128)
+- **解决**：将 `password_hash` 字段增加到 VARCHAR(255)
+
+**问题 3：缺少部署调试工具**
+- **原因**：无法快速诊断数据库状态
+- **解决**：添加 `/check-db` 端点查看表和用户信息
+
+**改进后的部署流程：**
+1. 部署代码到 Render
+2. 访问 `/init-db` 初始化数据库（自动迁移密码字段）
+3. 访问 `/check-db` 验证状态
+4. 登录后台开始使用
+
+---
+
 ## 获取帮助
 
 - 📧 **邮箱**: 3497875641@qq.com
-- 💬 **Issues**: [GitHub Issues](https://github.com/linxiong/flask-blog/issues)
+- 💬 **Issues**: [GitHub Issues](https://github.com/linxiong-rgb/flask-blog/issues)
+- 📖 **文档**: [完整文档](https://github.com/linxiong-rgb/flask-blog)
 
 ---
 

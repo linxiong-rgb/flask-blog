@@ -39,13 +39,15 @@
 | 类别 | 技术 | 版本 |
 |------|------|------|
 | 后端框架 | Flask | 3.0.0 |
-| 数据库 | SQLite | 3 |
+| 数据库 | SQLite / PostgreSQL | 3 / 14+ |
 | ORM | SQLAlchemy | 3.1.1 |
 | 用户认证 | Flask-Login | 0.6.3 |
 | CSRF 保护 | Flask-WTF | 1.2.1 |
+| 缓存 | Flask-Caching | 2.1.0 |
 | 前端框架 | Bootstrap | 5.3.0 |
 | 图标库 | Bootstrap Icons | 1.11.0 |
 | Markdown | Python-Markdown | 3.5.1 |
+| WSGI 服务器 | Gunicorn | 21.2.0 |
 
 ---
 
@@ -242,11 +244,64 @@ app.run(debug=True, host='0.0.0.0', port=5001)
 
 ### 忘记管理员密码
 
+**本地开发环境：**
 运行数据库重置脚本：
-
 ```bash
 python reset_database.py
 ```
+
+**生产环境（如 Render）：**
+访问以下地址重新创建管理员：
+```
+https://你的域名/init-db
+```
+
+### 部署后无法登录
+
+如果部署后出现登录失败，检查以下几点：
+1. 确认已访问 `/init-db` 初始化数据库
+2. 使用 `/check-db` 检查用户是否存在
+3. 查看应用日志获取详细错误信息
+
+---
+
+## 🚢 部署指南
+
+### 快速部署到 Render
+
+1. **Fork 本仓库** 到你的 GitHub
+
+2. **访问 [Render](https://dashboard.render.com)** 并连接 GitHub
+
+3. **创建 PostgreSQL 数据库**
+   - 点击 New → PostgreSQL
+   - 选择 Free 套餐
+   - 复制 Internal Database URL
+
+4. **创建 Web Service**
+   - 点击 New → Web Service
+   - 选择你 fork 的仓库
+   - 配置如下：
+     - Environment: Python 3
+     - Build Command: `pip install -r requirements.txt`
+     - Start Command: (留空，使用 Procfile)
+   - 环境变量：
+     ```
+     DATABASE_URL=你的PostgreSQL URL
+     SECRET_KEY=随机生成32位字符串
+     DEBUG=False
+     FLASK_ENV=production
+     ```
+
+5. **初始化数据库**
+   - 部署完成后访问：`https://你的应用.onrender.com/init-db`
+   - 使用 `/check-db` 验证数据库状态
+
+6. **登录后台**
+   - 访问：`https://你的应用.onrender.com/auth/login`
+   - 用户名: `admin01`，密码: `123456`
+
+详细部署文档请查看 [DEPLOY.md](DEPLOY.md)
 
 ---
 
