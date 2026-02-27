@@ -709,3 +709,49 @@ def get_post_bookmarks(post_id):
         'bookmark_count': bookmark_count,
         'bookmarked': bookmarked
     })
+
+
+@bp.route('/init-db')
+def init_database():
+    """
+    数据库初始化路由
+
+    用于部署后手动初始化数据库表和默认管理员用户
+    访问该路由将创建所有数据表和默认管理员账号
+
+    Returns:
+        JSON: 初始化结果
+    """
+    from app import db
+    from app.models.friend_link import FriendLink
+
+    try:
+        # 创建所有数据库表
+        db.create_all()
+        current_app.logger.info('数据库表创建成功')
+
+        # 检查管理员是否已存在
+        admin = User.query.filter_by(username='admin01').first()
+        if not admin:
+            # 创建默认管理员
+            admin = User(
+                username='admin01',
+                email='admin01@blog.local'
+            )
+            admin.set_password('123456')
+            db.session.add(admin)
+            db.session.commit()
+            current_app.logger.info('默认管理员账号创建成功')
+
+        return jsonify({
+            'success': True,
+            'message': '数据库初始化成功！',
+            'admin_created': admin is not None or User.query.filter_by(username='admin01').first() is not None
+        })
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'数据库初始化失败: {str(e)}')
+        return jsonify({
+            'success': False,
+            'message': f'初始化失败: {str(e)}'
+        }), 500

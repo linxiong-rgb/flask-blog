@@ -87,7 +87,7 @@ git push -u origin main
 | Branch | `main` |
 | Root Directory | (留空) |
 | Build Command | `pip install -r requirements.txt` |
-| Start Command | `gunicorn app:create_app():proxy` |
+| Start Command | (留空，使用 Procfile) |
 
 4. 配置环境变量：
 
@@ -101,9 +101,36 @@ git push -u origin main
 
 5. 选择 **Free** 套餐并创建
 
-#### 第三步：完成部署
+#### 第三步：初始化数据库
 
-等待 2-3 分钟构建完成，访问分配的 URL。
+部署完成后，需要手动初始化数据库：
+
+1. 等待 2-3 分钟构建完成
+2. 访问你的应用 URL，添加 `/init-db` 路径
+   ```
+   https://你的应用名.onrender.com/init-db
+   ```
+3. 你会看到类似这样的响应：
+   ```json
+   {
+     "success": true,
+     "message": "数据库初始化成功！",
+     "admin_created": true
+   }
+   ```
+
+#### 第四步：登录后台
+
+访问登录页面：
+```
+https://你的应用名.onrender.com/auth/login
+```
+
+**默认管理员账号：**
+- 用户名: `admin01`
+- 密码: `123456`
+
+> ⚠️ **安全提醒**：首次登录后请立即修改默认密码！
 
 ---
 
