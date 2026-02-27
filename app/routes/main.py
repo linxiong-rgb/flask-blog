@@ -730,6 +730,31 @@ def init_database():
         db.create_all()
         current_app.logger.info('数据库表创建成功')
 
+        # 检查是否需要迁移 password_hash 列（从 VARCHAR(128) 改为 VARCHAR(255)）
+        try:
+            # 检查当前列长度
+            from sqlalchemy import text
+            with db.engine.connect() as conn:
+                # PostgreSQL 查询列信息
+                result = conn.execute(text("""
+                    SELECT character_maximum_length
+                    FROM information_schema.columns
+                    WHERE table_name = 'user'
+                    AND column_name = 'password_hash'
+                """))
+                row = result.fetchone()
+                if row and row[0] and row[0] < 255:
+                    current_app.logger.info(f'检测到 password_hash 列长度为 {row[0]}，需要迁移到 255')
+                    # 执行迁移
+                    conn.execute(text("""
+                        ALTER TABLE "user"
+                        ALTER COLUMN password_hash TYPE VARCHAR(255)
+                    """))
+                    conn.commit()
+                    current_app.logger.info('password_hash 列迁移成功')
+        except Exception as migrate_error:
+            current_app.logger.warning(f'迁移检查/执行失败: {str(migrate_error)}')
+
         # 检查管理员是否已存在
         admin = User.query.filter_by(username='admin01').first()
         if not admin:
