@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}密码重置链接 - 我的博客{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="sidebar-widget">
+                <div class="text-center mb-4">
+                    <i class="bi bi-envelope-check display-4" style="color: #22c55e;"></i>
+                    <h4 class="mt-3">密码重置链接已生成</h4>
+                </div>
+
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-info-circle"></i> 开发环境提示</h6>
+                    <p class="mb-2">在实际应用中，此链接将通过电子邮件发送给用户。</p>
+                    <p class="mb-0">链接有效期：1小时</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <strong>密码重置链接</strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-group">
+                            <input type="text" class="form-control" value="{{ reset_url }}" readonly id="resetUrl">
+                            <button class="btn btn-primary" onclick="copyResetLink()">
+                                <i class="bi bi-clipboard"></i> 复制
+                            </button>
+                        </div>
+                        <div class="form-text mt-2">请点击以下链接或在新标签页中打开</div>
+                    </div>
+                    <div class="card-footer">
+                        <a href="{{ reset_url }}" class="btn btn-success w-100">
+                            <i class="bi bi-arrow-right-circle"></i> 前往重置密码页面
+                        </a>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <a href="{{ url_for('main.index') }}" class="text-decoration-none">
+                        <i class="bi bi-house-door"></i> 返回首页
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyResetLink() {
+    const input = document.getElementById('resetUrl');
+    input.select();
+    document.execCommand('copy');
+    alert('链接已复制到剪贴板！');
+}
+</script>
+{% endblock %}

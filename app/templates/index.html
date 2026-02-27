@@ -23,7 +23,7 @@
                 {% for post in posts.items %}
                     <article class="post-card">
                         {% if post.cover_image %}
-                            <img src="{{ post.cover_image }}" alt="{{ post.title }}" class="post-card-img">
+                            <img src="{{ post.cover_image }}" alt="{{ post.title }}" class="post-card-img" loading="lazy">
                         {% endif %}
                         <div class="post-card-body">
                             <div class="post-meta">
@@ -112,19 +112,6 @@
         <!-- 侧边栏 -->
         <div class="col-lg-4">
             <div class="sidebar">
-                <!-- 搜索框 -->
-                <div class="sidebar-widget">
-                    <h5 class="sidebar-widget-title">
-                        <i class="bi bi-search"></i> 搜索
-                    </h5>
-                    <form action="{{ url_for('main.search') }}" method="GET">
-                        <div class="search-box">
-                            <i class="bi bi-search"></i>
-                            <input type="text" name="q" placeholder="搜索文章...">
-                        </div>
-                    </form>
-                </div>
-
                 <!-- 热门文章 -->
                 {% if hot_posts %}
                     <div class="sidebar-widget">
@@ -157,6 +144,23 @@
                             {% for category in categories %}
                                 <a href="{{ url_for('main.category', category_id=category.id) }}" class="badge-category">
                                     {{ category.name }}
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- 热门标签 -->
+                {% if hot_tags %}
+                    <div class="sidebar-widget">
+                        <h5 class="sidebar-widget-title">
+                            <i class="bi bi-hash"></i> 热门标签
+                        </h5>
+                        <div class="hot-tags-list">
+                            {% for tag_id, tag_name, post_count in hot_tags %}
+                                <a href="{{ url_for('main.tag', tag_id=tag_id) }}" class="hot-tag-item">
+                                    <span class="hot-tag-name">{{ tag_name }}</span>
+                                    <span class="hot-tag-count">{{ post_count }}</span>
                                 </a>
                             {% endfor %}
                         </div>

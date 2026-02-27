@@ -3,9 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- SEO Meta 标签 -->
+    <meta name="description" content="{% block description %}专注于网络安全与渗透测试的技术博客，分享学习笔记与实践经验。{% endblock %}">
+    <meta name="keywords" content="{% block keywords %}网络安全,渗透测试,技术博客,编程,Python,Flask{% endblock %}">
+    <meta name="author" content="linxiong">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:url" content="{% block og_url %}{{ request.url_root }}{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}{{ self.title() }}{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}专注于网络安全与渗透测试的技术博客，分享学习笔记与实践经验。{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{{ url_for('static', filename='img/og-image.png', _external=True) }}{% endblock %}">
+    <meta property="og:site_name" content="linxiong's Blog">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{% block twitter_url %}{{ request.url_root }}{% endblock %}">
+    <meta property="twitter:title" content="{% block twitter_title %}{{ self.title() }}{% endblock %}">
+    <meta property="twitter:description" content="{% block twitter_description %}专注于网络安全与渗透测试的技术博客，分享学习笔记与实践经验。{% endblock %}">
+    <meta property="twitter:image" content="{% block twitter_image %}{{ url_for('static', filename='img/og-image.png', _external=True) }}{% endblock %}">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="{% block canonical %}{{ request.url_root }}{% endblock %}">
+
+    <!-- Sitemap -->
+    <link rel="sitemap" type="application/xml" title="Sitemap" href="{{ url_for('main.sitemap') }}">
+
+    <!-- RSS 订阅 -->
+    <link rel="alternate" type="application/rss+xml" title="RSS 订阅" href="{{ url_for('main.rss_feed') }}">
+
     <title>{% block title %}我的博客{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="{{ url_for('static', filename='vendor/bootstrap/bootstrap.min.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/icons/bootstrap-icons.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
@@ -32,6 +62,11 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.archive') }}">
+                            <i class="bi bi-archive"></i> 归档
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('main.about') }}">
                             <i class="bi bi-info-circle"></i> 关于
                         </a>
@@ -39,19 +74,33 @@
                 </ul>
 
                 <!-- 搜索框 -->
-                <form class="d-flex me-3" action="{{ url_for('main.search') }}" method="GET">
-                    <div class="input-group">
-                        <input class="form-control" type="search" name="q" placeholder="搜索文章..." value="{{ request.args.get('q', '') }}">
-                        <button class="btn btn-outline-primary" type="submit">
-                            <i class="bi bi-search"></i>
-                        </button>
+                <div class="navbar-search me-3">
+                    <div class="search-wrapper">
+                        <div class="input-group">
+                            <input class="form-control" type="search" id="navbarSearchInput" placeholder="搜索文章..." autocomplete="off">
+                            <button class="btn btn-outline-primary" type="submit" onclick="performNavbarSearch(event)">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                        <div class="search-suggestions" id="navbarSearchSuggestions">
+                            <div class="suggestions-loading" id="navbarSuggestionsLoading" style="display: none;">
+                                <div class="spinner-border spinner-border-sm me-2"></div> 搜索中...
+                            </div>
+                            <div class="suggestions-list" id="navbarSuggestionsList"></div>
+                        </div>
                     </div>
-                </form>
+                </div>
 
                 <ul class="navbar-nav">
                     <li class="nav-item">
                         <button class="nav-link theme-toggle btn btn-link" id="themeToggle" title="切换主题">
-                            <i class="bi bi-moon-stars"></i>
+                            <i class="bi bi-moon-stars icon-moon"></i>
+                            <i class="bi bi-sun-fill icon-sun"></i>
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link font-toggle btn btn-link" id="fontToggle" title="字体设置">
+                            <i class="bi bi-type"></i>
                         </button>
                     </li>
                     {% if current_user.is_authenticated %}
@@ -89,11 +138,11 @@
 
     <!-- 主内容 -->
     <main>
-        {% with messages = get_flashed_messages() %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <div class="container mt-3">
-                    {% for message in messages %}
-                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'success' if category == 'message' else category }} alert-dismissible fade show" role="alert">
                             {{ message }}
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
@@ -107,55 +156,433 @@
 
     <!-- 页脚 -->
     <footer class="footer">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <h5>关于博客</h5>
-                    <p class="text-muted small">专注于网络安全与渗透测试的技术博客，分享学习笔记与实践经验。</p>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <h5>快速链接</h5>
-                    <div class="footer-links">
-                        <a href="{{ url_for('main.index') }}">首页</a><br>
-                        <a href="{{ url_for('main.categories') }}">分类</a><br>
-                        <a href="{{ url_for('main.about') }}">关于</a>
+        <div class="footer-top">
+            <div class="container">
+                <div class="row g-4">
+                    <!-- 品牌介绍 -->
+                    <div class="col-lg-5 col-md-6">
+                        <div class="footer-brand">
+                            <a href="{{ url_for('main.index') }}" class="footer-logo">
+                                <i class="bi bi-shield-lock"></i> linxiong's Blog
+                            </a>
+                            <p class="footer-desc">
+                                专注于网络安全与渗透测试的技术博客，分享学习笔记与实践经验。探索技术世界，记录成长之路。
+                            </p>
+                            <div class="footer-social">
+                                <a href="https://github.com" target="_blank" title="GitHub">
+                                    <i class="bi bi-github"></i>
+                                </a>
+                                <a href="mailto:3497875641@qq.com" title="Email">
+                                    <i class="bi bi-envelope"></i>
+                                </a>
+                                <a href="{{ url_for('main.archive') }}" title="归档">
+                                    <i class="bi bi-archive"></i>
+                                </a>
+                                <a href="{{ url_for('main.categories') }}" title="分类">
+                                    <i class="bi bi-folder"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 快速链接 -->
+                    <div class="col-lg-3 col-md-6">
+                        <h6 class="footer-title">快速导航</h6>
+                        <ul class="footer-links">
+                            <li><a href="{{ url_for('main.index') }}"><i class="bi bi-chevron-right"></i> 首页</a></li>
+                            <li><a href="{{ url_for('main.categories') }}"><i class="bi bi-chevron-right"></i> 分类</a></li>
+                            <li><a href="{{ url_for('main.archive') }}"><i class="bi bi-chevron-right"></i> 归档</a></li>
+                            <li><a href="{{ url_for('main.about') }}"><i class="bi bi-chevron-right"></i> 关于</a></li>
+                        </ul>
+                    </div>
+
+                    <!-- 联系方式 -->
+                    <div class="col-lg-4 col-md-6">
+                        <h6 class="footer-title">联系方式</h6>
+                        <ul class="footer-contact">
+                            <li>
+                                <i class="bi bi-person-circle"></i>
+                                <div>
+                                    <span class="contact-label">作者</span>
+                                    <span class="contact-value">linxiong</span>
+                                </div>
+                            </li>
+                            <li>
+                                <i class="bi bi-envelope"></i>
+                                <div>
+                                    <span class="contact-label">邮箱</span>
+                                    <a href="mailto:3497875641@qq.com" class="contact-value">3497875641@qq.com</a>
+                                </div>
+                            </li>
+                            <li>
+                                <i class="bi bi-geo-alt"></i>
+                                <div>
+                                    <span class="contact-label">位置</span>
+                                    <span class="contact-value">中国</span>
+                                </div>
+                            </li>
+                        </ul>
                     </div>
                 </div>
-                <div class="col-md-4 mb-3">
-                    <h5>联系方式</h5>
-                    <p class="text-muted small">
-                        <i class="bi bi-person"></i> linxiong<br>
-                        <i class="bi bi-envelope"></i> 3497875641@qq.com
-                    </p>
+            </div>
+        </div>
+
+        <!-- 底部版权栏 -->
+        <div class="footer-bottom">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-md-6 text-center text-md-start">
+                        <p class="footer-copyright mb-0">
+                            &copy; 2025 linxiong. All rights reserved.
+                        </p>
+                    </div>
+                    <div class="col-md-6 text-center text-md-end">
+                        <p class="footer-powered mb-0">
+                            Powered by <i class="bi bi-flower1"></i> Flask
+                            <span class="mx-2">|</span>
+                            Made with <i class="bi bi-heart-fill text-danger"></i>
+                        </p>
+                    </div>
                 </div>
             </div>
-            <hr>
-            <p class="text-muted mb-0">&copy; 2025 linxiong. Made with <i class="bi bi-heart-fill text-danger"></i> using Flask</p>
         </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
+
     <script>
-        // 夜间模式切换
+        // 夜间模式切换（带动画）
         const themeToggle = document.getElementById('themeToggle');
         const html = document.documentElement;
-        const icon = themeToggle.querySelector('i');
 
         // 从 localStorage 读取主题设置
         const savedTheme = localStorage.getItem('theme') || 'light';
         html.setAttribute('data-theme', savedTheme);
-        updateIcon(savedTheme);
+        updateThemeIcon(savedTheme);
 
         themeToggle.addEventListener('click', () => {
+            // 添加旋转动画
+            themeToggle.style.transform = 'rotate(180deg)';
+
             const currentTheme = html.getAttribute('data-theme');
             const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+            // 先添加过渡类
+            html.classList.add('theme-transitioning');
+
+            // 切换主题
             html.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
-            updateIcon(newTheme);
+            updateThemeIcon(newTheme);
+
+            // 移除过渡类
+            setTimeout(() => {
+                html.classList.remove('theme-transitioning');
+                themeToggle.style.transform = 'rotate(0deg)';
+            }, 300);
         });
 
-        function updateIcon(theme) {
-            icon.className = theme === 'light' ? 'bi bi-moon-stars' : 'bi bi-sun-fill';
+        function updateThemeIcon(theme) {
+            const moonIcon = themeToggle.querySelector('.icon-moon');
+            const sunIcon = themeToggle.querySelector('.icon-sun');
+
+            if (theme === 'light') {
+                moonIcon.style.opacity = '1';
+                sunIcon.style.opacity = '0';
+            } else {
+                moonIcon.style.opacity = '0';
+                sunIcon.style.opacity = '1';
+            }
+        }
+
+        // 页面加载时的主题动画
+        document.addEventListener('DOMContentLoaded', () => {
+            html.classList.add('theme-loaded');
+            setTimeout(() => {
+                html.classList.remove('theme-loaded');
+            }, 500);
+
+            // 初始化字体设置
+            initFontSettings();
+        });
+
+        // ========================================
+        // 字体设置功能
+        // ========================================
+
+        function initFontSettings() {
+            const fontToggle = document.getElementById('fontToggle');
+
+            // 创建字体设置面板
+            const panel = document.createElement('div');
+            panel.className = 'font-settings-panel';
+            panel.id = 'fontSettingsPanel';
+            panel.innerHTML = `
+                <div class="font-settings-header">
+                    <h6><i class="bi bi-type"></i> 字体设置</h6>
+                    <button class="font-settings-close" onclick="toggleFontSettings()">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <div class="font-setting-group">
+                    <label class="font-setting-label">字体大小</label>
+                    <div class="font-size-controls">
+                        <button class="font-size-btn" onclick="changeFontSize(-1)">
+                            <i class="bi bi-dash"></i>
+                        </button>
+                        <span class="font-size-display" id="fontSizeDisplay">16px</span>
+                        <button class="font-size-btn" onclick="changeFontSize(1)">
+                            <i class="bi bi-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="font-setting-group">
+                    <label class="font-setting-label">行高</label>
+                    <input type="range" class="line-height-slider" id="lineHeightSlider"
+                           min="1.5" max="2.5" step="0.1" value="1.8"
+                           oninput="changeLineHeight(this.value)">
+                    <div style="text-align: center; margin-top: 5px; font-size: 12px; color: var(--text-light);">
+                        <span id="lineHeightDisplay">1.8</span>
+                    </div>
+                </div>
+                <div class="font-setting-group">
+                    <label class="font-setting-label">字体</label>
+                    <select class="font-family-select" id="fontFamilySelect" onchange="changeFontFamily(this.value)">
+                        <option value="default">默认字体</option>
+                        <option value="serif">宋体/衬线</option>
+                        <option value="sans">黑体/无衬线</option>
+                        <option value="mono">等宽字体</option>
+                    </select>
+                </div>
+                <button class="font-reset-btn" onclick="resetFontSettings()">
+                    <i class="bi bi-arrow-counterclockwise"></i> 恢复默认设置
+                </button>
+            `;
+            document.body.appendChild(panel);
+
+            if (fontToggle) {
+                fontToggle.addEventListener('click', () => {
+                    toggleFontSettings();
+                });
+            }
+
+            // 加载保存的设置
+            loadFontSettings();
+        }
+
+        function toggleFontSettings() {
+            const panel = document.getElementById('fontSettingsPanel');
+            panel.classList.toggle('show');
+        }
+
+        // 字体设置变量
+        let currentFontSize = 16;
+        let currentLineHeight = 1.8;
+        let currentFontFamily = 'default';
+
+        function changeFontSize(delta) {
+            currentFontSize = Math.max(12, Math.min(24, currentFontSize + delta));
+            applyFontSize(currentFontSize);
+            saveFontSettings();
+        }
+
+        function applyFontSize(size) {
+            const content = document.querySelector('.typora-content');
+            if (content) {
+                content.style.fontSize = size + 'px';
+            }
+            document.getElementById('fontSizeDisplay').textContent = size + 'px';
+        }
+
+        function changeLineHeight(value) {
+            currentLineHeight = parseFloat(value);
+            applyLineHeight(currentLineHeight);
+            saveFontSettings();
+        }
+
+        function applyLineHeight(height) {
+            const content = document.querySelector('.typora-content');
+            if (content) {
+                content.style.lineHeight = height;
+            }
+            document.getElementById('lineHeightDisplay').textContent = height.toFixed(1);
+        }
+
+        function changeFontFamily(family) {
+            currentFontFamily = family;
+            applyFontFamily(family);
+            saveFontSettings();
+        }
+
+        function applyFontFamily(family) {
+            const content = document.querySelector('.typora-content');
+            if (!content) return;
+
+            const fontFamilies = {
+                'default': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                'serif': '"SimSun", "Songti SC", serif',
+                'sans': '"Microsoft YaHei", "PingFang SC", sans-serif',
+                'mono': '"Consolas", "Monaco", monospace'
+            };
+
+            content.style.fontFamily = fontFamilies[family] || fontFamilies['default'];
+        }
+
+        function saveFontSettings() {
+            localStorage.setItem('fontSettings', JSON.stringify({
+                fontSize: currentFontSize,
+                lineHeight: currentLineHeight,
+                fontFamily: currentFontFamily
+            }));
+        }
+
+        function loadFontSettings() {
+            const saved = localStorage.getItem('fontSettings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                currentFontSize = settings.fontSize || 16;
+                currentLineHeight = settings.lineHeight || 1.8;
+                currentFontFamily = settings.fontFamily || 'default';
+
+                applyFontSize(currentFontSize);
+                applyLineHeight(currentLineHeight);
+                applyFontFamily(currentFontFamily);
+
+                // 更新控件值
+                document.getElementById('lineHeightSlider').value = currentLineHeight;
+                document.getElementById('fontFamilySelect').value = currentFontFamily;
+            }
+        }
+
+        function resetFontSettings() {
+            currentFontSize = 16;
+            currentLineHeight = 1.8;
+            currentFontFamily = 'default';
+
+            applyFontSize(currentFontSize);
+            applyLineHeight(currentLineHeight);
+            applyFontFamily(currentFontFamily);
+
+            document.getElementById('lineHeightSlider').value = currentLineHeight;
+            document.getElementById('fontFamilySelect').value = currentFontFamily;
+
+            localStorage.removeItem('fontSettings');
+        }
+
+        // 点击页面其他地方关闭字体设置面板
+        document.addEventListener('click', (e) => {
+            const panel = document.getElementById('fontSettingsPanel');
+            const fontToggle = document.getElementById('fontToggle');
+            if (panel && !panel.contains(e.target) && (!fontToggle || !fontToggle.contains(e.target))) {
+                panel.classList.remove('show');
+            }
+        });
+
+        // ========================================
+        // 导航栏搜索功能
+        // ========================================
+
+        const navbarSearchInput = document.getElementById('navbarSearchInput');
+        const navbarSearchSuggestions = document.getElementById('navbarSearchSuggestions');
+        const navbarSuggestionsList = document.getElementById('navbarSuggestionsList');
+        const navbarSuggestionsLoading = document.getElementById('navbarSuggestionsLoading');
+        let navbarSearchTimeout = null;
+
+        if (navbarSearchInput) {
+            navbarSearchInput.addEventListener('input', function() {
+                const query = this.value.trim();
+
+                // 清除之前的定时器
+                if (navbarSearchTimeout) {
+                    clearTimeout(navbarSearchTimeout);
+                }
+
+                // 隐藏建议框
+                if (query.length === 0) {
+                    navbarSearchSuggestions.classList.remove('show');
+                    return;
+                }
+
+                // 延迟 300ms 后执行搜索
+                navbarSearchTimeout = setTimeout(() => {
+                    performLiveSearch(query);
+                }, 300);
+            });
+
+            // 点击页面其他地方隐藏建议框
+            document.addEventListener('click', function(e) {
+                if (!navbarSearchInput.contains(e.target) && !navbarSearchSuggestions.contains(e.target)) {
+                    navbarSearchSuggestions.classList.remove('show');
+                }
+            });
+
+            // 按回车键提交搜索
+            navbarSearchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && this.value.trim()) {
+                    e.preventDefault();
+                    goToSearchPage();
+                    navbarSearchSuggestions.classList.remove('show');
+                }
+            });
+        }
+
+        // 实时搜索建议
+        function performLiveSearch(query) {
+            if (!query || query.length < 1) {
+                return;
+            }
+
+            // 显示加载状态
+            navbarSuggestionsLoading.style.display = 'block';
+            navbarSuggestionsList.innerHTML = '';
+            navbarSearchSuggestions.classList.add('show');
+
+            fetch(`/api/search/suggest?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    navbarSuggestionsLoading.style.display = 'none';
+
+                    if (data.suggestions && data.suggestions.length > 0) {
+                        navbarSuggestionsList.innerHTML = data.suggestions.map(item => {
+                            // 根据类型选择图标
+                            let iconClass = 'file-earmark-text';
+                            if (item.type === 'tag') iconClass = 'tag';
+                            else if (item.type === 'category') iconClass = 'folder';
+
+                            return `
+                            <a href="${item.url}" class="suggestion-item">
+                                <div class="suggestion-icon">
+                                    <i class="bi bi-${iconClass}"></i>
+                                </div>
+                                <div class="suggestion-content">
+                                    <div class="suggestion-title">${item.title}</div>
+                                    ${item.summary ? `<div class="suggestion-summary">${item.summary}</div>` : ''}
+                                </div>
+                            </a>
+                        `}).join('');
+                    } else {
+                        navbarSuggestionsList.innerHTML = '<div class="suggestion-empty">没有找到相关文章</div>';
+                    }
+                })
+                .catch(error => {
+                    navbarSuggestionsLoading.style.display = 'none';
+                    navbarSuggestionsList.innerHTML = '<div class="suggestion-empty">搜索失败，请重试</div>';
+                });
+        }
+
+        // 跳转到搜索页面
+        function performNavbarSearch(event) {
+            if (event) {
+                event.preventDefault();
+            }
+            goToSearchPage();
+        }
+
+        function goToSearchPage() {
+            const query = navbarSearchInput.value.trim();
+            if (query) {
+                window.location.href = `/search?q=${encodeURIComponent(query)}`;
+            }
         }
     </script>
     {% block extra_js %}{% endblock %}

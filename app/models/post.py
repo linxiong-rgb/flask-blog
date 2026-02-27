@@ -77,6 +77,7 @@ class Post(db.Model):
         created_at: 创建时间
         updated_at: 最后更新时间
         published: 是否已发布
+        scheduled_at: 定时发布时间（可选）
         cover_image: 封面图片URL
     """
 
@@ -95,9 +96,11 @@ class Post(db.Model):
                           backref=db.backref('posts', lazy='dynamic'))
 
     views = db.Column(db.Integer, default=0)
+    bookmarks = db.relationship('PostBookmark', backref='post', lazy='dynamic', cascade='all, delete-orphan')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     published = db.Column(db.Boolean, default=True)
+    scheduled_at = db.Column(db.DateTime, nullable=True)
     cover_image = db.Column(db.String(500))
 
     def __repr__(self):

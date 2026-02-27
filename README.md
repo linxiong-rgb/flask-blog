@@ -1,85 +1,146 @@
-# 我的博客
+<div align="center">
 
-一个现代化、功能丰富的 Flask 博客系统，拥有美观的界面和丰富的功能。
+# 🔐 Flask Blog System
 
-## 功能特点
+**现代化、功能完整的 Flask 博客系统**
 
-### 核心功能
-- 用户注册和登录
-- 文章的创建、编辑和删除
-- 支持 Markdown 格式写作
-- 文章发布/草稿状态管理
-- 文章浏览量统计
+[![Flask](https://img.shields.io/badge/Flask-3.0.0-blue)](https://flask.palletsprojects.com/)
+[![Python](https://img.shields.io/badge/Python-3.8+-green)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-### 高级功能
-- 分类管理 - 将文章组织到不同分类
-- 标签系统 - 为文章添加多个标签
-- 全文搜索 - 搜索文章标题、内容和摘要
-- 夜间模式 - 护眼的深色主题，自动保存偏好
-- 文章封面图 - 支持为文章设置封面图片
-- 分页功能 - 文章列表自动分页
+</div>
 
-### 界面特色
-- 响应式设计 - 完美支持手机、平板和电脑
-- 卡片式布局 - 现代化的 Material Design 风格
-- 渐变配色 - 紫色渐变主题，时尚美观
-- 动画效果 - 流畅的过渡和悬停动画
-- 侧边栏组件 - 热门文章、标签云、站点统计
-- 面包屑导航 - 清晰的页面层级
+---
 
-## 技术栈
+## ✨ 功能特点
 
-- **后端**: Flask 3.0.0
-- **数据库**: SQLite
-- **ORM**: SQLAlchemy 3.1.1
-- **用户认证**: Flask-Login 0.6.3
-- **前端**: Bootstrap 5.3.0
-- **图标**: Bootstrap Icons 1.11.0
-- **Markdown**: Python-Markdown 3.5.1
+### 📝 核心功能
+- ✅ 用户注册和登录 - Flask-Login 用户认证
+- ✅ 文章管理 - 创建、编辑、删除文章
+- ✅ Markdown 写作 - 支持标准 Markdown 语法
+- ✅ 文章状态 - 发布/草稿管理
+- ✅ 浏览统计 - 文章浏览量统计
+- ✅ 文章收藏 - 用户收藏喜欢的文章
 
-## 安装步骤
+### 🎯 高级功能
+- ✅ **智能搜索** - 实时搜索建议，支持文章/分类/标签搜索
+- ✅ **分类管理** - 将文章组织到不同分类
+- ✅ **标签系统** - 多标签支持，标签云展示
+- ✅ **文章归档** - 按日期浏览文章
+- ✅ **友情链接** - 管理和展示友情链接
+- ✅ **RSS 订阅** - 自动生成 RSS Feed
+- ✅ **Sitemap** - 自动生成站点地图
+- ✅ **文章分享** - 支持微博、QQ、微信分享
 
-### 1. 安装依赖
+### 🎨 界面特色
+- ✅ **夜间模式** - 护眼的深色主题，偏好自动保存
+- ✅ **响应式设计** - 完美支持手机、平板和电脑
+- ✅ **渐变配色** - 紫色渐变主题，时尚美观
+- ✅ **卡片式布局** - Material Design 风格
+- ✅ **流畅动画** - 过渡和悬停动画效果
+- ✅ **Typora 风格** - 优雅的文章阅读体验
+- ✅ **目录导航** - 自动生成文章目录
+- ✅ **阅读进度条** - 顶部显示阅读进度
+- ✅ **代码高亮** - 代码块语法高亮
+- ✅ **字体调节** - 支持字体大小调节
+
+### 🔧 管理功能
+- ✅ **仪表板** - 数据统计和快速操作
+- ✅ **文章管理** - 列表视图，删除确认
+- ✅ **Markdown 导入** - 支持单个/批量导入 .md 文件
+- ✅ **智能摘要** - 自动生成文章摘要
+- ✅ **封面图生成** - 自动生成简约封面图
+- ✅ **收藏管理** - 查看用户收藏列表
+- ✅ **数据导出** - 导出 Markdown/HTML
+- ✅ **友链管理** - 后台管理友情链接
+
+---
+
+## 🛠 技术栈
+
+| 类别 | 技术 | 版本 |
+|------|------|------|
+| 后端框架 | Flask | 3.0.0 |
+| 数据库 | SQLite | 3 |
+| ORM | SQLAlchemy | 3.1.1 |
+| 用户认证 | Flask-Login | 0.6.3 |
+| CSRF 保护 | Flask-WTF | 1.2.1 |
+| 前端框架 | Bootstrap | 5.3.0 |
+| 图标库 | Bootstrap Icons | 1.11.0 |
+| Markdown | Python-Markdown | 3.5.1 |
+
+---
+
+## 🚀 快速开始
+
+### 环境要求
+
+- Python 3.8+
+- pip 包管理器
+
+### 安装步骤
 
 ```bash
+# 1. 克隆项目
+git clone https://github.com/linxiong/my-blog.git
 cd my-blog
+
+# 2. 安装依赖
 pip install -r requirements.txt
-```
 
-### 2. 运行博客
-
-```bash
+# 3. 运行应用
 python run.py
 ```
 
-### 3. 访问博客
+### 访问博客
 
 打开浏览器访问: `http://localhost:5000`
 
-## 使用说明
+**默认管理员账号：**
+- 用户名: `admin01`
+- 密码: `123456`
+
+> ⚠️ **安全提醒**：首次使用后请立即修改默认密码！
+
+---
+
+## 📖 使用说明
 
 ### 首次使用
 
-1. 访问 `http://localhost:5000/auth/register` 注册账号
-2. 使用注册的账号登录
-3. 点击导航栏的"管理"进入管理界面
-4. 创建分类和标签（可选）
-5. 创建你的第一篇文章
+1. 使用默认管理员账号登录
+2. 进入管理后台
+3. 创建分类和标签
+4. 开始写作！
 
-### Markdown 语法示例
+### 重置数据库
+
+如需重置所有数据并恢复默认管理员：
+
+```bash
+python reset_database.py
+```
+
+这将：
+- 删除所有用户、文章、分类、标签等数据
+- 创建超级管理员 `admin01` / `123456`
+
+### Markdown 写作
+
+博客支持完整的 Markdown 语法：
 
 ```markdown
 # 一级标题
 
 ## 二级标题
 
-这是一段普通文本。
+这是正文内容，支持 **粗体** 和 *斜体*。
 
-**粗体文本** 和 *斜体文本*
+- 无序列表项 1
+- 无序列表项 2
 
-- 列表项 1
-- 列表项 2
-- 列表项 3
+1. 有序列表项 1
+2. 有序列表项 2
 
 [链接文本](https://example.com)
 
@@ -87,6 +148,7 @@ python run.py
 
 ```
 代码块
+支持语法高亮
 ```
 
 > 引用文本
@@ -94,206 +156,131 @@ python run.py
 ![图片描述](图片URL)
 ```
 
-### 文章管理
-
-1. **创建文章**：管理后台 → 新建文章
-2. **导入 Markdown**：管理后台 → 导入 MD（支持单个或批量导入）
-3. **快捷导入**：在新建/编辑文章页面点击"导入 MD 文件"按钮
-4. **设置分类**：选择已有分类或创建新分类
-5. **添加标签**：勾选一个或多个标签
-6. **设置封面**：输入图片 URL（可选）
-7. **发布/草稿**：勾选"立即发布"或保存为草稿
-
 ### Markdown 文件导入
 
-博客支持导入现有的 Markdown 文件，保持格式不变，不会出现乱码：
+支持导入现有 Markdown 文件，自动识别编码：
 
-#### 支持的导入方式
+```bash
+# 支持的格式
+- 标准 Markdown
+- YAML Front Matter (Jekyll/Hugo)
+- 自动识别编码 (UTF-8, GBK, GB2312)
+```
 
-1. **单文件导入**：管理后台 → 导入 MD → 选择单个 .md 文件
-2. **批量导入**：管理后台 → 导入 MD → 选择多个 .md 文件
-3. **编辑时导入**：新建/编辑文章 → 点击"导入 MD 文件"按钮
+### 快捷键
 
-#### 支持的文件格式
+| 快捷键 | 功能 |
+|--------|------|
+| `Ctrl/Cmd + K` | 聚焦搜索框 |
+| `Esc` | 关闭搜索建议 |
 
-- **标准 Markdown**：
-  ```markdown
-  # 文章标题
+---
 
-  这里是正文...
-  ```
-
-- **YAML Front Matter**（Jekyll/Hugo 格式）：
-  ```markdown
-  ---
-  title: 文章标题
-  date: 2025-01-17
-  ---
-
-  这里是正文...
-  ```
-
-#### 编码支持
-
-自动识别并支持以下编码，防止乱码：
-- UTF-8（推荐）
-- UTF-8 with BOM
-- GBK/GB2312（中文）
-- ISO-8859-1
-
-#### 导入说明
-
-- 自动提取标题（从 # 标题、YAML front matter 或文件名）
-- 自动生成摘要（文章前 200 字）
-- 导入的文章默认为草稿状态
-- 保持 Markdown 原始格式，不会出现乱码
-- 可以在导入后编辑、添加分类和标签
-
-### 分类和标签管理
-
-在管理后台可以：
-- 创建新分类
-- 删除分类
-- 添加新标签
-- 删除标签
-
-## 项目结构
+## 📁 项目结构
 
 ```
 my-blog/
 ├── app/
-│   ├── __init__.py          # Flask 应用工厂
-│   ├── models/              # 数据库模型
+│   ├── __init__.py          # 应用工厂
+│   ├── models/              # 数据模型
 │   │   ├── user.py          # 用户模型
-│   │   ├── post.py          # 文章、分类、标签模型
-│   │   └── __init__.py
+│   │   ├── post.py          # 文章模型
+│   │   ├── post_bookmark.py # 收藏模型
+│   │   ├── category.py      # 分类模型
+│   │   ├── tag.py           # 标签模型
+│   │   └── friend_link.py   # 友链模型
 │   ├── routes/              # 路由
+│   │   ├── main.py          # 主路由
 │   │   ├── auth.py          # 认证路由
-│   │   ├── main.py          # 主要路由（含搜索、分类、标签）
 │   │   ├── admin.py         # 管理路由
-│   │   └── __init__.py
-│   ├── templates/           # HTML 模板
+│   │   └── export.py        # 导出路由
+│   ├── templates/           # 模板
 │   │   ├── base.html        # 基础模板
 │   │   ├── index.html       # 首页
-│   │   ├── post.html        # 文章页
-│   │   ├── about.html       # 关于页
+│   │   ├── post.html        # 文章详情
 │   │   ├── search.html      # 搜索页
 │   │   ├── category.html    # 分类页
 │   │   ├── tag.html         # 标签页
+│   │   ├── archive.html     # 归档页
 │   │   ├── categories.html  # 分类列表
-│   │   ├── auth/            # 认证模板
 │   │   └── admin/           # 管理模板
-│   └── static/              # 静态文件
-│       └── css/
-│           └── style.css    # 自定义样式
-├── instance/                # 实例文件夹（数据库）
+│   ├── static/              # 静态文件
+│   │   ├── css/             # 样式文件
+│   │   ├── js/              # JavaScript
+│   │   ├── vendor/          # 第三方库
+│   │   └── uploads/         # 上传文件
+│   ├── forms.py             # 表单类
+│   ├── utils/               # 工具函数
+│   └── security.py          # 安全配置
+├── instance/                # 实例文件夹
 ├── requirements.txt         # 依赖列表
 ├── run.py                   # 启动脚本
-└── README.md               # 说明文档
+├── reset_database.py        # 数据库重置脚本
+├── README.md               # 项目文档
+└── DEPLOY.md               # 部署文档
 ```
-
-## 配置说明
-
-在 `app/__init__.py` 中可以修改以下配置：
-
-- `SECRET_KEY`: Flask 密钥，请修改为随机字符串
-- `SQLALCHEMY_DATABASE_URI`: 数据库连接字符串
-
-## 界面预览
-
-### 特色功能
-
-1. **夜间模式** - 点击导航栏的月亮图标切换
-2. **搜索功能** - 顶部搜索框支持全文搜索
-3. **分类浏览** - 导航栏 → 分类 → 查看所有分类
-4. **标签过滤** - 点击文章标签查看相关文章
-5. **热门文章** - 侧边栏显示浏览量最高的文章
-6. **站点统计** - 实时显示文章、分类、标签数量
-
-### 主题定制
-
-编辑 `app/static/css/style.css` 可以自定义：
-
-- 主色调（`--primary-color`）
-- 次色调（`--secondary-color`）
-- 背景色
-- 字体和间距
-
-## 常见问题
-
-### 端口被占用
-
-如果 5000 端口被占用，修改 `run.py` 中的端口号：
-
-```python
-app.run(debug=True, host='0.0.0.0', port=5001)  # 改为其他端口
-```
-
-### 重置数据库
-
-删除 `instance/blog.db` 文件，重新运行应用即可创建新数据库。
-
-### 分类/标签未显示
-
-确保：
-1. 已创建分类和标签
-2. 文章已关联分类和标签
-3. 文章状态为"已发布"
-
-## 后续开发建议
-
-- 添加评论系统
-- 支持图片上传
-- 文章点赞/收藏功能
-- RSS 订阅
-- 社交媒体分享
-- 友情链接
-- 文章归档页面
-- 全文搜索优化（Elasticsearch）
-- 缓存优化（Redis）
-- 部署到生产环境
-
-## 部署到生产环境
-
-### 使用 Gunicorn
-
-```bash
-pip install gunicorn
-gunicorn -w 4 -b 0.0.0.0:8000 "app:create_app()"
-```
-
-### 使用 Nginx 反向代理
-
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-
-    location / {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-
-    location /static {
-        alias /path/to/my-blog/app/static;
-    }
-}
-```
-
-## 许可证
-
-MIT License
-
-## 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
-## 联系方式
-
-- Email: contact@myblog.com
-- GitHub: github.com/myblog
 
 ---
 
+## 🎛 配置说明
+
+### 环境变量
+
+| 变量名 | 说明 | 默认值 |
+|--------|------|--------|
+| `SECRET_KEY` | Flask 密钥 | 自动生成 |
+| `DATABASE_URL` | 数据库连接 | `sqlite:///blog.db` |
+| `DEBUG` | 调试模式 | `True` |
+| `FLASK_ENV` | 运行环境 | `development` |
+
+### 主题定制
+
+编辑 `app/static/css/style.css` 可自定义：
+
+- `--primary-color` - 主色调
+- `--gradient` - 渐变色
+- `--text-color` - 文字颜色
+- `--bg-color` - 背景色
+- `--card-bg` - 卡片背景色
+
+---
+
+## 🐛 常见问题
+
+### 端口被占用
+
+修改 `run.py` 中的端口号：
+
+```python
+app.run(debug=True, host='0.0.0.0', port=5001)
+```
+
+### 搜索无结果
+
+确保：
+1. 文章已发布（非草稿状态）
+2. 搜索关键词在标题/内容/摘要中
+
+### 忘记管理员密码
+
+运行数据库重置脚本：
+
+```bash
+python reset_database.py
+```
+
+---
+
+## 📄 许可证
+
+MIT License
+
+---
+
+<div align="center">
+
 **享受写作，分享知识！** ✨
+
+Made with ❤️ using Flask
+
+</div>

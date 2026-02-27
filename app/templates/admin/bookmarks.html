@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}收藏管理 - 我的博客{% endblock %}
+
+{% block extra_css %}
+<style>
+.bookmarks-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.bookmarks-header h1 {
+    color: white;
+}
+
+.bookmarks-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 300px;
+    height: 300px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+}
+
+.bookmarks-header-content {
+    position: relative;
+    z-index: 1;
+}
+
+.bookmarks-stats {
+    display: flex;
+    gap: 3rem;
+    margin-top: 1rem;
+}
+
+.bookmark-stat {
+    text-align: center;
+}
+
+.bookmark-stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: white;
+}
+
+.bookmark-stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    color: white;
+}
+
+.bookmark-table {
+    background: var(--card-bg);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.bookmark-table .table {
+    margin-bottom: 0;
+}
+
+.bookmark-table th {
+    background: var(--bg-color);
+    border-bottom: 2px solid var(--border-color);
+    padding: 1rem;
+    font-weight: 600;
+}
+
+.bookmark-table td {
+    padding: 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.bookmark-table tr:last-child td {
+    border-bottom: none;
+}
+
+.bookmark-table tr:hover {
+    background: var(--bg-color);
+}
+
+.bookmark-post-title {
+    font-weight: 500;
+    color: var(--text-color);
+    text-decoration: none;
+    display: block;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bookmark-post-title:hover {
+    color: var(--primary-color);
+}
+
+.bookmark-user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.bookmark-time {
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+.empty-bookmarks {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--card-bg);
+    border-radius: 16px;
+    border: 2px dashed var(--border-color);
+}
+
+.empty-bookmarks i {
+    font-size: 4rem;
+    color: var(--text-light);
+    margin-bottom: 1rem;
+}
+
+.empty-bookmarks h4 {
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+}
+
+.empty-bookmarks p {
+    color: var(--text-light);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <!-- 面包屑导航 -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}"><i class="bi bi-house-door"></i> 首页</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">管理后台</a></li>
+            <li class="breadcrumb-item active">收藏管理</li>
+        </ol>
+    </nav>
+
+    <!-- 头部统计 -->
+    <div class="bookmarks-header">
+        <div class="bookmarks-header-content">
+            <h1 class="mb-0"><i class="bi bi-bookmark-fill"></i> 收藏管理</h1>
+            <div class="bookmarks-stats">
+                <div class="bookmark-stat">
+                    <div class="bookmark-stat-value">{{ bookmarks.total }}</div>
+                    <div class="bookmark-stat-label">总收藏数</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 返回按钮 -->
+    <div class="mb-3">
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> 返回后台
+        </a>
+    </div>
+
+    <!-- 收藏列表 -->
+    {% if bookmarks.items %}
+        <div class="bookmark-table">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th style="width: 40%;">文章标题</th>
+                        <th style="width: 20%;">收藏用户</th>
+                        <th style="width: 20%;">收藏时间</th>
+                        <th style="width: 20%;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bookmark in bookmarks.items %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('main.post', post_id=bookmark.post.id) }}" class="bookmark-post-title" target="_blank">
+                                    <i class="bi bi-file-earmark-text"></i> {{ bookmark.post.title }}
+                                </a>
+                                <div class="small text-muted mt-1">
+                                    {% if bookmark.post.category %}
+                                        <span class="badge-category me-1">{{ bookmark.post.category.name }}</span>
+                                    {% endif %}
+                                    <span><i class="bi bi-eye"></i> {{ bookmark.post.views }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="bookmark-user-info">
+                                    <i class="bi bi-person-circle"></i>
+                                    <span>{{ bookmark.user.username }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="bookmark-time">
+                                    <i class="bi bi-clock"></i> {{ bookmark.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                </div>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('main.post', post_id=bookmark.post.id) }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                    <i class="bi bi-eye"></i> 查看
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteBookmark({{ bookmark.id }}, this)">
+                                    <i class="bi bi-trash"></i> 删除
+                                </button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 分页 -->
+        {% if bookmarks.pages > 1 %}
+            <div class="pagination mt-4">
+                {% if bookmarks.has_prev %}
+                    <a href="{{ url_for('admin.bookmarks', page=bookmarks.prev_num) }}">
+                        <i class="bi bi-chevron-left"></i> 上一页
+                    </a>
+                {% endif %}
+
+                {% for page_num in bookmarks.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                        {% if page_num == bookmarks.page %}
+                            <span class="active">{{ page_num }}</span>
+                        {% else %}
+                            <a href="{{ url_for('admin.bookmarks', page=page_num) }}">{{ page_num }}</a>
+                        {% endif %}
+                    {% else %}
+                        <span>...</span>
+                    {% endif %}
+                {% endfor %}
+
+                {% if bookmarks.has_next %}
+                    <a href="{{ url_for('admin.bookmarks', page=bookmarks.next_num) }}">
+                        下一页 <i class="bi bi-chevron-right"></i>
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="empty-bookmarks">
+            <i class="bi bi-bookmark"></i>
+            <h4>暂无收藏</h4>
+            <p>还没有用户收藏任何文章</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+async function deleteBookmark(bookmarkId, btn) {
+    if (!confirm('确定要删除这条收藏记录吗？')) {
+        return;
+    }
+
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> 删除中...';
+    btn.disabled = true;
+
+    try {
+        const response = await fetch('/admin/bookmark/' + bookmarkId + '/delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // 移除对应的行
+            const row = btn.closest('tr');
+            row.style.transition = 'all 0.3s';
+            row.style.opacity = '0';
+            setTimeout(() => row.remove(), 300);
+
+            // 如果是最后一项，刷新页面
+            if (document.querySelectorAll('tbody tr').length === 1) {
+                setTimeout(() => location.reload(), 500);
+            }
+        } else {
+            alert('删除失败: ' + data.message);
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    } catch (error) {
+        alert('请求失败: ' + error.message);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+</script>
+{% endblock %}

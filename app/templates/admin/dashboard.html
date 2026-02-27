@@ -13,8 +13,56 @@
             <a href="{{ url_for('admin.import_markdown') }}" class="btn btn-success">
                 <i class="bi bi-file-earmark-markup"></i> 导入 MD
             </a>
+            <a href="{{ url_for('admin.bookmarks') }}" class="btn btn-info">
+                <i class="bi bi-bookmark-fill"></i> 收藏管理
+            </a>
+            <a href="{{ url_for('admin.friend_links') }}" class="btn btn-secondary">
+                <i class="bi bi-link-45"></i> 友链管理
+            </a>
+            <button type="button" class="btn btn-warning" onclick="regenerateCovers()">
+                <i class="bi bi-image"></i> 重生成封面图
+            </button>
         </div>
     </div>
+
+    <script>
+    async function regenerateCovers() {
+        if (!confirm('确定要为所有文章重新生成封面图吗？这将会覆盖现有的封面图。')) {
+            return;
+        }
+
+        const btn = event.target;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> 生成中...';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('{{ url_for("admin.regenerate_covers") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alert(data.message);
+                if (data.count > 0) {
+                    location.reload();
+                }
+            } else {
+                alert('操作失败: ' + data.message);
+            }
+        } catch (error) {
+            alert('请求失败: ' + error.message);
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+    </script>
 
     <!-- 统计卡片 -->
     <div class="row mb-4">
@@ -60,6 +108,7 @@
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <span>{{ category.name }}</span>
                                 <form method="POST" action="{{ url_for('admin.delete_category', category_id=category.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('确定删除此分类？')">
                                         <i class="bi bi-trash"></i>
                                     </button>
@@ -85,6 +134,7 @@
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <span class="badge-tag">{{ tag.name }}</span>
                                 <form method="POST" action="{{ url_for('admin.delete_tag', tag_id=tag.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('确定删除此标签？')">
                                         <i class="bi bi-trash"></i>
                                     </button>
@@ -94,6 +144,7 @@
                     </div>
                 {% endif %}
                 <form method="POST" action="{{ url_for('admin.new_tag') }}" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <div class="input-group input-group-sm">
                         <input type="text" name="name" class="form-control" placeholder="新标签名称" required>
                         <button type="submit" class="btn btn-primary">
@@ -155,27 +206,6 @@
                                     <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ post.id }}">
                                         <i class="bi bi-trash"></i>
                                     </button>
-
-                                    <!-- 删除确认模态框 -->
-                                    <div class="modal fade" id="deleteModal{{ post.id }}" tabindex="-1">
-                                        <div class="modal-dialog">
-                                            <div class="modal-content">
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title">确认删除</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    确定要删除文章《{{ post.title }}》吗？此操作不可撤销。
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                                                    <form method="POST" action="{{ url_for('admin.delete_post', post_id=post.id) }}" class="d-inline">
-                                                        <button type="submit" class="btn btn-danger">确认删除</button>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </td>
                             </tr>
                         {% endfor %}
@@ -197,6 +227,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="POST" action="{{ url_for('admin.new_category') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-header">
                     <h5 class="modal-title">新建分类</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -219,4 +250,28 @@
         </div>
     </div>
 </div>
+
+<!-- 删除文章确认模态框 -->
+{% for post in posts %}
+<div class="modal fade" id="deleteModal{{ post.id }}" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">确认删除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                确定要删除文章《{{ post.title }}》吗？此操作不可撤销。
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <form method="POST" action="{{ url_for('admin.delete_post', post_id=post.id) }}" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="btn btn-danger">确认删除</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
 {% endblock %}

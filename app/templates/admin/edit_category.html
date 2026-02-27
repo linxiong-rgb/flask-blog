@@ -12,6 +12,7 @@
                 </h1>
 
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <div class="mb-3">
                         <label for="name" class="form-label">分类名称 <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="name" name="name" required>

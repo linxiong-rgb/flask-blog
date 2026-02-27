@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}友情链接管理 - 管理后台{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-link-45"></i> 友情链接管理</h1>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#linkModal">
+            <i class="bi bi-plus-lg"></i> 添加链接
+        </button>
+    </div>
+
+    <!-- 链接列表 -->
+    <div class="row">
+        {% for link in links %}
+        <div class="col-md-6 mb-3">
+            <div class="sidebar-widget">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="d-flex align-items-center gap-3">
+                        {% if link.logo %}
+                        <img src="{{ link.logo }}" alt="{{ link.name }}" class="friend-link-logo">
+                        {% else %}
+                        <div class="friend-link-logo-placeholder">
+                            <i class="bi bi-globe"></i>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <h6 class="mb-1">
+                                <a href="{{ link.url }}" target="_blank" class="text-decoration-none">
+                                    {{ link.name }}
+                                </a>
+                            </h6>
+                            {% if link.description %}
+                            <p class="small text-muted mb-0">{{ link.description }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <form method="POST" action="{{ url_for('admin.delete_friend_link', link_id=link.id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('确定删除此友情链接？')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not links %}
+    <div class="text-center py-5">
+        <i class="bi bi-link-45 display-1 text-muted"></i>
+        <p class="mt-3 text-muted">还没有添加友情链接</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 添加链接模态框 -->
+<div class="modal fade" id="linkModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin.new_friend_link') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加友情链接</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="linkName" class="form-label">网站名称 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="linkName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="linkUrl" class="form-label">网站URL <span class="text-danger">*</span></label>
+                        <input type="url" class="form-control" id="linkUrl" name="url" placeholder="https://example.com" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="linkLogo" class="form-label">Logo URL</label>
+                        <input type="url" class="form-control" id="linkLogo" name="logo" placeholder="https://example.com/logo.png">
+                        <div class="form-text">网站 Logo 图片地址</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="linkDescription" class="form-label">描述</label>
+                        <textarea class="form-control" id="linkDescription" name="description" rows="3" placeholder="简短描述"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">添加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 返回仪表盘 -->
+<div class="mt-4">
+    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> 返回管理后台
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.friend-link-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.friend-link-logo-placeholder {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    background: var(--bg-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.friend-link-logo-placeholder i {
+    font-size: 24px;
+    color: var(--text-light);
+}
+</style>
+{% endblock %}

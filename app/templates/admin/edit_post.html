@@ -12,7 +12,8 @@
                     {% if post %}编辑文章{% else %}新建文章{% endif %}
                 </h1>
 
-                <form method="POST">
+                <form method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <div class="mb-3">
                         <label for="title" class="form-label">文章标题 <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="title" name="title"
@@ -34,19 +35,66 @@
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label for="cover_image" class="form-label">封面图片 URL（可选）</label>
-                            <input type="url" class="form-control" id="cover_image" name="cover_image"
-                                   value="{% if post and post.cover_image %}{{ post.cover_image }}{% endif %}"
-                                   placeholder="https://example.com/image.jpg">
+                            <label class="form-label">封面图片（可选）</label>
+                            <div class="mb-2">
+                                <div class="btn-group" role="group">
+                                    <input type="radio" class="btn-check" name="cover_image_type" id="coverTypeUrl" value="url" autocomplete="off"
+                                           {% if not post or not post.cover_image or post.cover_image.startswith('http') %}checked{% endif %}>
+                                    <label class="btn btn-outline-secondary" for="coverTypeUrl">
+                                        <i class="bi bi-link-45deg"></i> URL链接
+                                    </label>
+
+                                    <input type="radio" class="btn-check" name="cover_image_type" id="coverTypeFile" value="file" autocomplete="off"
+                                           {% if post and post.cover_image and post.cover_image.startswith('/static/') %}checked{% endif %}>
+                                    <label class="btn btn-outline-secondary" for="coverTypeFile">
+                                        <i class="bi bi-upload"></i> 本地上传
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- URL输入 -->
+                            <div id="coverImageUrlSection" class="{% if post and post.cover_image and not post.cover_image.startswith('/static/') %}d-none{% endif %}">
+                                <input type="url" class="form-control" id="cover_image_url" name="cover_image_url"
+                                       value="{% if post and post.cover_image and not post.cover_image.startswith('/static/') %}{{ post.cover_image }}{% endif %}"
+                                       placeholder="https://example.com/image.jpg">
+                            </div>
+
+                            <!-- 文件上传 -->
+                            <div id="coverImageFileSection" class="{% if not post or not post.cover_image or post.cover_image.startswith('http') %}d-none{% endif %}">
+                                <input type="file" class="form-control" id="cover_image_file" name="cover_image_file"
+                                       accept="image/png,image/jpeg,image/gif,image/webp">
+                                <input type="hidden" id="cover_image" name="cover_image"
+                                       value="{% if post and post.cover_image %}{{ post.cover_image }}{% endif %}">
+                                <div class="form-text">支持 PNG, JPG, GIF, WebP 格式，最大 16MB</div>
+                            </div>
+
+                            <!-- 图片预览 -->
+                            {% if post and post.cover_image %}
+                            <div class="mt-2">
+                                <img id="coverPreview" src="{{ post.cover_image }}"
+                                     style="max-width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; display: block;"
+                                     onerror="this.style.display='none'">
+                            </div>
+                            {% else %}
+                            <div class="mt-2">
+                                <img id="coverPreview" src=""
+                                     style="max-width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; display: none;">
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="summary" class="form-label">摘要（可选）</label>
+                        <label for="summary" class="form-label">
+                            摘要（可选）
+                            <button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="generateSummary()">
+                                <i class="bi bi-magic"></i> 自动生成
+                            </button>
+                        </label>
                         <input type="text" class="form-control" id="summary" name="summary"
                                value="{% if post and post.summary %}{{ post.summary }}{% endif %}"
                                placeholder="简短描述文章内容，显示在首页（最多300字）">
-                        <div class="form-text">将显示在文章列表中</div>
+                        <div class="form-text">将显示在文章列表中，留空则自动生成</div>
                     </div>
 
                     <div class="mb-3">
@@ -81,6 +129,38 @@
                                 还没有标签，在管理后台创建
                             </small>
                         {% endif %}
+                    </div>
+
+                    <!-- 定时发布 -->
+                    <div class="mb-3">
+                        <div class="form-check mb-2">
+                            <input type="checkbox" class="form-check-input" id="scheduled" name="scheduled"
+                                   onchange="toggleScheduledFields()"
+                                   {% if post and post.scheduled_at %}checked{% endif %}>
+                            <label class="form-check-label" for="scheduled">
+                                <i class="bi bi-clock"></i> 定时发布
+                            </label>
+                        </div>
+
+                        <div id="scheduledFields" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="scheduled_date" class="form-label">日期</label>
+                                    <input type="date" class="form-control" id="scheduled_date" name="scheduled_date"
+                                           {% if post and post.scheduled_at %}value="{{ post.scheduled_at.strftime('%Y-%m-%d') }}"{% endif %}>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="scheduled_time" class="form-label">时间</label>
+                                    <input type="time" class="form-control" id="scheduled_time" name="scheduled_time"
+                                           {% if post and post.scheduled_at %}value="{{ post.scheduled_at.strftime('%H:%M') }}"{% endif %}
+                                           value="00:00">
+                                </div>
+                            </div>
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i>
+                                设置定时发布后，文章将在指定时间自动发布，在此之前为草稿状态
+                            </small>
+                        </div>
                     </div>
 
                     <div class="mb-4 form-check">
@@ -136,6 +216,126 @@
 </div>
 
 <script>
+// 封面图片类型切换
+document.addEventListener('DOMContentLoaded', function() {
+    const coverTypeUrl = document.getElementById('coverTypeUrl');
+    const coverTypeFile = document.getElementById('coverTypeFile');
+    const coverImageUrlSection = document.getElementById('coverImageUrlSection');
+    const coverImageFileSection = document.getElementById('coverImageFileSection');
+    const coverImageFile = document.getElementById('cover_image_file');
+    const coverImageInput = document.getElementById('cover_image');
+    const coverPreview = document.getElementById('coverPreview');
+
+    function switchCoverType(type) {
+        if (type === 'url') {
+            coverImageUrlSection.classList.remove('d-none');
+            coverImageFileSection.classList.add('d-none');
+        } else {
+            coverImageUrlSection.classList.add('d-none');
+            coverImageFileSection.classList.remove('d-none');
+        }
+    }
+
+    coverTypeUrl.addEventListener('change', function() {
+        if (this.checked) {
+            switchCoverType('url');
+            // 同步 URL 到隐藏字段
+            const urlInput = document.getElementById('cover_image_url');
+            coverImageInput.value = urlInput.value;
+            coverPreview.src = urlInput.value;
+            coverPreview.style.display = urlInput.value ? 'block' : 'none';
+        }
+    });
+
+    coverTypeFile.addEventListener('change', function() {
+        if (this.checked) {
+            switchCoverType('file');
+        }
+    });
+
+    // URL 输入时同步到隐藏字段和预览
+    const urlInput = document.getElementById('cover_image_url');
+    if (urlInput) {
+        urlInput.addEventListener('input', function() {
+            coverImageInput.value = this.value;
+            coverPreview.src = this.value;
+            coverPreview.style.display = this.value ? 'block' : 'none';
+        });
+    }
+
+    // 文件选择后自动上传
+    coverImageFile.addEventListener('change', function() {
+        const file = this.files[0];
+        if (!file) return;
+
+        // 验证文件大小
+        if (file.size > 16 * 1024 * 1024) {
+            alert('文件大小不能超过 16MB');
+            this.value = '';
+            return;
+        }
+
+        // 验证文件类型
+        const allowedTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+        if (!allowedTypes.includes(file.type)) {
+            alert('不支持的文件类型。请上传 PNG, JPG, GIF 或 WebP 格式的图片');
+            this.value = '';
+            return;
+        }
+
+        // 创建 FormData 上传文件
+        const formData = new FormData();
+        formData.append('cover_image', file);
+
+        // 显示上传中状态
+        const uploadButton = this;
+        uploadButton.disabled = true;
+        const originalText = uploadButton.parentNode.querySelector('.form-text')?.textContent || '';
+        if (uploadButton.parentNode.querySelector('.form-text')) {
+            uploadButton.parentNode.querySelector('.form-text').textContent = '上传中...';
+        }
+
+        fetch('{{ url_for("admin.upload_cover_image") }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            uploadButton.disabled = false;
+            if (uploadButton.parentNode.querySelector('.form-text')) {
+                uploadButton.parentNode.querySelector('.form-text').textContent = originalText;
+            }
+
+            if (data.success) {
+                // 更新隐藏字段
+                coverImageInput.value = data.image_url;
+                // 显示预览
+                coverPreview.src = data.image_url;
+                coverPreview.style.display = 'block';
+                // 显示成功消息
+                alert('图片上传成功！');
+            } else {
+                alert('上传失败: ' + data.message);
+                uploadButton.value = '';
+            }
+        })
+        .catch(error => {
+            uploadButton.disabled = false;
+            if (uploadButton.parentNode.querySelector('.form-text')) {
+                uploadButton.parentNode.querySelector('.form-text').textContent = originalText;
+            }
+            alert('上传失败: ' + error.message);
+            uploadButton.value = '';
+        });
+    });
+
+    // 初始化定时发布字段
+    toggleScheduledFields();
+});
+
 function importMarkdown(input) {
     const file = input.files[0];
     if (!file) return;
@@ -216,5 +416,238 @@ if (!String.prototype.stripQuotes) {
         return this.replace(/^["']|["']$/g, '');
     };
 }
+
+// ========================================
+// 定时发布功能
+// ========================================
+
+function toggleScheduledFields() {
+    const scheduled = document.getElementById('scheduled').checked;
+    const scheduledFields = document.getElementById('scheduledFields');
+    const publishedCheckbox = document.getElementById('published');
+
+    if (scheduled) {
+        scheduledFields.style.display = 'block';
+        // 禁用立即发布选项
+        if (publishedCheckbox) {
+            publishedCheckbox.disabled = true;
+            publishedCheckbox.checked = false;
+        }
+    } else {
+        scheduledFields.style.display = 'none';
+        // 启用立即发布选项
+        if (publishedCheckbox) {
+            publishedCheckbox.disabled = false;
+        }
+    }
+}
+
+// ========================================
+// 自动生成摘要功能
+// ========================================
+
+async function generateSummary() {
+    const content = document.getElementById('content').value.trim();
+
+    if (!content) {
+        alert('请先输入文章内容');
+        return;
+    }
+
+    // 显示加载状态
+    const summaryInput = document.getElementById('summary');
+    const originalPlaceholder = summaryInput.placeholder;
+    summaryInput.placeholder = '正在生成摘要...';
+    summaryInput.disabled = true;
+
+    try {
+        const response = await fetch('{{ url_for("admin.api_generate_summary") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ content: content })
+        });
+
+        if (!response.ok) {
+            throw new Error('生成失败');
+        }
+
+        const data = await response.json();
+
+        if (data.summary) {
+            summaryInput.value = data.summary;
+            showSaveIndicator('摘要已生成');
+        } else {
+            throw new Error('未返回摘要');
+        }
+    } catch (error) {
+        console.error('生成摘要失败:', error);
+        // 如果API调用失败，使用前端简单生成
+        const simpleSummary = content
+            .replace(/```[\s\S]*?```/g, '') // 移除代码块
+            .replace(/`[^`]+`/g, '') // 移除行内代码
+            .replace(/^#+\s+/gm, '') // 移除标题
+            .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // 移除链接
+            .split(/[。！？.!?]/)[0] // 按句子分割
+            .trim()
+            .substring(0, 280);
+
+        summaryInput.value = simpleSummary + (simpleSummary.length < content.length ? '...' : '');
+        showSaveIndicator('使用简单摘要生成');
+    } finally {
+        summaryInput.placeholder = originalPlaceholder;
+        summaryInput.disabled = false;
+    }
+}
+
+// ========================================
+// 草稿自动保存功能
+// ========================================
+
+const DRAFT_KEY = 'blog_post_draft';
+const AUTOSAVE_INTERVAL = 30000; // 30秒
+
+// 获取当前文章ID（用于区分不同文章的草稿）
+function getPostId() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('post_id') || 'new';
+}
+
+// 保存草稿到 localStorage
+function saveDraft() {
+    const draft = {
+        postId: getPostId(),
+        title: document.getElementById('title').value,
+        summary: document.getElementById('summary').value,
+        content: document.getElementById('content').value,
+        category: document.getElementById('category_id').value,
+        tags: Array.from(document.querySelectorAll('input[name="tags"]:checked')).map(el => el.value),
+        coverImage: document.getElementById('cover_image').value,
+        savedAt: new Date().toISOString()
+    };
+
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+
+    // 显示保存提示
+    showSaveIndicator('已自动保存');
+}
+
+// 从 localStorage 恢复草稿
+function restoreDraft() {
+    const savedDraft = localStorage.getItem(DRAFT_KEY);
+    if (!savedDraft) return;
+
+    const draft = JSON.parse(savedDraft);
+
+    // 检查草稿是否属于当前文章
+    if (draft.postId !== getPostId()) {
+        // 显示恢复提示
+        const otherDraft = confirm(`检测到其他文章的草稿（保存于 ${new Date(draft.savedAt).toLocaleString()}）\n\n是否恢复该草稿？`);
+        if (!otherDraft) {
+            return;
+        }
+    }
+
+    // 恢复草稿内容
+    if (draft.title && !document.getElementById('title').value) {
+        document.getElementById('title').value = draft.title;
+    }
+    if (draft.summary && !document.getElementById('summary').value) {
+        document.getElementById('summary').value = draft.summary;
+    }
+    if (draft.content && !document.getElementById('content').value) {
+        document.getElementById('content').value = draft.content;
+    }
+    if (draft.category && !document.getElementById('category_id').value) {
+        document.getElementById('category_id').value = draft.category;
+    }
+    if (draft.coverImage && !document.getElementById('cover_image').value) {
+        document.getElementById('cover_image').value = draft.coverImage;
+        const preview = document.getElementById('coverPreview');
+        if (preview) {
+            preview.src = draft.coverImage;
+            preview.style.display = 'block';
+        }
+    }
+
+    // 恢复标签选择
+    if (draft.tags && draft.tags.length > 0) {
+        document.querySelectorAll('input[name="tags"]').forEach(checkbox => {
+            if (draft.tags.includes(checkbox.value)) {
+                checkbox.checked = true;
+            }
+        });
+    }
+
+    showSaveIndicator('草稿已恢复');
+}
+
+// 显示保存指示器
+function showSaveIndicator(message) {
+    let indicator = document.getElementById('autosaveIndicator');
+    if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.id = 'autosaveIndicator';
+        indicator.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #22c55e;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 9999;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        `;
+        document.body.appendChild(indicator);
+    }
+
+    indicator.textContent = message;
+    indicator.style.opacity = '1';
+
+    setTimeout(() => {
+        indicator.style.opacity = '0';
+    }, 2000);
+}
+
+// 清除草稿（表单提交后）
+function clearDraft() {
+    localStorage.removeItem(DRAFT_KEY);
+}
+
+// 初始化自动保存
+document.addEventListener('DOMContentLoaded', function() {
+    // 尝试恢复草稿
+    restoreDraft();
+
+    // 设置自动保存定时器
+    const autosaveTimer = setInterval(saveDraft, AUTOSAVE_INTERVAL);
+
+    // 监听表单提交，清除草稿
+    const form = document.querySelector('form[method="POST"]');
+    if (form) {
+        form.addEventListener('submit', function() {
+            clearInterval(autosaveTimer);
+            clearDraft();
+        });
+    }
+
+    // 监听内容变化，实时更新保存状态
+    const contentTextarea = document.getElementById('content');
+    if (contentTextarea) {
+        let saveTimeout;
+        contentTextarea.addEventListener('input', function() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                showSaveIndicator('正在保存...');
+                saveDraft();
+            }, 1000);
+        });
+    }
+});
 </script>
 {% endblock %}

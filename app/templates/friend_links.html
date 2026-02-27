@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}友情链接 - 我的博客{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <!-- 面包屑导航 -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}"><i class="bi bi-house-door"></i> 首页</a></li>
+            <li class="breadcrumb-item active">友情链接</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="sidebar-widget">
+                <h1 class="mb-4">
+                    <i class="bi bi-link-45"></i> 友情链接
+                </h1>
+
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-info-circle"></i> 友链说明</h6>
+                    <p class="mb-0">欢迎交换友情链接！如需交换友链，请通过邮箱联系我告知您的网站信息。</p>
+                </div>
+
+                <!-- 友链列表 -->
+                <div class="row">
+                    {% for link in links %}
+                    <div class="col-md-6 mb-3">
+                        <a href="{{ link.url }}" target="_blank" class="friend-link-card">
+                            {% if link.logo %}
+                            <img src="{{ link.logo }}" alt="{{ link.name }}" class="friend-link-img">
+                            {% endif %}
+                            <div class="friend-link-info">
+                                <h6 class="friend-link-name">{{ link.name }}</h6>
+                                {% if link.description %}
+                                <p class="friend-link-desc">{{ link.description }}</p>
+                                {% endif %}
+                            </div>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if not links %}
+                <div class="text-center py-5">
+                    <i class="bi bi-link-45 display-1 text-muted"></i>
+                    <p class="mt-3 text-muted">暂无友情链接</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 侧边栏 -->
+        <div class="col-lg-4">
+            <!-- 友链申请 -->
+            <div class="sidebar-widget">
+                <h5 class="sidebar-widget-title">
+                    <i class="bi bi-person-plus"></i> 申请友链
+                </h5>
+                <div class="alert alert-warning mb-0">
+                    <h6 class="small">友链要求</h6>
+                    <ul class="small mb-0">
+                        <li>网站内容健康，无违法违规内容</li>
+                        <li>有一定的访问量和原创内容</li>
+                        <li>建站时间超过3个月</li>
+                        <li>能正常访问，无死链</li>
+                    </ul>
+                </div>
+                <p class="mt-2 small text-muted">
+                    如需申请友链，请通过邮箱联系我。
+                </p>
+            </div>
+
+            <!-- 本站信息 -->
+            <div class="sidebar-widget">
+                <h5 class="sidebar-widget-title">
+                    <i class="bi bi-info-circle"></i> 本站信息
+                </h5>
+                <div class="friend-link-site-info">
+                    <strong>网站名称：</strong> linxiong's Blog<br>
+                    <strong>网站地址：</strong> {{ request.url_root }}<br>
+                    <strong>网站描述：</strong> 专注于网络安全与渗透测试的技术博客
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.friend-link-card {
+    display: flex;
+    gap: 12px;
+    padding: 15px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--text-color);
+    transition: all 0.2s;
+}
+
+.friend-link-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-color);
+}
+
+.friend-link-img {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.friend-link-info {
+    flex: 1;
+}
+
+.friend-link-name {
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--text-color);
+}
+
+.friend-link-desc {
+    font-size: 14px;
+    color: var(--text-light);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.friend-link-site-info {
+    font-size: 14px;
+    color: var(--text-color);
+    line-height: 1.8;
+}
+</style>
+{% endblock %}

@@ -14,27 +14,73 @@
                 </div>
 
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+                    {% with errors = get_flashed_messages(category_filter=['error']) %}
+                        {% if errors %}
+                            {% for error in errors %}
+                                <div class="alert alert-danger">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    {% if form.username.errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.username.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+
+                    {% if form.email.errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.email.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+
+                    {% if form.password.errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.password.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+
+                    {% if form.confirm_password.errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.confirm_password.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+
                     <div class="mb-3">
                         <label for="username" class="form-label">用户名</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-person"></i></span>
-                            <input type="text" class="form-control" id="username" name="username" value="linxiong" required autofocus>
+                            <input type="text" class="form-control" id="username" name="username"
+                                   value="{{ form.username.data or 'linxiong' }}" required autofocus>
                         </div>
+                        <div class="form-text">3-20个字符，字母开头</div>
                     </div>
 
                     <div class="mb-3">
                         <label for="email" class="form-label">邮箱</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                            <input type="email" class="form-control" id="email" name="email" required>
+                            <input type="email" class="form-control" id="email" name="email"
+                                   value="{{ form.email.data or '' }}" required>
                         </div>
                     </div>
 
-                    <div class="mb-4">
+                    <div class="mb-3">
                         <label for="password" class="form-label">密码</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-lock"></i></span>
                             <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        <div class="form-text">至少6个字符</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="confirm_password" class="form-label">确认密码</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
                         </div>
                     </div>
 

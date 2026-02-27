@@ -41,6 +41,10 @@ class User(UserMixin, db.Model):
     posts = db.relationship('Post', backref='author', lazy=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # 密码重置相关字段
+    reset_token = db.Column(db.String(100), unique=True, nullable=True)
+    reset_token_expires = db.Column(db.DateTime, nullable=True)
+
     def set_password(self, password):
         """
         设置用户密码

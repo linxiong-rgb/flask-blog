@@ -2,6 +2,270 @@
 
 {% block title %}{{ category.name }} - 分类 - 我的博客{% endblock %}
 
+{% block extra_css %}
+<style>
+.category-header {
+    background: linear-gradient(135deg, var(--gradient));
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.category-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 300px;
+    height: 300px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+}
+
+.category-header::after {
+    content: '';
+    position: absolute;
+    bottom: -30%;
+    left: -5%;
+    width: 200px;
+    height: 200px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+}
+
+.category-header-content {
+    position: relative;
+    z-index: 1;
+}
+
+.category-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.9;
+}
+
+.category-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.category-description {
+    font-size: 1.1rem;
+    opacity: 0.95;
+    margin-bottom: 1.5rem;
+}
+
+.category-stats {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.category-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.category-stat i {
+    font-size: 1.2rem;
+}
+
+.category-stat-value {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.category-stat-label {
+    opacity: 0.9;
+}
+
+.post-list-enhanced {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.row {
+    --bs-gutter-x: 2rem;
+}
+
+.post-card-enhanced {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    display: flex;
+    gap: 1.5rem;
+}
+
+.post-card-enhanced:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-color);
+}
+
+.post-card-enhanced-image {
+    width: 200px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.post-card-enhanced-image img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+}
+
+.post-card-enhanced-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.post-card-enhanced-meta {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.85rem;
+    color: var(--text-light);
+    margin-bottom: 0.75rem;
+}
+
+.post-card-enhanced-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.post-card-enhanced-title {
+    font-size: 1.35rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
+}
+
+.post-card-enhanced-title a {
+    color: var(--text-color);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.post-card-enhanced-title a:hover {
+    color: var(--primary-color);
+}
+
+.post-card-enhanced-summary {
+    color: var(--text-light);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    flex: 1;
+}
+
+.post-card-enhanced-tags {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.post-card-enhanced-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sidebar-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.sidebar-card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.related-tag-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.related-tag-item:last-child {
+    border-bottom: none;
+}
+
+.related-tag-item a {
+    color: var(--text-color);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.related-tag-item a:hover {
+    color: var(--primary-color);
+}
+
+.related-tag-count {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    background: var(--bg-color);
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+}
+
+.empty-state-enhanced {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--card-bg);
+    border-radius: 16px;
+    border: 2px dashed var(--border-color);
+}
+
+.empty-state-enhanced i {
+    font-size: 4rem;
+    color: var(--text-light);
+    margin-bottom: 1rem;
+}
+
+.empty-state-enhanced h4 {
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+}
+
+.empty-state-enhanced p {
+    color: var(--text-light);
+}
+
+@media (max-width: 991px) {
+    .post-card-enhanced {
+        flex-direction: column;
+    }
+
+    .post-card-enhanced-image {
+        width: 100%;
+    }
+
+    .post-card-enhanced-image img {
+        height: 200px;
+    }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="main-container">
     <!-- 面包屑导航 -->
@@ -13,59 +277,58 @@
         </ol>
     </nav>
 
-    <!-- 分类标题 -->
-    <div class="hero mb-4" style="padding: 2rem;">
-        <h1 class="mb-2">
-            <i class="bi bi-folder"></i> {{ category.name }}
-        </h1>
-        {% if category.description %}
-            <p class="mb-0">{{ category.description }}</p>
-        {% endif %}
-    </div>
-
-    <!-- 文章列表 -->
-    <div class="row">
+    <!-- 主要内容 -->
+    <div class="row g-4">
         <div class="col-lg-8">
             {% if posts.items %}
-                {% for post in posts.items %}
-                    <article class="post-card">
-                        <div class="post-card-body">
-                            <div class="post-meta">
-                                <span>
-                                    <i class="bi bi-calendar3"></i> {{ post.created_at.strftime('%Y-%m-%d') }}
-                                </span>
-                                <span>
-                                    <i class="bi bi-person"></i> {{ post.author.username }}
-                                </span>
-                                <span>
-                                    <i class="bi bi-eye"></i> {{ post.views }}
-                                </span>
-                            </div>
-
-                            <h3 class="post-card-title">
-                                <a href="{{ url_for('main.post', post_id=post.id) }}">{{ post.title }}</a>
-                            </h3>
-
-                            {% if post.summary %}
-                                <p class="post-summary">{{ post.summary }}</p>
-                            {% endif %}
-
-                            {% if post.tags %}
-                                <div class="mb-3">
-                                    {% for tag in post.tags %}
-                                        <a href="{{ url_for('main.tag', tag_id=tag.id) }}" class="badge-tag">
-                                            <i class="bi bi-tag"></i> {{ tag.name }}
-                                        </a>
-                                    {% endfor %}
+                <div class="post-list-enhanced">
+                    {% for post in posts.items %}
+                        <article class="post-card-enhanced">
+                            {% if post.cover_image %}
+                                <div class="post-card-enhanced-image">
+                                    <img src="{{ post.cover_image }}" alt="{{ post.title }}" loading="lazy">
                                 </div>
                             {% endif %}
+                            <div class="post-card-enhanced-content">
+                                <div class="post-card-enhanced-meta">
+                                    <span>
+                                        <i class="bi bi-calendar3"></i> {{ post.created_at.strftime('%Y-%m-%d') }}
+                                    </span>
+                                    <span>
+                                        <i class="bi bi-eye"></i> {{ post.views }}
+                                    </span>
+                                    <span>
+                                        <i class="bi bi-bookmark"></i> {{ post.bookmarks.count() if post.bookmarks else 0 }}
+                                    </span>
+                                </div>
 
-                            <a href="{{ url_for('main.post', post_id=post.id) }}" class="btn btn-outline-primary btn-sm">
-                                阅读全文 <i class="bi bi-arrow-right"></i>
-                            </a>
-                        </div>
-                    </article>
-                {% endfor %}
+                                <h3 class="post-card-enhanced-title">
+                                    <a href="{{ url_for('main.post', post_id=post.id) }}">{{ post.title }}</a>
+                                </h3>
+
+                                {% if post.summary %}
+                                    <p class="post-card-enhanced-summary">{{ post.summary[:150] }}{% if post.summary|length > 150 %}...{% endif %}</p>
+                                {% endif %}
+
+                                {% if post.tags %}
+                                    <div class="post-card-enhanced-tags">
+                                        {% for tag in post.tags[:3] %}
+                                            <a href="{{ url_for('main.tag', tag_id=tag.id) }}" class="badge-tag">
+                                                <i class="bi bi-tag"></i> {{ tag.name }}
+                                            </a>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+
+                                <div class="post-card-enhanced-footer">
+                                    <a href="{{ url_for('main.post', post_id=post.id) }}" class="btn btn-primary btn-sm">
+                                        阅读全文 <i class="bi bi-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
 
                 <!-- 分页 -->
                 {% if posts.pages > 1 %}
@@ -96,9 +359,55 @@
                     </div>
                 {% endif %}
             {% else %}
-                <div class="text-center py-5">
-                    <i class="bi bi-inbox display-1 text-muted"></i>
-                    <p class="mt-3 text-muted">该分类下还没有文章</p>
+                <div class="empty-state-enhanced">
+                    <i class="bi bi-inbox"></i>
+                    <h4>暂无文章</h4>
+                    <p>该分类下还没有文章，敬请期待...</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- 侧边栏 -->
+        <div class="col-lg-4">
+            {% if posts.total > 0 %}
+                <!-- 该分类下的热门标签 -->
+                <div class="sidebar-card">
+                    <h5 class="sidebar-card-title">
+                        <i class="bi bi-tags"></i> 相关标签
+                    </h5>
+                    {% set all_tags = [] %}
+                    {% for post in posts.items %}
+                        {% for tag in post.tags %}
+                            {% if tag not in all_tags %}
+                                {% set _ = all_tags.append(tag) %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                    {% if all_tags %}
+                        {% for tag in all_tags[:10] %}
+                            <div class="related-tag-item">
+                                <a href="{{ url_for('main.tag', tag_id=tag.id) }}">
+                                    <i class="bi bi-tag"></i> {{ tag.name }}
+                                </a>
+                                <span class="related-tag-count">{{ tag.posts.count() }}</span>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted small mb-0">暂无标签</p>
+                    {% endif %}
+                </div>
+
+                <!-- 该分类下的最新文章 -->
+                <div class="sidebar-card">
+                    <h5 class="sidebar-card-title">
+                        <i class="bi bi-clock-history"></i> 最新文章
+                    </h5>
+                    {% for post in posts.items[:5] %}
+                        <div class="related-tag-item">
+                            <a href="{{ url_for('main.post', post_id=post.id) }}">{{ post.title }}</a>
+                            <span class="related-tag-count">{{ post.created_at.strftime('%m-%d') }}</span>
+                        </div>
+                    {% endfor %}
                 </div>
             {% endif %}
         </div>

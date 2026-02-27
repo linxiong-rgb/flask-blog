@@ -35,6 +35,7 @@
                     </div>
                     <div class="card-body">
                         <form id="importForm" enctype="multipart/form-data">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <div class="mb-3">
                                 <label for="markdownFile" class="form-label">选择 Markdown 文件</label>
                                 <input class="form-control" type="file" id="markdownFile" name="file"
@@ -55,6 +56,7 @@
                     </div>
                     <div class="card-body">
                         <form id="batchImportForm" enctype="multipart/form-data">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <div class="mb-3">
                                 <label for="markdownFiles" class="form-label">选择多个 Markdown 文件</label>
                                 <input class="form-control" type="file" id="markdownFiles" name="files"

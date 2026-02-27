@@ -3,7 +3,20 @@ from app.models.post import Post
 from app import db
 from datetime import datetime
 import markdown
+import bleach
 from urllib.parse import quote
+
+# 从 main.py 导入清理配置
+from app.routes.main import ALLOWED_TAGS, ALLOWED_ATTRIBUTES
+
+def clean_html(html_content):
+    """使用 bleach 清理 HTML，防止 XSS 攻击"""
+    return bleach.clean(
+        html_content,
+        tags=ALLOWED_TAGS,
+        attributes=ALLOWED_ATTRIBUTES,
+        strip=True
+    )
 
 bp = Blueprint('export', __name__)
 
@@ -48,15 +61,26 @@ def export_pdf(post_id):
     post = Post.query.get_or_404(post_id)
 
     # 将 Markdown 转换为 HTML
-    content_html = markdown.markdown(
+    raw_html = markdown.markdown(
         post.content,
         extensions=[
             'fenced_code',
             'tables',
             'nl2br',
             'sane_lists',
-        ]
+            'codehilite',
+        ],
+        extension_configs={
+            'codehilite': {
+                'linenums': False,
+                'guess_lang': True,
+                'noclasses': False,
+                'cssclass': 'codehilite'
+            }
+        }
     )
+    # 清理 HTML 防止 XSS 攻击
+    content_html = clean_html(raw_html)
 
     # 获取标签
     tags_html = ""
@@ -120,13 +144,30 @@ def export_pdf(post_id):
             font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
         }}
         pre {{
-            background: #f5f5f5;
+            background: #1e1e1e;
             padding: 16px;
             border-radius: 6px;
             overflow-x: auto;
             font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
             font-size: 0.9em;
-            line-height: 1.6;
+            line-height: 1.8;
+            border: 1px solid #3c3c3c;
+        }}
+        pre code {{
+            background: transparent;
+            color: #d4d4d4;
+            padding: 0;
+        }}
+        .codehilite {{
+            background: #1e1e1e;
+            padding: 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }}
+        .codehilite pre {{
+            background: transparent;
+            border: none;
+            padding: 0;
         }}
         blockquote {{
             border-left: 4px solid #667eea;

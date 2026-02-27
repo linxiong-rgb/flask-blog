@@ -15,5 +15,19 @@ email_validator==2.1.0.post1
 markdown==3.5.1
 Pygments==2.19.2
 
+# 安全防护
+bleach==6.1.0
+
+# 缓存
+Flask-Caching==2.1.0
+
+# 评论系统（前端CDN引入，此处仅记录）
+
+# RSS 生成
+feedgen==0.9.0
+
+# 图片处理
+Pillow>=10.1.0
+
 # PostgreSQL 数据库（Render 部署使用）
 psycopg2-binary==2.9.10

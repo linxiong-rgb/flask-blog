@@ -2,7 +2,26 @@
 
 {% block title %}{{ post.title }} - 我的博客{% endblock %}
 
+{% block description %}{{ post.summary or post.title }} - {{ post.content | striptags | truncate(150) }}{% endblock %}
+
+{% block keywords %}{{ post.title }}{% if post.tags %},{% for tag in post.tags %}{{ tag.name }}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}{% endblock %}
+
+{% block og_type %}article{% endblock %}
+{% block og_url %}{{ request.url_root }}post/{{ post.id }}{% endblock %}
+{% block og_title %}{{ post.title }}{% endblock %}
+{% block og_description %}{{ post.summary or post.content | striptags | truncate(150) }}{% endblock %}
+{% block og_image %}{% if post.cover_image %}{{ post.cover_image }}{% else %}{{ url_for('static', filename='img/default-og.png', _external=True) }}{% endif %}{% endblock %}
+
+{% block twitter_title %}{{ post.title }}{% endblock %}
+{% block twitter_description %}{{ post.summary or post.content | striptags | truncate(150) }}{% endblock %}
+{% block twitter_image %}{% if post.cover_image %}{{ post.cover_image }}{% else %}{{ url_for('static', filename='img/default-og.png', _external=True) }}{% endif %}{% endblock %}
+
+{% block canonical %}{{ request.url_root }}post/{{ post.id }}{% endblock %}
+
 {% block content %}
+<!-- 阅读进度条 -->
+<div class="reading-progress" id="readingProgress"></div>
+
 <div class="typora-container">
     <div class="article-wrapper">
         <!-- 左侧目录 -->
@@ -78,6 +97,36 @@
                 {{ post.content_html | safe }}
             </div>
 
+            <!-- 文章操作按钮区域 -->
+            <div class="article-bookmark-section">
+                <div class="article-actions-wrapper">
+                    <!-- 分享按钮组 -->
+                    <div class="share-buttons-group">
+                        <button class="action-icon-btn" data-platform="weibo" onclick="shareToWeibo()" title="分享到微博">
+                            <i class="bi bi-sina-weibo"></i>
+                        </button>
+                        <button class="action-icon-btn" data-platform="qq" onclick="shareToQQ()" title="分享到QQ">
+                            <span class="penguin-icon">🐧</span>
+                        </button>
+                        <button class="action-icon-btn" data-platform="wechat" onclick="shareToWechat()" title="分享到微信">
+                            <i class="bi bi-wechat"></i>
+                        </button>
+                        <button class="action-icon-btn" data-platform="copy" onclick="copyArticleLink()" title="复制链接">
+                            <i class="bi bi-link"></i>
+                        </button>
+                    </div>
+
+                    <!-- 收藏按钮 -->
+                    <button class="bookmark-action-btn" id="bookmarkBtn" onclick="toggleBookmark()">
+                        <i class="bi bi-bookmark" id="bookmarkIcon"></i>
+                        <span class="bookmark-text" id="bookmarkText">收藏</span>
+                        <span class="bookmark-count-badge" id="bookmarkCount">{{ post.bookmarks.count() if post.bookmarks else 0 }}</span>
+                    </button>
+                </div>
+                <!-- 操作提示 -->
+                <div class="action-feedback" id="actionFeedback"></div>
+            </div>
+
             <!-- 文章底部操作栏 -->
             <footer class="typora-footer">
                 <div class="footer-actions">
@@ -101,6 +150,39 @@
                     {% endif %}
                 </div>
             </footer>
+
+            <!-- 相关文章推荐 -->
+            {% if related_posts %}
+            <div class="related-posts-section mt-5">
+                <h6 class="mb-3">
+                    <i class="bi bi-collection"></i> 相关文章推荐
+                </h6>
+                <div class="row">
+                    {% for related_post in related_posts %}
+                    <div class="col-md-6 mb-3">
+                        <a href="{{ url_for('main.post', post_id=related_post.id) }}" class="related-post-card">
+                            {% if related_post.cover_image %}
+                            <div class="related-post-img">
+                                <img src="{{ related_post.cover_image }}" alt="{{ related_post.title }}" loading="lazy">
+                            </div>
+                            {% endif %}
+                            <div class="related-post-content">
+                                <h6 class="related-post-title">{{ related_post.title }}</h6>
+                                <div class="related-post-meta">
+                                    {% if related_post.category %}
+                                    <span class="badge-category">{{ related_post.category.name }}</span>
+                                    {% endif %}
+                                    <span class="text-muted small">
+                                        <i class="bi bi-calendar3"></i> {{ related_post.created_at.strftime('%Y-%m-%d') }}
+                                    </span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
         </article>
     </div>
 </div>
@@ -185,35 +267,67 @@ function generateTOC() {
         return;
     }
 
-    let tocHTML = '<ul class="toc-list">';
-    let level = 0;
+    // 清理标题文本，移除数字前缀
+    function cleanHeadingText(text) {
+        return text
+            .replace(/^[\d]+\.\s*/, '')  // 移除 "1. " 等数字前缀
+            .replace(/^流程\d+[：:]\s*/, '')  // 移除 "流程1：" 等
+            .replace(/^[一二三四五六七八九十]+[、．]\s*/, '')  // 移除中文数字前缀
+            .trim();
+    }
+
+    // 构建嵌套结构的目录
+    const tocStructure = [];
+    const stack = [];
 
     headings.forEach((heading, index) => {
         const headingLevel = parseInt(heading.tagName.substring(1));
-        const headingText = heading.textContent.trim();
+        const headingText = cleanHeadingText(heading.textContent.trim());
         const headingId = 'heading-' + index;
 
         heading.id = headingId;
 
-        if (headingLevel > level) {
-            tocHTML += '<ul class="toc-sublist">';
-        } else if (headingLevel < level) {
-            tocHTML += '</ul>'.repeat(level - headingLevel + 1);
+        const item = {
+            level: headingLevel,
+            text: headingText,
+            id: headingId,
+            children: []
+        };
+
+        // 找到合适的父级
+        while (stack.length > 0 && stack[stack.length - 1].level >= headingLevel) {
+            stack.pop();
         }
 
-        tocHTML += `
-            <li class="toc-item toc-level-${headingLevel}">
-                <a href="#${headingId}" class="toc-link" data-target="${headingId}">
-                    ${headingText}
-                </a>
-            </li>
-        `;
+        if (stack.length === 0) {
+            tocStructure.push(item);
+        } else {
+            stack[stack.length - 1].children.push(item);
+        }
 
-        level = headingLevel;
+        stack.push(item);
     });
 
-    tocHTML += '</ul>';
-    tocContent.innerHTML = tocHTML;
+    // 渲染目录HTML
+    function renderTOC(items) {
+        if (!items || items.length === 0) return '';
+
+        let html = '<ul class="toc-list">';
+        items.forEach(item => {
+            html += `
+                <li class="toc-item toc-level-${item.level}">
+                    <a href="#${item.id}" class="toc-link" data-target="${item.id}">
+                        ${item.text}
+                    </a>
+                    ${renderTOC(item.children)}
+                </li>
+            `;
+        });
+        html += '</ul>';
+        return html;
+    }
+
+    tocContent.innerHTML = renderTOC(tocStructure);
 
     // 目录点击事件
     document.querySelectorAll('.toc-link').forEach(link => {
@@ -223,7 +337,9 @@ function generateTOC() {
             const targetElement = document.getElementById(targetId);
 
             if (targetElement) {
-                const offsetTop = targetElement.offsetTop - 80;
+                const navbarHeight = document.querySelector('.navbar').offsetHeight;
+                const offsetTop = targetElement.offsetTop - navbarHeight - 20;
+
                 window.scrollTo({
                     top: offsetTop,
                     behavior: 'smooth'
@@ -246,11 +362,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const tocLinks = document.querySelectorAll('.toc-link');
 
     window.addEventListener('scroll', () => {
+        const navbarHeight = document.querySelector('.navbar').offsetHeight;
+        const scrollPosition = window.scrollY + navbarHeight + 100;
         let currentHeading = null;
 
         headings.forEach(heading => {
-            const rect = heading.getBoundingClientRect();
-            if (rect.top <= 100) {
+            const headingTop = heading.offsetTop;
+            if (scrollPosition >= headingTop) {
                 currentHeading = heading;
             }
         });
@@ -262,16 +380,35 @@ document.addEventListener('DOMContentLoaded', () => {
                     link.classList.add('active');
                 }
             });
+        } else {
+            // 如果没有找到当前标题，清除所有活动状态
+            tocLinks.forEach(link => link.classList.remove('active'));
         }
     });
 });
 
-// 代码块复制功能
+// 代码块复制功能和语言识别
 function addCopyButtons() {
     const codeBlocks = document.querySelectorAll('pre code');
 
     codeBlocks.forEach((codeBlock, index) => {
         const pre = codeBlock.parentElement;
+
+        // 识别代码语言
+        let language = 'CODE';
+        const classList = Array.from(codeBlock.classList);
+        for (const cls of classList) {
+            if (cls.startsWith('language-')) {
+                language = cls.replace('language-', '').toUpperCase();
+                break;
+            }
+        }
+
+        // 为 .codehilite 容器添加语言标签
+        if (pre.classList.contains('codehilite') || pre.parentElement?.classList.contains('codehilite')) {
+            const hiliteContainer = pre.classList.contains('codehilite') ? pre : pre.parentElement;
+            hiliteContainer.setAttribute('data-language', language);
+        }
 
         // 创建复制按钮
         const copyBtn = document.createElement('button');
@@ -328,5 +465,233 @@ function addCopyButtons() {
 
 // 页面加载完成后添加复制按钮
 document.addEventListener('DOMContentLoaded', addCopyButtons);
+
+// 图片懒加载
+document.addEventListener('DOMContentLoaded', function() {
+    const images = document.querySelectorAll('.typora-content img');
+
+    const imageObserver = new IntersectionObserver(function(entries, observer) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                img.classList.add('loaded');
+                observer.unobserve(img);
+            }
+        });
+    });
+
+    images.forEach(function(img) {
+        img.setAttribute('loading', 'lazy');
+        imageObserver.observe(img);
+    });
+
+    // 初始化阅读进度条
+    initReadingProgress();
+});
+
+// ========================================
+// 阅读进度条功能
+// ========================================
+
+function initReadingProgress() {
+    const progressBar = document.getElementById('readingProgress');
+    const articleContent = document.getElementById('articleContent');
+
+    if (!progressBar || !articleContent) return;
+
+    window.addEventListener('scroll', function() {
+        const windowHeight = window.innerHeight;
+        const documentHeight = document.documentElement.scrollHeight - windowHeight;
+        const scrolled = window.scrollY;
+        const progress = (scrolled / documentHeight) * 100;
+
+        progressBar.style.width = Math.min(progress, 100) + '%';
+
+        // 阅读完成时添加完成样式
+        if (progress >= 100) {
+            progressBar.classList.add('complete');
+        } else {
+            progressBar.classList.remove('complete');
+        }
+    });
+}
+
+// ========================================
+// 文章收藏功能
+// ========================================
+
+const postId = {{ post.id }};
+let isBookmarked = false; // 当前用户是否已收藏
+let bookmarkCount = 0; // 当前收藏数
+
+// 初始化收藏状态
+document.addEventListener('DOMContentLoaded', function() {
+    initBookmarkButton();
+});
+
+function initBookmarkButton() {
+    const bookmarkBtn = document.getElementById('bookmarkBtn');
+    const bookmarkIcon = document.getElementById('bookmarkIcon');
+    const bookmarkCountEl = document.getElementById('bookmarkCount');
+
+    if (!bookmarkBtn || !bookmarkIcon || !bookmarkCountEl) return;
+
+    // 获取收藏状态
+    fetchBookmarkStatus();
+}
+
+async function fetchBookmarkStatus() {
+    try {
+        const response = await fetch(`/api/post/${postId}/bookmarks`);
+        const data = await response.json();
+        bookmarkCount = data.bookmark_count;
+        isBookmarked = data.bookmarked;
+        updateBookmarkUI();
+    } catch (error) {
+        console.error('获取收藏状态失败:', error);
+    }
+}
+
+async function toggleBookmark() {
+    if (!{{ current_user.is_authenticated|tojson }}) {
+        showActionFeedback('请先登录后收藏');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/post/${postId}/bookmark`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            isBookmarked = data.bookmarked;
+            bookmarkCount = data.bookmark_count;
+            updateBookmarkUI();
+
+            // 显示文字提示
+            if (isBookmarked) {
+                showActionFeedback('✓ 收藏成功！');
+            } else {
+                showActionFeedback('✓ 已取消收藏');
+            }
+        } else {
+            // 尝试读取错误信息
+            let errorMsg = '操作失败，请重试';
+            try {
+                const errorData = await response.json();
+                if (errorData.message) {
+                    errorMsg = errorData.message;
+                }
+            } catch (e) {
+                console.error('Response not JSON:', response.status);
+            }
+            showActionFeedback(errorMsg);
+        }
+    } catch (error) {
+        console.error('收藏操作失败:', error);
+        showActionFeedback('网络错误，请重试');
+    }
+}
+
+function updateBookmarkUI() {
+    const bookmarkBtn = document.getElementById('bookmarkBtn');
+    const bookmarkIcon = document.getElementById('bookmarkIcon');
+    const bookmarkText = document.getElementById('bookmarkText');
+    const bookmarkCountEl = document.getElementById('bookmarkCount');
+
+    if (bookmarkIcon) {
+        bookmarkIcon.classList.toggle('bi-bookmark-fill', isBookmarked);
+        bookmarkIcon.classList.toggle('bi-bookmark', !isBookmarked);
+    }
+
+    if (bookmarkBtn) {
+        bookmarkBtn.classList.toggle('active', isBookmarked);
+    }
+
+    if (bookmarkText) {
+        bookmarkText.textContent = isBookmarked ? '已收藏' : '收藏';
+    }
+
+    if (bookmarkCountEl) {
+        bookmarkCountEl.textContent = bookmarkCount;
+    }
+}
+
+function showActionFeedback(message) {
+    const feedback = document.getElementById('actionFeedback');
+    if (feedback) {
+        feedback.textContent = message;
+        feedback.classList.add('show');
+        setTimeout(() => {
+            feedback.classList.remove('show');
+        }, 2000);
+    }
+}
+
+// 分享功能
+function getArticleUrl() {
+    return window.location.href;
+}
+
+function getArticleTitle() {
+    const titleElement = document.querySelector('.typora-title');
+    return titleElement ? titleElement.textContent : document.title;
+}
+
+function shareToWeibo() {
+    const url = encodeURIComponent(getArticleUrl());
+    const title = encodeURIComponent(getArticleTitle());
+    window.open(`https://service.weibo.com/share/share.php?url=${url}&title=${title}`, '_blank');
+    showActionFeedback('正在打开微博分享...');
+}
+
+function shareToQQ() {
+    const url = encodeURIComponent(getArticleUrl());
+    const title = encodeURIComponent(getArticleTitle());
+    window.open(`https://connect.qq.com/widget/shareqq/index.html?url=${url}&title=${title}`, '_blank');
+    showActionFeedback('正在打开QQ分享...');
+}
+
+function shareToWechat() {
+    showActionFeedback('请使用微信扫一扫功能扫描屏幕二维码分享');
+}
+
+function copyArticleLink() {
+    const url = getArticleUrl();
+
+    // 使用现代 API
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(function() {
+            showActionFeedback('✓ 链接已复制到剪贴板！');
+        }).catch(function() {
+            fallbackCopyLink(url);
+        });
+    } else {
+        fallbackCopyLink(url);
+    }
+}
+
+function fallbackCopyLink(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+
+    try {
+        document.execCommand('copy');
+        showActionFeedback('✓ 链接已复制到剪贴板！');
+    } catch (e) {
+        showActionFeedback('复制失败，请手动复制链接');
+    }
+
+    document.body.removeChild(textarea);
+}
 </script>
 {% endblock %}

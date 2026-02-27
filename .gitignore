@@ -46,3 +46,6 @@ Thumbs.db
 # Environment variables
 .env
 .env.local
+
+# Uploaded files
+app/static/uploads/

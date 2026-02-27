@@ -7,21 +7,72 @@
 - 标签管理（创建、删除）
 - 文章管理（创建、编辑、删除）
 - Markdown 文件导入（单个和批量）
+- 图片上传处理
 """
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
+from sqlalchemy import func
 import os
 import re
+from datetime import datetime
 from app.models.post import Post, Category, Tag
 from app.models.user import User
+from app.models.friend_link import FriendLink
+from app.models.post_bookmark import PostBookmark
 from app import db
+from PIL import Image
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
 # 文件编码支持列表（按优先级排序）
 SUPPORTED_ENCODINGS = ['utf-8', 'utf-8-sig', 'gbk', 'gb2312', 'iso-8859-1']
+
+# 允许的图片扩展名
+ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
+# 最大图片尺寸（宽 x 高）
+MAX_IMAGE_SIZE = (3000, 3000)
+
+
+def allowed_file(filename):
+    """检查文件扩展名是否允许"""
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS
+
+
+def generate_unique_filename(filename):
+    """生成唯一的文件名（使用时间戳）"""
+    name, ext = os.path.splitext(filename)
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    return f"{timestamp}{ext}"
+
+
+def process_image(file_path):
+    """
+    处理图片：验证并优化图片
+
+    Args:
+        file_path: 图片文件路径
+
+    Returns:
+        tuple: (success: bool, message: str)
+    """
+    try:
+        with Image.open(file_path) as img:
+            # 验证图片尺寸
+            if img.size[0] > MAX_IMAGE_SIZE[0] or img.size[1] > MAX_IMAGE_SIZE[1]:
+                # 调整图片大小
+                img.thumbnail(MAX_IMAGE_SIZE, Image.Resampling.LANCZOS)
+                img.save(file_path, quality=95, optimize=True)
+            else:
+                # 优化图片大小
+                img.save(file_path, quality=95, optimize=True)
+
+        return True, "图片处理成功"
+    except Exception as e:
+        return False, f"图片处理失败: {str(e)}"
 
 
 # ==================== 仪表板 ====================
@@ -41,6 +92,69 @@ def dashboard():
     categories = Category.query.all()
     tags = Tag.query.all()
     return render_template('admin/dashboard.html', posts=posts, categories=categories, tags=tags)
+
+
+# ==================== 图片上传 ====================
+
+@bp.route('/upload/cover', methods=['POST'])
+@login_required
+def upload_cover_image():
+    """
+    上传封面图片
+
+    处理图片上传、验证和优化
+
+    Returns:
+        JSON响应：包含成功状态和图片URL或错误消息
+    """
+    # 检查是否有文件
+    if 'cover_image' not in request.files:
+        return jsonify({'success': False, 'message': '没有选择文件'}), 400
+
+    file = request.files['cover_image']
+
+    # 检查文件名
+    if file.filename == '':
+        return jsonify({'success': False, 'message': '没有选择文件'}), 400
+
+    # 检查文件类型
+    if not allowed_file(file.filename):
+        return jsonify({
+            'success': False,
+            'message': f'不支持的文件类型。支持的格式: {", ".join(ALLOWED_IMAGE_EXTENSIONS)}'
+        }), 400
+
+    try:
+        # 确保上传目录存在
+        upload_folder = current_app.config['UPLOAD_FOLDER']
+        os.makedirs(upload_folder, exist_ok=True)
+
+        # 生成唯一文件名
+        filename = generate_unique_filename(file.filename)
+        file_path = os.path.join(upload_folder, filename)
+
+        # 保存文件
+        file.save(file_path)
+
+        # 处理图片（验证和优化）
+        success, message = process_image(file_path)
+        if not success:
+            # 处理失败，删除文件
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            return jsonify({'success': False, 'message': message}), 400
+
+        # 返回图片URL（相对路径）
+        image_url = f'/static/uploads/covers/{filename}'
+
+        return jsonify({
+            'success': True,
+            'message': '图片上传成功',
+            'image_url': image_url
+        })
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'上传失败: {str(e)}'}), 500
 
 
 # ==================== 分类管理 ====================
@@ -157,11 +271,51 @@ def new_post():
     if request.method == 'POST':
         title = request.form.get('title')
         content = request.form.get('content')
-        summary = request.form.get('summary', '')[:300]
+        summary = request.form.get('summary', '').strip()
         published = request.form.get('published') == 'on'
         category_id = request.form.get('category_id', type=int)
-        cover_image = request.form.get('cover_image', '')
+
+        # 处理定时发布
+        scheduled = request.form.get('scheduled') == 'on'
+        scheduled_at = None
+        if scheduled:
+            scheduled_date = request.form.get('scheduled_date')
+            scheduled_time = request.form.get('scheduled_time', '00:00')
+            if scheduled_date:
+                try:
+                    scheduled_at = datetime.strptime(f'{scheduled_date} {scheduled_time}', '%Y-%m-%d %H:%M')
+                    # 如果定时发布，则不立即发布
+                    published = False
+                except ValueError:
+                    flash('定时发布时间格式错误', 'danger')
+                    categories = Category.query.all()
+                    tags = Tag.query.all()
+                    return render_template('admin/edit_post.html', categories=categories, tags=tags)
+
+        # 处理封面图片：优先使用上传的文件路径，其次是 URL
+        cover_image = request.form.get('cover_image', '') or request.form.get('cover_image_url', '')
+
         tags = request.form.getlist('tags')
+
+        # 如果没有提供摘要，自动生成
+        if not summary:
+            from app.utils.text import generate_summary
+            summary = generate_summary(content, max_length=300)
+
+        # 如果没有封面图，自动生成
+        if not cover_image:
+            from app.utils.image_generator import generate_cover_image
+            # 获取分类名称
+            category_obj = Category.query.get(category_id) if category_id else None
+            category_name = category_obj.name if category_obj else None
+            # 获取标签名称
+            tag_names = []
+            for tag_id in tags:
+                tag = Tag.query.get(int(tag_id))
+                if tag:
+                    tag_names.append(tag.name)
+            # 生成封面图（传递内容用于提取关键词）
+            cover_image = generate_cover_image(title, category_name, tag_names, content)
 
         # 创建文章对象
         post = Post(
@@ -170,8 +324,9 @@ def new_post():
             summary=summary,
             user_id=current_user.id,
             category_id=category_id if category_id else None,
-            cover_image=cover_image if cover_image else None,
-            published=published
+            cover_image=cover_image,
+            published=published,
+            scheduled_at=scheduled_at
         )
 
         # 添加标签关联
@@ -183,7 +338,10 @@ def new_post():
         db.session.add(post)
         db.session.commit()
 
-        flash('文章创建成功')
+        if scheduled_at:
+            flash(f'文章已保存，将于 {scheduled_at.strftime("%Y-%m-%d %H:%M")} 自动发布')
+        else:
+            flash('文章创建成功')
         return redirect(url_for('admin.dashboard'))
 
     categories = Category.query.all()
@@ -217,10 +375,59 @@ def edit_post(post_id):
         # 更新文章基本信息
         post.title = request.form.get('title')
         post.content = request.form.get('content')
-        post.summary = request.form.get('summary', '')[:300]
-        post.published = request.form.get('published') == 'on'
+        summary = request.form.get('summary', '').strip()
+
+        # 如果没有提供摘要，自动生成
+        if not summary:
+            from app.utils.text import generate_summary
+            summary = generate_summary(post.content, max_length=300)
+
+        post.summary = summary
+
+        # 处理定时发布
+        scheduled = request.form.get('scheduled') == 'on'
+        scheduled_at = None
+        if scheduled:
+            scheduled_date = request.form.get('scheduled_date')
+            scheduled_time = request.form.get('scheduled_time', '00:00')
+            if scheduled_date:
+                try:
+                    scheduled_at = datetime.strptime(f'{scheduled_date} {scheduled_time}', '%Y-%m-%d %H:%M')
+                    # 如果定时发布，则不立即发布
+                    post.published = False
+                    post.scheduled_at = scheduled_at
+                except ValueError:
+                    flash('定时发布时间格式错误', 'danger')
+                    categories = Category.query.all()
+                    all_tags = Tag.query.all()
+                    return render_template('admin/edit_post.html', post=post,
+                                          categories=categories, tags=all_tags)
+            else:
+                post.scheduled_at = None
+                post.published = request.form.get('published') == 'on'
+        else:
+            post.scheduled_at = None
+            post.published = request.form.get('published') == 'on'
+
         post.category_id = request.form.get('category_id', type=int) or None
-        post.cover_image = request.form.get('cover_image', '') or None
+
+        # 处理封面图片：优先使用上传的文件路径，其次是 URL
+        cover_image = request.form.get('cover_image', '') or request.form.get('cover_image_url', '')
+
+        # 如果没有封面图且之前也没有，自动生成
+        if not cover_image and not post.cover_image:
+            from app.utils.image_generator import generate_cover_image
+            # 获取分类名称
+            category_obj = Category.query.get(post.category_id) if post.category_id else None
+            category_name = category_obj.name if category_obj else None
+            # 获取标签名称
+            tags = [tag.name for tag in post.tags] if post.tags else []
+            # 生成封面图（传递内容用于提取关键词）
+            cover_image = generate_cover_image(post.title, category_name, tags, post.content)
+
+        # 更新封面图（如果有新的）
+        if cover_image:
+            post.cover_image = cover_image
 
         # 更新标签关联
         post.tags.clear()
@@ -231,7 +438,11 @@ def edit_post(post_id):
                 post.tags.append(tag)
 
         db.session.commit()
-        flash('文章更新成功')
+
+        if post.scheduled_at:
+            flash(f'文章已更新，将于 {post.scheduled_at.strftime("%Y-%m-%d %H:%M")} 自动发布')
+        else:
+            flash('文章更新成功')
         return redirect(url_for('admin.dashboard'))
 
     categories = Category.query.all()
@@ -316,12 +527,17 @@ def import_markdown():
             if not title:
                 title = os.path.splitext(file.filename)[0]
 
+            # 自动生成封面图（传递内容用于提取关键词）
+            from app.utils.image_generator import generate_cover_image
+            cover_image = generate_cover_image(title, None, None, body_content)
+
             # 创建文章
             post = Post(
                 title=title,
                 content=body_content,
                 summary=summary,
                 user_id=current_user.id,
+                cover_image=cover_image,
                 published=False  # 默认为草稿，需要手动发布
             )
 
@@ -382,12 +598,17 @@ def import_batch():
             if not title:
                 title = os.path.splitext(file.filename)[0]
 
+            # 自动生成封面图（传递内容用于提取关键词）
+            from app.utils.image_generator import generate_cover_image
+            cover_image = generate_cover_image(title, None, None, body_content)
+
             # 创建文章
             post = Post(
                 title=title,
                 content=body_content,
                 summary=summary,
                 user_id=current_user.id,
+                cover_image=cover_image,
                 published=False
             )
 
@@ -507,3 +728,173 @@ def parse_markdown(content):
         summary = body_content[:300] + ('...' if len(body_content) > 300 else '')
 
     return title, summary, body_content
+
+
+# ========================================
+# 友情链接管理
+# ========================================
+
+@bp.route('/friend-links')
+@login_required
+def friend_links():
+    """友情链接管理页面"""
+    links = FriendLink.query.order_by(FriendLink.order, FriendLink.created_at.desc()).all()
+    return render_template('admin/friend_links.html', links=links)
+
+
+@bp.route('/friend-links/new', methods=['POST'])
+@login_required
+def new_friend_link():
+    """添加友情链接"""
+    name = request.form.get('name')
+    url = request.form.get('url')
+    description = request.form.get('description')
+    logo = request.form.get('logo')
+
+    if not name or not url:
+        return jsonify({'success': False, 'message': '网站名称和URL不能为空'}), 400
+
+    link = FriendLink(
+        name=name,
+        url=url,
+        description=description,
+        logo=logo
+    )
+    db.session.add(link)
+    db.session.commit()
+
+    return jsonify({'success': True, 'message': '友情链接添加成功'})
+
+
+@bp.route('/friend-links/<int:link_id>/delete', methods=['POST'])
+@login_required
+def delete_friend_link(link_id):
+    """删除友情链接"""
+    link = FriendLink.query.get_or_404(link_id)
+    db.session.delete(link)
+    db.session.commit()
+
+    return jsonify({'success': True, 'message': '友情链接已删除'})
+
+
+@bp.route('/regenerate-covers', methods=['POST'])
+@login_required
+def regenerate_covers():
+    """
+    为所有文章重新生成封面图
+
+    Returns:
+        JSON: 生成结果
+    """
+    # 获取所有文章
+    posts = Post.query.all()
+
+    if not posts:
+        return jsonify({'success': True, 'message': '没有文章', 'count': 0})
+
+    from app.utils.image_generator import generate_cover_from_post
+
+    success_count = 0
+    failed_count = 0
+    failed_posts = []
+
+    for post in posts:
+        try:
+            post.cover_image = generate_cover_from_post(post)
+            success_count += 1
+        except Exception as e:
+            failed_count += 1
+            failed_posts.append(f"{post.title}: {str(e)}")
+
+    try:
+        db.session.commit()
+        message = f'成功生成 {success_count} 张封面图'
+        if failed_count > 0:
+            message += f'，失败 {failed_count} 张'
+
+        return jsonify({
+            'success': True,
+            'message': message,
+            'count': success_count,
+            'failed': failed_count,
+            'failed_posts': failed_posts[:10]  # 最多返回10个失败项
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'保存失败: {str(e)}'}), 500
+
+
+# ==================== API 路由 ====================
+
+@bp.route('/api/generate-summary', methods=['POST'])
+@login_required
+def api_generate_summary():
+    """
+    自动生成文章摘要 API
+
+    从文章内容中提取关键句子生成摘要
+
+    Request Body:
+        JSON: { "content": "文章内容" }
+
+    Returns:
+        JSON: { "summary": "生成的摘要" }
+    """
+    from app.utils.text import generate_summary
+
+    data = request.get_json()
+    content = data.get('content', '')
+
+    if not content:
+        return jsonify({'error': '内容不能为空'}), 400
+
+    try:
+        summary = generate_summary(content, max_length=300)
+        return jsonify({'summary': summary})
+    except Exception as e:
+        current_app.logger.error(f'生成摘要失败: {str(e)}')
+        return jsonify({'error': '生成摘要失败'}), 500
+
+
+@bp.route('/bookmarks')
+@login_required
+def bookmarks():
+    """
+    收藏文章管理页面
+
+    显示所有被用户收藏的文章列表
+    """
+    # 获取所有收藏记录，按收藏时间倒序
+    bookmarks_query = PostBookmark.query.order_by(PostBookmark.created_at.desc())
+
+    # 分页
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    bookmarks_pagination = bookmarks_query.paginate(page=page, per_page=per_page, error_out=False)
+
+    return render_template('admin/bookmarks.html', bookmarks=bookmarks_pagination)
+
+
+@bp.route('/bookmark/<int:bookmark_id>/delete', methods=['POST'])
+@login_required
+def delete_bookmark(bookmark_id):
+    """
+    删除收藏记录 API
+
+    删除指定的收藏记录
+
+    Args:
+        bookmark_id: 收藏记录ID
+
+    Returns:
+        JSON: 操作结果
+    """
+    bookmark = PostBookmark.query.get_or_404(bookmark_id)
+
+    try:
+        db.session.delete(bookmark)
+        db.session.commit()
+        return jsonify({'success': True, 'message': '收藏已删除'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
