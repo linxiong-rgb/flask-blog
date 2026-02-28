@@ -1032,8 +1032,7 @@ function isLocalImagePath(text) {
 
     // 检查是否是不完整的 Markdown 图片语法（只有 alt 文本部分）
     // 格式：![alt text] 或 ![alt text](
-    const partialMdImageRegex = /^!\[([^\]]*)\]?\(?:
-/;
+    const partialMdImageRegex = /^!\[([^\]]*)\]?(\(?=\)?$|^\!\[[^\]]*\]$/;
     if (partialMdImageRegex.test(text)) {
         // 这是图片语法的一部分，应该提示替换
         return true;
