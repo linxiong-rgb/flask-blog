@@ -531,8 +531,8 @@ function closeLocalImagesModal() {
     if (modal) {
         modal.remove();
     }
-    // 清除存储的图片信息
-    delete window.detectedLocalImages;
+    // 注释：保留存储的图片信息供批量上传使用
+    // delete window.detectedLocalImages;
 }
 
 // ========================================
@@ -592,12 +592,36 @@ function uploadLocalImage(index, input) {
 }
 
 // 批量上传图片
-function batchUploadImages(input) {
+async function batchUploadImages(input) {
     const files = Array.from(input.files);
     if (files.length === 0) return;
 
     const textarea = document.getElementById('content');
     const currentContent = textarea.value;
+
+    // 如果还没有检测本地图片，先进行检测
+    if (!window.detectedLocalImages || window.detectedLocalImages.length === 0) {
+        console.log('未检测到本地图片，开始自动检测...');
+        try {
+            const response = await fetch('{{ url_for("admin.detect_local_images") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ content: currentContent })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                window.detectedLocalImages = data.local_images || [];
+                console.log(`检测到 ${window.detectedLocalImages.length} 张本地图片`);
+            }
+        } catch (error) {
+            console.error('检测本地图片失败:', error);
+        }
+    }
+
     const localImages = window.detectedLocalImages || [];
 
     // 调试信息：显示检测到的本地图片
@@ -684,6 +708,7 @@ function batchUploadImages(input) {
 
     progressDiv.classList.remove('d-none');
     let completed = 0;
+    let replacedCount = 0;  // 直接追踪替换数量
 
     uploadPromises.forEach(promise => {
         promise.then(result => {
@@ -695,10 +720,20 @@ function batchUploadImages(input) {
                 // 替换文章内容中的路径
                 const altText = result.filename.replace(/\.[^/.]+$/, '');
                 const newImageMd = `![${altText}](${result.imageUrl})`;
-                const newContent = textarea.value.split(result.originalPath).join(newImageMd);
+
+                // 使用正则表达式全局替换，处理转义字符
+                // 转义路径中的特殊正则字符
+                const escapedPath = result.originalPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const pathRegex = new RegExp(escapedPath, 'g');
+                const newContent = textarea.value.replace(pathRegex, newImageMd);
                 textarea.value = newContent;
 
-                // 更新对应的图片项状态
+                // 计数替换
+                replacedCount++;
+
+                console.log(`成功替换: ${result.originalPath} -> ${result.imageUrl}`);
+
+                // 更新对应的图片项状态（如果模态框仍然显示）
                 const imageItem = document.querySelector(`.local-image-item[data-path*="${result.originalPath}"]`);
                 if (imageItem) {
                     const index = parseInt(imageItem.getAttribute('data-index'));
@@ -707,21 +742,23 @@ function batchUploadImages(input) {
                     imageItem.classList.add('upload-success');
                     imageItem.style.opacity = '0.6';
                 }
+            } else {
+                console.log(`未匹配: ${result.filename}`);
             }
 
             // 更新状态显示
-            const matchedCount = Array.from(document.querySelectorAll('.upload-success')).length;
-            statusDiv.textContent = `已完成 ${completed}/${files.length}，成功替换 ${matchedCount} 张`;
+            statusDiv.textContent = `已完成 ${completed}/${files.length}，成功替换 ${replacedCount} 张`;
 
             if (completed === files.length) {
                 setTimeout(() => {
-                    showSaveIndicator(`批量上传完成！成功替换 ${matchedCount} 张图片`);
+                    showSaveIndicator(`批量上传完成！成功替换 ${replacedCount} 张图片`);
                 }, 500);
             }
         }).catch(error => {
             completed++;
             progressBar.style.width = (completed / files.length) * 100 + '%';
             statusDiv.textContent += ` | ${error.file.name} 失败`;
+            console.error('上传失败:', error);
         });
     });
 }
