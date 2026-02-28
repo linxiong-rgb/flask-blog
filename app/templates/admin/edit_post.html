@@ -534,6 +534,7 @@ function uploadLocalImage(index, input) {
     const imageItem = document.querySelector(`.local-image-item[data-index="${index}"]`);
     const statusEl = document.getElementById(`status_${index}`);
     const originalPath = imageItem.getAttribute('data-path');
+    const originalFilename = imageItem.getAttribute('data-filename');
     const textarea = document.getElementById('content');
 
     // 显示上传中状态
@@ -556,9 +557,54 @@ function uploadLocalImage(index, input) {
             const altText = file.name.replace(/\.[^/.]+$/, '');
             const newImageMd = `![${altText}](${data.image_url})`;
 
-            // 在文章内容中替换所有匹配的路径
+            // 在文章内容中进行智能替换
             const currentContent = textarea.value;
-            const newContent = currentContent.split(originalPath).join(newImageMd);
+            let newContent = currentContent;
+
+            // 正则匹配各种可能的图片语法格式：
+            // 1. 完整语法: ![alt](path)
+            // 2. 只有路径: path
+            // 3. 不完整语法: ![alt](path 或 ![alt]
+
+            // 首先尝试匹配完整的图片语法
+            const completeImagePattern = new RegExp(`!\\[[^\\]]*\\]\\(${escapeRegExp(originalPath)}\\)`, 'g');
+            const hasCompleteSyntax = completeImagePattern.test(currentContent);
+
+            if (hasCompleteSyntax) {
+                // 替换完整的图片语法
+                newContent = currentContent.replace(completeImagePattern, newImageMd);
+            } else {
+                // 尝试匹配不完整的语法 ![alt]( 或 ![alt]
+                const incompletePattern1 = new RegExp(`!\\[([^\\]]*)\\]\\(${escapeRegExp(originalPath)}`, 'g');
+                const incompletePattern2 = new RegExp(`!\\[(${escapeRegExp(originalPath)})\\]`, 'g');
+
+                if (incompletePattern1.test(currentContent)) {
+                    // 替换 ![alt](path 为 ![alt](url)
+                    newContent = currentContent.replace(incompletePattern1, (match, alt) => {
+                        return `![${alt || altText}](${data.image_url})`;
+                    });
+                } else if (incompletePattern2.test(currentContent)) {
+                    // 替换 ![path] 为 ![alt](url)
+                    newContent = currentContent.replace(incompletePattern2, newImageMd);
+                } else {
+                    // 直接替换路径字符串
+                    // 使用 split/join 进行简单替换（从右向左避免重复替换）
+                    const parts = currentContent.split(originalPath);
+                    if (parts.length > 1) {
+                        // 从后向前替换，只替换第一个匹配
+                        let lastIdx = -1;
+                        for (let i = 0; i < parts.length - 1; i++) {
+                            const idx = currentContent.indexOf(originalPath, lastIdx + 1);
+                            if (idx !== -1) {
+                                newContent = currentContent.substring(0, idx) + newImageMd + currentContent.substring(idx + originalPath.length);
+                                break;
+                            }
+                            lastIdx = idx;
+                        }
+                    }
+                }
+            }
+
             textarea.value = newContent;
 
             // 更新 UI
@@ -576,6 +622,11 @@ function uploadLocalImage(index, input) {
         statusEl.innerHTML = '<span class="badge bg-danger">✗ 错误</span>';
         alert('上传失败: ' + error.message);
     });
+}
+
+// 辅助函数：转义正则表达式特殊字符
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 // 打开图片上传
@@ -1082,26 +1133,32 @@ function insertContentImage(input) {
     const textAfterCursor = textarea.value.substring(cursorPos);
 
     // 检查光标是否在已有的 Markdown 图片语法中
-    // 查找光标前的 ![ 和可能的 ](
-    const beforeImageSyntax = textBeforeCursor.match(/!\[[^\]]*?\]?$/);
-    const afterImageSyntax = textAfterCursor.match(/^\]?\([^\)]*$/);
+    // 检测：前面有 ![ 后面有 ]
+    const beforeMatch = textBeforeCursor.match(/!\[([^\]]*)$/);
+    const afterMatch = textAfterCursor.match(/^\]\(([^)]*)$/);
 
-    if (beforeImageSyntax && afterImageSyntax) {
-        // 光标在已有的图片语法中间，询问用户是否要替换
+    // 如果前面有 ![alt] 后面有 (url) 或者类似的模式
+    const isInCompleteImage = beforeMatch && (afterMatch || textAfterCursor.startsWith(')('));
+
+    if (isInCompleteImage) {
+        // 光标在图片语法中，需要替换整个语法
         if (!confirm('检测到光标在已有的图片语法中，是否要替换该图片？')) {
             input.value = '';
             return;
         }
 
-        // 找到完整的图片语法
+        // 找到完整的图片语法范围
         const fullText = textarea.value;
         let imageStart = textBeforeCursor.lastIndexOf('![');
         let imageEnd = cursorPos + textAfterCursor.indexOf(')') + 1;
 
-        if (imageEnd <= imageStart) {
-            imageEnd = cursorPos + textAfterCursor.indexOf(')') + 1;
+        // 如果找不到结尾，尝试其他模式
+        if (imageEnd < cursorPos) {
+            // 可能是 ![alt] 这种不完整格式
+            imageEnd = cursorPos;
         }
 
+        // 提取旧语法
         const oldImageMd = fullText.substring(imageStart, imageEnd);
         const textBeforeImage = fullText.substring(0, imageStart);
         const textAfterImage = fullText.substring(imageEnd);
@@ -1111,7 +1168,7 @@ function insertContentImage(input) {
         const formData = new FormData();
         formData.append('cover_image', file);
 
-        textarea.value = textBeforeImage + `![正在替换图片...](${fileName})` + textAfterImage;
+        textarea.value = textBeforeImage + `![正在上传...]` + textAfterImage;
 
         fetch('{{ url_for("admin.upload_cover_image") }}', {
             method: 'POST',
@@ -1163,7 +1220,7 @@ function insertContentImage(input) {
     const textAfter = textarea.value.substring(textarea.selectionEnd);
 
     // 临时插入上传中提示
-    textarea.value = textBefore + `![正在上传图片...](${fileName})` + textAfter;
+    textarea.value = textBefore + `![正在上传...]` + textAfter;
     showSaveIndicator('正在上传图片...');
 
     fetch('{{ url_for("admin.upload_cover_image") }}', {
@@ -1226,79 +1283,51 @@ function uploadAndReplaceLocalPath(file, localPath, textarea) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            const mdImageRegex = /^!\[([^\]]*)\]\(([^)]+)\)$/;
-            let newImageMd;
-            let replaceStart, replaceEnd;
+            // 生成新的完整图片语法
+            const altText = file.name.replace(/\.[^/.]+$/, '');
+            const newImageMd = `![${altText}](${data.image_url})`;
 
-            // 优先检查选中的文本是否是完整的 Markdown 图片语法
-            if (mdImageRegex.test(selectedText)) {
-                // 选中的是完整的图片语法，替换整个语法
-                const altText = file.name.replace(/\.[^/.]+$/, '');
-                newImageMd = `![${altText}](${data.image_url})`;
+            // 确定要替换的起始和结束位置
+            let replaceStart = start;
+            let replaceEnd = end;
+
+            // 完整的 Markdown 图片语法正则
+            const completeImageRegex = /^!\[([^\]]*)\]\(([^)]+)\)$/;
+            // 不完整的图片语法正则（只有 alt 部分）
+            const incompleteImageRegex = /^!\[([^\]]*)\]?$/;
+
+            // 检查选中的文本是否是图片语法
+            if (completeImageRegex.test(selectedText)) {
+                // 完整的图片语法，直接替换
+                replaceStart = start;
+                replaceEnd = end;
+            } else if (incompleteImageRegex.test(selectedText)) {
+                // 不完整的图片语法（如 ![alt]），替换整个选中部分
                 replaceStart = start;
                 replaceEnd = end;
             } else {
-                // 选中的不是完整图片语法，查找是否在图片语法中
+                // 检查是否在图片语法内部
                 const textBefore = currentValue.substring(0, start);
                 const textAfter = currentValue.substring(end);
 
-                // 查找选中文本前后是否有图片语法标记
-                // 检查前面是否有 ![
-                const beforeBrackets = textBefore.lastIndexOf('![');
-                const beforeParen = textBefore.lastIndexOf('(');
+                // 向前查找 ![ 的位置
+                const exclamationPos = textBefore.lastIndexOf('![');
+                // 向后查找 ) 的位置
+                const closingParenPos = textAfter.indexOf(')');
 
-                // 检查后面是否有 )
-                const afterParen = textAfter.indexOf(')');
-
-                // 判断是否在图片语法内部
-                // 条件：前面有 ![( 或者 [( 且后面有 )
-                const isInImageSyntax = (beforeBrackets >= 0 || (beforeParen >= 0 && beforeBrackets < 0)) && afterParen >= 0;
-
-                if (isInImageSyntax) {
-                    // 尝试找到完整的图片语法起始位置
-                    let imageStart = textBefore.lastIndexOf('![');
-                    if (imageStart < 0) {
-                        // 可能是只有 alt 文本没有 ![ 前缀的情况
-                        // 检查前面是否有 (
-                        imageStart = textBefore.lastIndexOf('(');
+                // 如果前面有 ![ 且后面有 )，说明在图片语法内部
+                if (exclamationPos >= 0 && closingParenPos >= 0) {
+                    const potentialImage = currentValue.substring(exclamationPos, end + closingParenPos + 1);
+                    if (completeImageRegex.test(potentialImage) || incompleteImageRegex.test(potentialImage)) {
+                        replaceStart = exclamationPos;
+                        replaceEnd = end + closingParenPos + 1;
                     }
-
-                    // 找到图片语法结束位置
-                    let imageEnd = end + textAfter.indexOf(')') + 1;
-
-                    // 验证是否能形成完整的图片语法
-                    if (imageStart >= 0 && imageEnd > start && imageEnd <= currentValue.length) {
-                        const potentialImage = currentValue.substring(imageStart, imageEnd);
-                        if (mdImageRegex.test(potentialImage) || /^!\[([^\]]*)\]$/.test(potentialImage)) {
-                            // 在完整的图片语法中或只有 alt 部分，替换整个语法
-                            const altText = file.name.replace(/\.[^/.]+$/, '');
-                            newImageMd = `![${altText}](${data.image_url})`;
-                            replaceStart = imageStart;
-                            replaceEnd = imageEnd;
-                        } else {
-                            // 无法确认，直接替换选中的文本
-                            const altText = file.name.replace(/\.[^/.]+$/, '');
-                            newImageMd = `![${altText}](${data.image_url})`;
-                            replaceStart = start;
-                            replaceEnd = end;
-                        }
-                    } else {
-                        // 无法找到完整的语法，直接替换选中的文本
-                        const altText = file.name.replace(/\.[^/.]+$/, '');
-                        newImageMd = `![${altText}](${data.image_url})`;
-                        replaceStart = start;
-                        replaceEnd = end;
-                    }
-                } else {
-                    // 不在图片语法中，直接替换选中的文本
-                    const altText = file.name.replace(/\.[^/.]+$/, '');
-                    newImageMd = `![${altText}](${data.image_url})`;
-                    replaceStart = start;
-                    replaceEnd = end;
                 }
             }
 
-            // 替换内容
+            // 执行替换：使用原始内容（因为之前已经临时替换了）
+            // 需要重新计算位置，因为内容可能被临时修改过
+            // 所以我们使用 currentValue（修改前的内容）
             textarea.value = currentValue.substring(0, replaceStart) + newImageMd + currentValue.substring(replaceEnd);
 
             // 设置光标位置
