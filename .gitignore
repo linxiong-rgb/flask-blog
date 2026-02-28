@@ -32,20 +32,44 @@ instance/
 *.sqlite
 *.sqlite3
 
+# Logs
+logs/
+*.log
+
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+.project
+.pydevproject
+.settings/
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Environment variables
 .env
 .env.local
+.env.*.local
 
-# Uploaded files
+# Uploaded files (local only, production uses GitHub storage)
 app/static/uploads/
+
+# Claude AI
+.claude/
+
+# Coverage
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/

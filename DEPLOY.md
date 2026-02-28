@@ -131,7 +131,26 @@ git push -u origin main
    }
    ```
 
-#### 第四步：登录后台
+**注意**：如果后续代码更新添加了新字段，可以访问 `/migrate-db` 进行数据库迁移，无需重新初始化。
+
+#### 第四步：验证数据库状态
+
+访问数据库检查端点确认一切正常：
+```
+https://你的应用名.onrender.com/check-db
+```
+
+响应示例：
+```json
+{
+  "success": true,
+  "table_count": 7,
+  "user_count": 1,
+  "admin_exists": true
+}
+```
+
+#### 第五步：登录后台
 
 访问登录页面：
 ```
@@ -432,6 +451,137 @@ docker-compose logs -f
 
 ---
 
+## 安全配置
+
+### 必需安全措施
+
+#### 1. 生成强随机密钥
+
+**生产环境必须设置随机 SECRET_KEY**：
+
+```python
+# Python 生成密钥
+import secrets
+print(secrets.token_hex(32))
+```
+
+#### 2. 修改默认密码
+
+**首次登录后立即修改管理员密码**：
+
+1. 登录后台
+2. 访问 `/admin/profile` 或修改密码页面
+3. 设置强密码（建议 12 位以上，包含大小写字母、数字和符号）
+
+#### 3. 配置 HTTPS
+
+**所有部署方案都应启用 HTTPS**：
+
+- **Render/Vercel**: 自动配置，无需额外操作
+- **VPS**: 使用 Let's Encrypt 免费证书
+
+```bash
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d yourdomain.com
+```
+
+#### 4. 环境变量安全
+
+**禁止将敏感信息提交到 Git**：
+
+```bash
+# .gitignore 应包含
+.env
+instance/
+*.pyc
+__pycache__/
+logs/
+```
+
+#### 5. 限制调试端点
+
+**生产环境应禁用或保护调试端点**：
+
+方法一：通过环境变量控制
+```python
+# config.py
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+if not DEBUG:
+    # 禁用调试端点
+    pass
+```
+
+方法二：使用 IP 白名单
+```python
+from flask import abort
+import ipaddress
+
+ALLOWED_IPS = ['你的IP地址']
+
+@app.before_request
+def limit_remote_addr():
+    client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+    if request.path in ['/init-db', '/check-db', '/migrate-db']:
+        if client_ip not in ALLOWED_IPS:
+            abort(403)
+```
+
+### 推荐安全措施
+
+#### 1. 启用 CSRF 保护（已内置）
+
+所有表单都包含 CSRF Token 验证。
+
+#### 2. 密码强度要求
+
+```python
+# 建议添加密码验证
+def validate_password(password):
+    if len(password) < 8:
+        return False, "密码至少8位"
+    if not re.search(r'[A-Z]', password):
+        return False, "密码需包含大写字母"
+    if not re.search(r'[a-z]', password):
+        return False, "密码需包含小写字母"
+    if not re.search(r'\d', password):
+        return False, "密码需包含数字"
+    return True, ""
+```
+
+#### 3. 登录速率限制
+
+```python
+# 建议使用 Flask-Limiter
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"]
+)
+
+@app.route('/auth/login', methods=['POST'])
+@limiter.limit("5 per minute")
+def login():
+    # 登录逻辑
+```
+
+#### 4. 日志记录
+
+```python
+# 记录关键操作
+import logging
+
+logging.basicConfig(
+    filename='app.log',
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s: %(message)s'
+)
+```
+
+---
+
 ## 域名配置
 
 ### 购买域名
@@ -508,8 +658,36 @@ sudo certbot renew --dry-run
 |------|------|------|
 | `/init-db` | 初始化数据库 | 创建表和默认管理员 |
 | `/check-db` | 检查数据库状态 | 查看表和用户信息 |
+| `/migrate-db` | 数据库迁移 | 添加新列（如文章可见性） |
 
 > **安全提示**：生产环境部署完成后，建议删除或保护这些端点
+
+### 5. 数据库迁移说明
+
+当代码更新添加新的数据库字段时（如 v1.5.0 的文章可见性功能），使用 `/migrate-db` 端点进行迁移：
+
+```bash
+# 访问迁移端点
+https://你的应用.onrender.com/migrate-db
+```
+
+响应示例：
+```json
+{
+  "success": true,
+  "message": "数据库迁移完成！",
+  "results": [
+    "visibility 列添加成功",
+    "access_password 列添加成功"
+  ]
+}
+```
+
+**迁移原理**：
+- 自动检测缺失的列
+- 添加带有默认值的新列
+- 不影响现有数据
+- 支持重复调用（幂等）
 
 ### 5. 数据库连接失败
 
