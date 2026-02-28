@@ -782,6 +782,42 @@ def init_database():
         except Exception as migrate_error:
             current_app.logger.warning(f'迁移检查/执行失败: {str(migrate_error)}')
 
+        # 检查是否需要添加文章可见性列
+        try:
+            from sqlalchemy import text
+            with db.engine.connect() as conn:
+                # 检查 visibility 列是否存在
+                result = conn.execute(text("""
+                    SELECT column_name
+                    FROM information_schema.columns
+                    WHERE table_name = 'post'
+                    AND column_name = 'visibility'
+                """))
+                if not result.fetchone():
+                    current_app.logger.info('检测到缺少 visibility 列，正在添加...')
+                    conn.execute(text("""
+                        ALTER TABLE post ADD COLUMN visibility VARCHAR(20) DEFAULT 'public'
+                    """))
+                    conn.commit()
+                    current_app.logger.info('visibility 列添加成功')
+
+                # 检查 access_password 列是否存在
+                result = conn.execute(text("""
+                    SELECT column_name
+                    FROM information_schema.columns
+                    WHERE table_name = 'post'
+                    AND column_name = 'access_password'
+                """))
+                if not result.fetchone():
+                    current_app.logger.info('检测到缺少 access_password 列，正在添加...')
+                    conn.execute(text("""
+                        ALTER TABLE post ADD COLUMN access_password VARCHAR(100)
+                    """))
+                    conn.commit()
+                    current_app.logger.info('access_password 列添加成功')
+        except Exception as migrate_error:
+            current_app.logger.warning(f'可见性列迁移检查/执行失败: {str(migrate_error)}')
+
         # 检查管理员是否已存在
         admin = User.query.filter_by(username='admin01').first()
         if not admin:
@@ -806,6 +842,73 @@ def init_database():
         return jsonify({
             'success': False,
             'message': f'初始化失败: {str(e)}'
+        }), 500
+
+
+@bp.route('/migrate-db')
+def migrate_database():
+    """
+    数据库迁移路由
+
+    用于添加新的数据库列，不修改现有数据
+    访问该路由将添加文章可见性和密码列
+
+    Returns:
+        JSON: 迁移结果
+    """
+    from app import db
+    from sqlalchemy import text
+
+    results = []
+
+    try:
+        with db.engine.connect() as conn:
+            # 检查并添加 visibility 列
+            result = conn.execute(text("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name = 'post'
+                AND column_name = 'visibility'
+            """))
+            if not result.fetchone():
+                current_app.logger.info('正在添加 visibility 列...')
+                conn.execute(text("""
+                    ALTER TABLE post ADD COLUMN visibility VARCHAR(20) DEFAULT 'public'
+                """))
+                conn.commit()
+                results.append('visibility 列添加成功')
+                current_app.logger.info('visibility 列添加成功')
+            else:
+                results.append('visibility 列已存在')
+
+            # 检查并添加 access_password 列
+            result = conn.execute(text("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name = 'post'
+                AND column_name = 'access_password'
+            """))
+            if not result.fetchone():
+                current_app.logger.info('正在添加 access_password 列...')
+                conn.execute(text("""
+                    ALTER TABLE post ADD COLUMN access_password VARCHAR(100)
+                """))
+                conn.commit()
+                results.append('access_password 列添加成功')
+                current_app.logger.info('access_password 列添加成功')
+            else:
+                results.append('access_password 列已存在')
+
+        return jsonify({
+            'success': True,
+            'message': '数据库迁移完成！',
+            'results': results
+        })
+    except Exception as e:
+        current_app.logger.error(f'数据库迁移失败: {str(e)}')
+        return jsonify({
+            'success': False,
+            'message': f'迁移失败: {str(e)}'
         }), 500
 
 
