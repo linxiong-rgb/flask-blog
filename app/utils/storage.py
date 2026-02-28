@@ -188,7 +188,9 @@ class GitHubStorage(StorageBackend):
 
     def get_url(self, object_name):
         """获取 GitHub 文件访问 URL"""
-        return f'{self.raw_base}/{self.repo}/{self.branch}/{self.path}/{object_name}'
+        # 使用 jsDelivr CDN 加速，国内可直接访问
+        # 格式: https://cdn.jsdelivr.net/gh/user/repo@branch/path/file
+        return f'https://cdn.jsdelivr.net/gh/{self.repo}@{self.branch}/{self.path}/{object_name}'
 
 
 # 全局存储实例

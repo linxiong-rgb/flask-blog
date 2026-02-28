@@ -139,13 +139,15 @@ GITHUB_PATH=images
 使用 GitHub 图床后，图片 URL 格式为：
 
 ```
-https://raw.githubusercontent.com/用户名/仓库名/分支/images/covers/20260228_054451.jpg
+https://cdn.jsdelivr.net/gh/用户名/仓库名@分支/images/covers/20260228_054451.jpg
 ```
 
 例如：
 ```
-https://raw.githubusercontent.com/linxiong-rgb/blog-images/main/images/covers/20260228_054451.jpg
+https://cdn.jsdelivr.net/gh/linxiong-rgb/blog-images@main/images/covers/20260228_054451.jpg
 ```
+
+**注意**：项目使用 jsDelivr CDN 加速，国内可直接访问，无需代理。
 
 ## 迁移现有图片
 
