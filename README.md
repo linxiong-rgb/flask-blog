@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🔐 Flask Blog System
+# Flask Blog System
 
 **现代化、功能完整的 Flask 博客系统**
 
@@ -9,32 +9,28 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/linxiong-rgb/flask-blog?style=social)](https://github.com/linxiong-rgb/flask-blog/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/linxiong-rgb/flask-blog?style=social)](https://github.com/linxiong-rgb/flask-blog/network/members)
-[![GitHub issues](https://img.shields.io/github/issues/linxiong-rgb/flask-blog)](https://github.com/linxiong-rgb/flask-blog/issues)
-[![GitHub pull requests](https://img.shields.io/github/issues-pr/linxiong-rgb/flask-blog)](https://github.com/linxiong-rgb/flask-blog/pulls)
 
 </div>
 
 ---
 
-## ✨ 项目简介
+## 项目简介
 
 一个基于 Flask 开发的现代化博客系统，专注于简洁、高效的用户体验。系统采用 Bootstrap 5 构建响应式前端界面，支持 Markdown 写作、夜间模式、智能搜索等功能。
 
-![Demo](https://img.shields.io/badge/Demo-Online-success?logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij48cGF0aCBkPSJNOCAwaC0ydjJoMnYyek0wIDBoMnYyaDJ2LTJoMnYtMnoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=)
+### 核心特性
 
-### 🎯 核心特性
-
-- 🚀 **快速部署** - 支持多种部署方案（Vercel、Render、Docker、VPS）
-- 📝 **Markdown 写作** - 支持标准 Markdown 语法和代码高亮
-- 🌓 **夜间模式** - 护眼的深色主题，偏好自动保存
-- 🔍 **智能搜索** - 实时搜索建议，支持文章/分类/标签
-- 📱 **响应式设计** - 完美适配手机、平板和电脑
-- 🔐 **用户认证** - Flask-Login 用户认证系统
-- 📊 **数据统计** - 文章浏览量统计
+- **快速部署** - 支持多种部署方案（Vercel、Render、Docker、VPS）
+- **Markdown 写作** - 支持标准 Markdown 语法和代码高亮
+- **夜间模式** - 护眼的深色主题，偏好自动保存
+- **智能搜索** - 实时搜索建议，支持文章/分类/标签
+- **响应式设计** - 完美适配手机、平板和电脑
+- **用户认证** - Flask-Login 用户认证系统
+- **数据统计** - 文章浏览量统计
 
 ---
 
-## 🛠 技术栈
+## 技术栈
 
 | 类别 | 技术 | 版本 |
 |------|------|------|
@@ -43,36 +39,74 @@
 | ORM | SQLAlchemy | 3.1.1 |
 | 用户认证 | Flask-Login | 0.6.3 |
 | CSRF 保护 | Flask-WTF | 1.2.1 |
-| 缓存 | Flask-Caching | 2.1.0 |
+| Markdown | Python-Markdown | 3.5.1 |
+| 图片处理 | Pillow | 10.1.0+ |
+| WSGI 服务器 | Gunicorn | 21.2.0 |
 | 前端框架 | Bootstrap | 5.3.0 |
 | 图标库 | Bootstrap Icons | 1.11.0 |
-| Markdown | Python-Markdown | 3.5.1 |
-| WSGI 服务器 | Gunicorn | 21.2.0 |
 
 ---
 
-## 📸 功能截图
+## 功能特性
 
-### 🏠 首页展示
-- 卡片式文章列表
-- 渐变色主题设计
-- 响应式布局
+### 核心功能
 
-### 📖 文章阅读
-- Typora 风格阅读体验
-- 自动生成目录导航
-- 代码语法高亮
-- 阅读进度条
+- 用户注册和登录 - Flask-Login 用户认证
+- 文章管理 - 创建、编辑、删除文章
+- Markdown 写作 - 支持标准 Markdown 语法
+- 文章状态 - 发布/草稿管理
+- 浏览统计 - 文章浏览量统计
+- 文章收藏 - 用户收藏喜欢的文章
 
-### 🎛️ 管理后台
-- 数据统计仪表板
-- 文章 CRUD 管理
-- 分类/标签管理
-- 友情链接管理
+### 高级功能
+
+- **智能搜索** - 实时搜索建议，支持文章/分类/标签搜索
+- **分类管理** - 将文章组织到不同分类
+- **标签系统** - 多标签支持，标签云展示
+- **文章归档** - 按日期浏览文章
+- **友情链接** - 管理和展示友情链接
+- **RSS 订阅** - 自动生成 RSS Feed
+- **Sitemap** - 自动生成站点地图
+- **文章分享** - 支持微博、QQ、微信分享
+
+### 界面特色
+
+- **夜间模式** - 护眼的深色主题，偏好自动保存
+- **响应式设计** - 完美支持手机、平板和电脑
+- **渐变配色** - 紫色渐变主题，时尚美观
+- **卡片式布局** - Material Design 风格
+- **流畅动画** - 过渡和悬停动画效果
+- **Typora 风格** - 优雅的文章阅读体验
+- **目录导航** - 自动生成文章目录
+- **阅读进度条** - 顶部显示阅读进度
+- **代码高亮** - 代码块语法高亮
+- **字体调节** - 支持字体大小调节
+
+### 管理功能
+
+- **仪表板** - 数据统计和快速操作
+- **文章管理** - 列表视图，删除确认
+- **Markdown 导入** - 支持单个/批量导入 .md 文件
+- **智能摘要** - 自动生成文章摘要
+- **封面图生成** - 自动生成简约封面图
+- **收藏管理** - 查看用户收藏列表
+- **数据导出** - 导出 Markdown/HTML
+- **友链管理** - 后台管理友情链接
+
+### 图片功能
+
+- **字体优化** - 支持楷体/宋体，跨平台中文字体自动检测
+- **封面图生成** - 一键生成简约风格的封面图
+- **重新生成封面** - 可重新生成文章封面图
+- **快捷插入图片** - 编辑器内快捷插入本地图片
+- **本地图片智能提示** - 自动检测并提示上传本地图片路径
+- **图片查看功能** - 图片预览和查看
+- **图片加载优化** - 图片懒加载，优化页面性能
+- **图片上传** - 支持本地上传封面图和内容图片
 
 ---
 
-## 🚀 快速开始
+## 快速开始
 
 ### 环境要求
 
@@ -104,55 +138,11 @@ python run.py
 - 用户名: `admin01`
 - 密码: `123456`
 
-> ⚠️ **安全提醒**：首次使用后请立即修改默认密码！
+> **安全提醒**：首次使用后请立即修改默认密码！
 
 ---
 
-## 📖 功能特点
-
-### 📝 核心功能
-- ✅ 用户注册和登录 - Flask-Login 用户认证
-- ✅ 文章管理 - 创建、编辑、删除文章
-- ✅ Markdown 写作 - 支持标准 Markdown 语法
-- ✅ 文章状态 - 发布/草稿管理
-- ✅ 浏览统计 - 文章浏览量统计
-- ✅ 文章收藏 - 用户收藏喜欢的文章
-
-### 🎯 高级功能
-- ✅ **智能搜索** - 实时搜索建议，支持文章/分类/标签搜索
-- ✅ **分类管理** - 将文章组织到不同分类
-- ✅ **标签系统** - 多标签支持，标签云展示
-- ✅ **文章归档** - 按日期浏览文章
-- ✅ **友情链接** - 管理和展示友情链接
-- ✅ **RSS 订阅** - 自动生成 RSS Feed
-- ✅ **Sitemap** - 自动生成站点地图
-- ✅ **文章分享** - 支持微博、QQ、微信分享
-
-### 🎨 界面特色
-- ✅ **夜间模式** - 护眼的深色主题，偏好自动保存
-- ✅ **响应式设计** - 完美支持手机、平板和电脑
-- ✅ **渐变配色** - 紫色渐变主题，时尚美观
-- ✅ **卡片式布局** - Material Design 风格
-- ✅ **流畅动画** - 过渡和悬停动画效果
-- ✅ **Typora 风格** - 优雅的文章阅读体验
-- ✅ **目录导航** - 自动生成文章目录
-- ✅ **阅读进度条** - 顶部显示阅读进度
-- ✅ **代码高亮** - 代码块语法高亮
-- ✅ **字体调节** - 支持字体大小调节
-
-### 🔧 管理功能
-- ✅ **仪表板** - 数据统计和快速操作
-- ✅ **文章管理** - 列表视图，删除确认
-- ✅ **Markdown 导入** - 支持单个/批量导入 .md 文件
-- ✅ **智能摘要** - 自动生成文章摘要
-- ✅ **封面图生成** - 自动生成简约封面图
-- ✅ **收藏管理** - 查看用户收藏列表
-- ✅ **数据导出** - 导出 Markdown/HTML
-- ✅ **友链管理** - 后台管理友情链接
-
----
-
-## 📁 项目结构
+## 项目结构
 
 ```
 flask-blog/
@@ -184,14 +174,13 @@ flask-blog/
 │   │   ├── css/             # 样式文件
 │   │   ├── js/              # JavaScript
 │   │   ├── vendor/          # 第三方库
+│   │   ├── fonts/           # 字体文件
 │   │   └── uploads/         # 上传文件
 │   ├── forms.py             # 表单类
 │   ├── utils/               # 工具函数
+│   │   └── image_generator.py  # 封面图生成器
 │   └── security.py          # 安全配置
 ├── instance/                # 实例文件夹
-├── .github/                 # GitHub 配置
-│   ├── ISSUE_TEMPLATE/      # Issue 模板
-│   └── pull_request_template.md
 ├── requirements.txt         # 依赖列表
 ├── run.py                   # 启动脚本
 ├── reset_database.py        # 数据库重置脚本
@@ -203,7 +192,7 @@ flask-blog/
 
 ---
 
-## 🎛 配置说明
+## 配置说明
 
 ### 环境变量
 
@@ -224,9 +213,20 @@ flask-blog/
 - `--bg-color` - 背景色
 - `--card-bg` - 卡片背景色
 
+### 字体配置
+
+项目支持跨平台中文字体，字体文件应放置在 `app/static/fonts/` 目录：
+
+- `simkai.ttf` - 楷体
+- `simsun.ttc` / `simsunb.ttf` - 宋体/粗宋体
+- `msyh.ttc` / `msyhbd.ttc` - 微软雅黑
+- `simhei.ttf` - 黑体
+
+系统会自动检测并使用可用的字体。
+
 ---
 
-## 🐛 常见问题
+## 常见问题
 
 ### 端口被占用
 
@@ -263,9 +263,23 @@ https://你的域名/init-db
 2. 使用 `/check-db` 检查用户是否存在
 3. 查看应用日志获取详细错误信息
 
+### 图片上传失败
+
+确保：
+1. `app/static/uploads/covers/` 目录存在且有写入权限
+2. 图片格式支持（PNG、JPG、GIF、WebP）
+3. 图片大小不超过限制（默认 16MB）
+
+### 封面图生成失败
+
+确保：
+1. 系统已安装 Pillow 库
+2. 字体文件存在于 `app/static/fonts/` 目录
+3. 查看日志获取详细错误信息
+
 ---
 
-## 🚢 部署指南
+## 部署指南
 
 ### 快速部署到 Render
 
@@ -305,7 +319,7 @@ https://你的域名/init-db
 
 ---
 
-## 🤝 贡献
+## 贡献
 
 欢迎贡献代码！请查看 [CONTRIBUTING.md](CONTRIBUTING.md) 了解详情。
 
@@ -319,13 +333,13 @@ https://你的域名/init-db
 
 ---
 
-## 📄 开源协议
+## 开源协议
 
 本项目采用 [MIT License](LICENSE) 开源协议。
 
 ---
 
-## 📮 联系方式
+## 联系方式
 
 - **作者**: linxiong-rgb
 - **邮箱**: 3497875641@qq.com
@@ -333,15 +347,36 @@ https://你的域名/init-db
 
 ---
 
-## ⭐ Star History
+## 更新日志
 
-[![Star History Chart](https://api.star-history.com/svg?repos=linxiong-rgb/flask-blog&type=Date)](https://star-history.com/#linxiong-rgb/flask-blog&Date)
+### v1.2.0 (最新)
+
+- **新增** 字体优化功能 - 支持楷体/宋体，跨平台字体检测
+- **新增** 重新生成封面图功能
+- **新增** 快捷插入图片功能
+- **新增** 本地图片智能提示功能
+- **新增** 图片查看功能
+- **优化** 图片加载性能 - 懒加载支持
+- **优化** 封面图生成器 - 支持更多字体和智能字体大小
+
+### v1.1.0
+
+- **新增** Markdown 文件批量导入
+- **新增** 自动生成文章摘要
+- **新增** 图片上传和优化
+- **优化** 编辑器用户体验
+
+### v1.0.0
+
+- 初始版本发布
+- 完整的博客功能
+- 用户认证和权限管理
 
 ---
 
 <div align="center">
 
-**如果觉得项目对你有帮助，请给个 Star ⭐**
+**如果觉得项目对你有帮助，请给个 Star**
 
 Made with ❤️ using Flask
 

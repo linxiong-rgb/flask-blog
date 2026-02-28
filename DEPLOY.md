@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🚀 Flask Blog 部署指南
+# Flask Blog 部署指南
 
 **多种部署方案，轻松将博客上线**
 
@@ -8,10 +8,10 @@
 
 ---
 
-## 📋 目录
+## 目录
 
 - [部署前准备](#部署前准备)
-- [方案一：Render 部署](#方案一render-部署推荐)
+- [方案一：Render 部署（推荐）](#方案一render-部署推荐)
 - [方案二：Vercel + PostgreSQL](#方案二vercel--postgresql)
 - [方案三：传统 VPS 部署](#方案三传统-vps-部署)
 - [方案四：Docker 部署](#方案四docker-部署)
@@ -34,7 +34,7 @@ python reset_database.py
 - 用户名: `admin01`
 - 密码: `123456`
 
-> ⚠️ **安全提醒**：部署后请立即修改默认密码！
+> **安全提醒**：部署后请立即修改默认密码！
 
 ### 2. 准备代码仓库
 
@@ -49,15 +49,27 @@ git branch -M main
 git push -u origin main
 ```
 
+### 3. 字体文件准备（可选）
+
+如果需要使用封面图生成功能，建议将中文字体文件放置在 `app/static/fonts/` 目录：
+
+- `simkai.ttf` - 楷体
+- `simsun.ttc` / `simsunb.ttf` - 宋体/粗宋体
+- `msyh.ttc` / `msyhbd.ttc` - 微软雅黑
+
+系统会自动检测并使用可用的字体。
+
 ---
 
 ## 方案一：Render 部署（推荐）
 
 ### 优势
-- ✅ 免费套餐
-- ✅ 自动部署
-- ✅ 自动 HTTPS
-- ✅ PostgreSQL 数据库
+
+- 免费套餐
+- 自动部署
+- 自动 HTTPS
+- PostgreSQL 数据库
+- 零配置启动
 
 ### 部署步骤
 
@@ -68,7 +80,7 @@ git push -u origin main
 3. 配置数据库：
    - 数据库名: `flaskblog`
    - 用户名: 随机生成
-   - 区域: Singapore（推荐）
+   - 区域: Singapore（推荐，国内访问快）
 4. 选择 **Free** 套餐并创建
 5. 复制 **Internal Database URL**
 
@@ -130,17 +142,28 @@ https://你的应用名.onrender.com/auth/login
 - 用户名: `admin01`
 - 密码: `123456`
 
-> ⚠️ **安全提醒**：首次登录后请立即修改默认密码！
+> **安全提醒**：首次登录后请立即修改默认密码！
+
+#### 第五步：配置字体（可选）
+
+如果需要使用封面图生成功能，可以通过 Render 的 Shell 功能上传字体文件：
+
+1. 进入 Render Dashboard
+2. 选择你的 Web Service
+3. 点击 "Shell" 进入命令行
+4. 上传字体文件到 `app/static/fonts/` 目录
 
 ---
 
 ## 方案二：Vercel + PostgreSQL
 
 ### 优势
-- ✅ 全球 CDN
-- ✅ 自动 HTTPS
-- ✅ 极快的部署速度
-- ✅ 免费额度充足
+
+- 全球 CDN
+- 自动 HTTPS
+- 极快的部署速度
+- 免费额度充足
+- 边缘计算
 
 ### 部署步骤
 
@@ -171,6 +194,13 @@ https://你的应用名.onrender.com/auth/login
    DEBUG=False
    ```
 6. 部署！
+
+#### 第三步：初始化数据库
+
+部署完成后访问：
+```
+https://你的应用.vercel.app/init-db
+```
 
 ---
 
@@ -239,7 +269,7 @@ DEBUG=False
 EOF
 ```
 
-#### 4. 配置 Supervisor
+#### 5. 配置 Supervisor
 
 ```bash
 sudo tee /etc/supervisor/conf.d/flaskblog.conf << EOF
@@ -254,7 +284,7 @@ stdout_logfile=/var/log/flaskblog.out.log
 EOF
 ```
 
-#### 5. 配置 Nginx
+#### 6. 配置 Nginx
 
 ```bash
 sudo tee /etc/nginx/sites-available/flaskblog << EOF
@@ -272,6 +302,8 @@ server {
 
     location /static {
         alias /var/www/flask-blog/app/static;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
     }
 }
 EOF
@@ -282,7 +314,7 @@ sudo nginx -t
 sudo systemctl restart nginx
 ```
 
-#### 6. 启动服务
+#### 7. 启动服务
 
 ```bash
 sudo supervisorctl reread
@@ -445,7 +477,7 @@ sudo certbot renew --dry-run
 | `/init-db` | 初始化数据库 | 创建表和默认管理员 |
 | `/check-db` | 检查数据库状态 | 查看表和用户信息 |
 
-> ⚠️ **安全提示**：生产环境部署完成后，建议删除或保护这些端点
+> **安全提示**：生产环境部署完成后，建议删除或保护这些端点
 
 ### 5. 数据库连接失败
 
@@ -499,16 +531,37 @@ docker-compose restart
 git push 会自动触发重新部署
 ```
 
+### 10. 封面图生成失败
+
+**可能原因**：
+- 字体文件不存在
+- Pillow 库未安装
+- 权限问题
+
+**解决方案**：
+1. 确认字体文件在 `app/static/fonts/` 目录
+2. 检查 Pillow 是否安装：`pip list | grep Pillow`
+3. 确保 `app/static/uploads/covers/` 目录有写入权限
+4. 查看应用日志获取详细错误信息
+
+### 11. 图片上传失败
+
+**检查项**：
+- [ ] 上传目录是否存在且有写入权限
+- [ ] 图片格式是否支持（PNG、JPG、GIF、WebP）
+- [ ] 图片大小是否超过限制
+- [ ] 查看 Nginx/应用日志
+
 ---
 
 ## 平台对比
 
-| 平台 | 免费额度 | 优点 | 缺点 |
-|------|---------|------|------|
-| **Render** | 750h/月 | 自动部署，PostgreSQL | 休眠慢 |
-| **Vercel** | 100GB/月 | 全球CDN，极快 | 需要 DB |
-| **VPS** | 取决于配置 | 完全控制 | 需运维 |
-| **Docker** | 取决于配置 | 环境一致 | 学习成本 |
+| 平台 | 免费额度 | 优点 | 缺点 | 推荐度 |
+|------|---------|------|------|--------|
+| **Render** | 750h/月 | 自动部署，PostgreSQL | 休眠慢 | ⭐⭐⭐⭐⭐ |
+| **Vercel** | 100GB/月 | 全球CDN，极快 | 需要单独配置 DB | ⭐⭐⭐⭐ |
+| **VPS** | 取决于配置 | 完全控制 | 需运维 | ⭐⭐⭐ |
+| **Docker** | 取决于配置 | 环境一致 | 学习成本 | ⭐⭐⭐⭐ |
 
 ---
 
@@ -559,6 +612,12 @@ git push 会自动触发重新部署
    }
    ```
 
+### 图片优化
+
+1. **启用图片懒加载** - 已内置
+2. **使用 WebP 格式** - 减少图片大小
+3. **配置 CDN** - 加速图片加载
+
 ---
 
 ## 备份建议
@@ -608,6 +667,7 @@ tar -czf uploads_$(date +%Y%m%d).tar.gz app/static/uploads/
 |------|------|
 | `README.md` | 项目介绍文档 |
 | `DEPLOY.md` | 本部署文档 |
+| `CONTRIBUTING.md` | 贡献指南 |
 | `requirements.txt` | Python 依赖 |
 | `reset_database.py` | 数据库重置脚本 |
 | `run.py` | 启动脚本 |
@@ -642,15 +702,15 @@ tar -czf uploads_$(date +%Y%m%d).tar.gz app/static/uploads/
 
 ## 获取帮助
 
-- 📧 **邮箱**: 3497875641@qq.com
-- 💬 **Issues**: [GitHub Issues](https://github.com/linxiong-rgb/flask-blog/issues)
-- 📖 **文档**: [完整文档](https://github.com/linxiong-rgb/flask-blog)
+- **邮箱**: 3497875641@qq.com
+- **Issues**: [GitHub Issues](https://github.com/linxiong-rgb/flask-blog/issues)
+- **文档**: [完整文档](https://github.com/linxiong-rgb/flask-blog)
 
 ---
 
 <div align="center">
 
-**祝你部署顺利！** 🎉
+**祝你部署顺利！**
 
 如有问题，欢迎反馈
 
