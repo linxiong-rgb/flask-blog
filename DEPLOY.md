@@ -153,6 +153,38 @@ https://你的应用名.onrender.com/auth/login
 3. 点击 "Shell" 进入命令行
 4. 上传字体文件到 `app/static/fonts/` 目录
 
+#### 第六步：配置 GitHub 图床（重要）
+
+> **为什么需要 GitHub 图床？**
+>
+> Render 免费版的文件系统是临时的，服务重启后上传的图片会丢失。使用 GitHub 仓库存储图片可以永久保存。
+
+**优势：完全免费，无需信用卡**
+
+1. 创建 GitHub 仓库
+   - 登录 [GitHub](https://github.com)
+   - 点击 `+` → **New repository**
+   - 创建公开仓库 `blog-images`
+
+2. 创建 Personal Access Token
+   - 进入 **Settings** → **Developer settings** → **Personal access tokens**
+   - 点击 **Generate new token (classic)**
+   - 勾选 `repo` 权限
+   - 复制生成的 Token
+
+3. 在 Render 添加环境变量：
+
+| 环境变量 | 值 |
+|---------|-----|
+| `GITHUB_TOKEN` | 你的 Personal Access Token |
+| `GITHUB_REPO` | `用户名/blog-images` |
+| `GITHUB_BRANCH` | `main` |
+| `GITHUB_PATH` | `images` |
+
+4. 触发重新部署
+
+**详细配置指南**：查看 [docs/GITHUB_STORAGE.md](docs/GITHUB_STORAGE.md)
+
 ---
 
 ## 方案二：Vercel + PostgreSQL
@@ -551,6 +583,16 @@ git push 会自动触发重新部署
 - [ ] 图片格式是否支持（PNG、JPG、GIF、WebP）
 - [ ] 图片大小是否超过限制
 - [ ] 查看 Nginx/应用日志
+
+### 12. 图片返回 404 错误（重启后）
+
+**症状**：图片上传成功后，服务重启显示 404
+
+**原因**：Render 免费版文件系统是临时的
+
+**解决方案**：
+1. 配置 GitHub 图床（推荐，完全免费）
+2. 详见 [docs/GITHUB_STORAGE.md](docs/GITHUB_STORAGE.md)
 
 ---
 

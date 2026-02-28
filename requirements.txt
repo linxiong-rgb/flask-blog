@@ -29,5 +29,8 @@ feedgen==0.9.0
 # 图片处理
 Pillow>=10.1.0
 
+# HTTP 请求（GitHub API）
+requests>=2.31.0
+
 # PostgreSQL 数据库（Render 部署使用）
 psycopg2-binary==2.9.10

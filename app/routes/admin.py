@@ -22,7 +22,9 @@ from app.models.user import User
 from app.models.friend_link import FriendLink
 from app.models.post_bookmark import PostBookmark
 from app import db
+from app.utils.storage import get_storage, reset_storage
 from PIL import Image
+from io import BytesIO
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -100,9 +102,10 @@ def dashboard():
 @login_required
 def upload_cover_image():
     """
-    上传封面图片
+    上传封面图片或内容图片
 
     处理图片上传、验证和优化
+    支持本地存储和 GitHub 仓库存储
 
     Returns:
         JSON响应：包含成功状态和图片URL或错误消息
@@ -125,27 +128,65 @@ def upload_cover_image():
         }), 400
 
     try:
-        # 确保上传目录存在
-        upload_folder = current_app.config['UPLOAD_FOLDER']
-        os.makedirs(upload_folder, exist_ok=True)
-
         # 生成唯一文件名
         filename = generate_unique_filename(file.filename)
-        file_path = os.path.join(upload_folder, filename)
 
-        # 保存文件
-        file.save(file_path)
+        # 获取存储后端
+        storage = get_storage()
 
-        # 处理图片（验证和优化）
-        success, message = process_image(file_path)
-        if not success:
-            # 处理失败，删除文件
-            if os.path.exists(file_path):
-                os.remove(file_path)
-            return jsonify({'success': False, 'message': message}), 400
+        # 检测存储类型
+        is_github = hasattr(storage, 'token')
 
-        # 返回图片URL（相对路径）
-        image_url = f'/static/uploads/covers/{filename}'
+        if is_github:
+            # 使用 GitHub 存储：直接上传文件对象
+            object_name = f'covers/{filename}'
+
+            # 先处理图片（验证和优化）
+            file.seek(0)
+            img_data = file.read()
+
+            # 使用 PIL 处理图片
+            try:
+                with Image.open(BytesIO(img_data)) as img:
+                    # 验证图片尺寸
+                    if img.size[0] > MAX_IMAGE_SIZE[0] or img.size[1] > MAX_IMAGE_SIZE[1]:
+                        # 调整图片大小
+                        img.thumbnail(MAX_IMAGE_SIZE, Image.Resampling.LANCZOS)
+
+                    # 保存到内存
+                    output = BytesIO()
+                    img_format = img.format or 'JPEG'
+                    img.save(output, format=img_format, quality=95, optimize=True)
+                    output.seek(0)
+
+                    # 上传到 GitHub
+                    if storage.upload_fileobj(output, object_name):
+                        image_url = storage.get_url(object_name)
+                    else:
+                        return jsonify({'success': False, 'message': '上传到 GitHub 失败'}), 500
+            except Exception as e:
+                return jsonify({'success': False, 'message': f'图片处理失败: {str(e)}'}), 400
+
+        else:
+            # 使用本地存储
+            upload_folder = current_app.config['UPLOAD_FOLDER']
+            os.makedirs(upload_folder, exist_ok=True)
+
+            file_path = os.path.join(upload_folder, filename)
+
+            # 保存文件
+            file.save(file_path)
+
+            # 处理图片（验证和优化）
+            success, message = process_image(file_path)
+            if not success:
+                # 处理失败，删除文件
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                return jsonify({'success': False, 'message': message}), 400
+
+            # 返回本地存储的图片URL
+            image_url = f'/static/uploads/covers/{filename}'
 
         return jsonify({
             'success': True,
@@ -154,6 +195,7 @@ def upload_cover_image():
         })
 
     except Exception as e:
+        current_app.logger.error(f'图片上传失败: {str(e)}')
         return jsonify({'success': False, 'message': f'上传失败: {str(e)}'}), 500
 
 
