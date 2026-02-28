@@ -726,8 +726,14 @@ function optimizeImages() {
             img.setAttribute('decoding', 'async');
         }
 
-        // 添加加载类
-        img.classList.add('lazy-image');
+        // 检查图片是否已经加载完成
+        if (img.complete && img.naturalHeight !== 0) {
+            // 图片已加载完成，直接显示
+            img.classList.add('image-loaded');
+        } else {
+            // 图片未加载，添加加载类
+            img.classList.add('lazy-image');
+        }
 
         // 加载完成处理
         img.addEventListener('load', function() {
