@@ -781,13 +781,17 @@ def delete_friend_link(link_id):
 @login_required
 def regenerate_covers():
     """
-    为所有文章重新生成封面图
+    为当前用户的所有文章重新生成封面图
+
+    限制：
+    - 只处理当前登录用户创建的文章
+    - 跳过已上传封面图的文章（非自动生成的封面）
 
     Returns:
         JSON: 生成结果
     """
-    # 获取所有文章
-    posts = Post.query.all()
+    # 只获取当前用户的文章
+    posts = Post.query.filter_by(user_id=current_user.id).all()
 
     if not posts:
         return jsonify({'success': True, 'message': '没有文章', 'count': 0})
@@ -795,10 +799,26 @@ def regenerate_covers():
     from app.utils.image_generator import generate_cover_from_post
 
     success_count = 0
+    skipped_count = 0  # 跳过的文章数（已有上传的封面图）
     failed_count = 0
     failed_posts = []
+    skipped_posts = []  # 记录跳过的文章
 
     for post in posts:
+        # 检查是否有封面图
+        if post.cover_image:
+            # 判断是否是自动生成的封面图
+            # 自动生成的封面图路径格式：/static/uploads/covers/cover_
+            # 用户上传的封面图通常包含 uploads 但不是 cover_ 开头
+            if '/static/uploads/covers/cover_' in post.cover_image:
+                # 是自动生成的，可以重新生成
+                pass
+            else:
+                # 是用户上传的图片，跳过
+                skipped_count += 1
+                skipped_posts.append(post.title)
+                continue
+
         try:
             post.cover_image = generate_cover_from_post(post)
             success_count += 1
@@ -808,14 +828,24 @@ def regenerate_covers():
 
     try:
         db.session.commit()
-        message = f'成功生成 {success_count} 张封面图'
+
+        # 构建返回消息
+        message_parts = []
+        if success_count > 0:
+            message_parts.append(f'成功生成 {success_count} 张封面图')
+        if skipped_count > 0:
+            message_parts.append(f'跳过 {skipped_count} 篇已有封面图的文章')
         if failed_count > 0:
-            message += f'，失败 {failed_count} 张'
+            message_parts.append(f'失败 {failed_count} 张')
+
+        message = '，'.join(message_parts) if message_parts else '没有处理任何文章'
 
         return jsonify({
             'success': True,
             'message': message,
             'count': success_count,
+            'skipped': skipped_count,
+            'skipped_posts': skipped_posts[:10],  # 最多返回10个跳过的文章
             'failed': failed_count,
             'failed_posts': failed_posts[:10]  # 最多返回10个失败项
         })
