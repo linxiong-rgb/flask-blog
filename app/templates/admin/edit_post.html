@@ -1006,14 +1006,35 @@ function getSelectedText(textarea) {
 function isLocalImagePath(text) {
     if (!text) return false;
 
+    // 移除可能的 Markdown 图片语法包裹
+    let cleanText = text;
+
+    // 如果文本包含完整的 Markdown 图片语法 ![alt](url)，提取其中的 URL 部分
+    const mdImageRegex = /^!\[([^\]]*)\]\(([^)]+)\)$/;
+    const match = text.match(mdImageRegex);
+    if (match) {
+        cleanText = match[2]; // 使用 URL 部分
+    }
+
     // 检查是否是 Windows 路径
-    if (text.length >= 2 && text[1] === ':' && text[0].isalpha()) {
+    if (cleanText.length >= 2 && cleanText[1] === ':' && cleanText[0].match(/[a-z]/i)) {
         return true;
     }
 
-    // 检查是否以 .jpg, .png, .gif 等图片扩展名结尾
+    // 检查是否是本地路径（以 /static/ 开头或相对路径）
+    if (cleanText.startsWith('/static/') || cleanText.startsWith('./') || cleanText.startsWith('../')) {
+        return true;
+    }
+
+    // 检查是否以 .jpg, .png, .gif 等图片扩展名结尾（但不是完整的 URL）
     const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
-    const lowerText = text.toLowerCase();
+    const lowerText = cleanText.toLowerCase();
+
+    // 如果是完整的 HTTP(S) URL，不认为是本地路径
+    if (lowerText.startsWith('http://') || lowerText.startsWith('https://')) {
+        return false;
+    }
+
     return imageExtensions.some(ext => lowerText.endsWith(ext));
 }
 
@@ -1139,6 +1160,69 @@ function insertContentImage(input) {
     }
 
     const textarea = document.getElementById('content');
+    const cursorPos = textarea.selectionStart;
+    const textBeforeCursor = textarea.value.substring(0, cursorPos);
+    const textAfterCursor = textarea.value.substring(cursorPos);
+
+    // 检查光标是否在已有的 Markdown 图片语法中
+    // 查找光标前的 ![ 和可能的 ](
+    const beforeImageSyntax = textBeforeCursor.match(/!\[[^\]]*?\]?$/);
+    const afterImageSyntax = textAfterCursor.match(/^\]?\([^\)]*$/);
+
+    if (beforeImageSyntax && afterImageSyntax) {
+        // 光标在已有的图片语法中间，询问用户是否要替换
+        if (!confirm('检测到光标在已有的图片语法中，是否要替换该图片？')) {
+            input.value = '';
+            return;
+        }
+
+        // 找到完整的图片语法
+        const fullText = textarea.value;
+        let imageStart = textBeforeCursor.lastIndexOf('![');
+        let imageEnd = cursorPos + textAfterCursor.indexOf(')') + 1;
+
+        if (imageEnd <= imageStart) {
+            imageEnd = cursorPos + textAfterCursor.indexOf(')') + 1;
+        }
+
+        const oldImageMd = fullText.substring(imageStart, imageEnd);
+        const textBeforeImage = fullText.substring(0, imageStart);
+        const textAfterImage = fullText.substring(imageEnd);
+
+        // 上传新图片并替换
+        const fileName = file.name.replace(/\.[^/.]+$/, '');
+        const formData = new FormData();
+        formData.append('cover_image', file);
+
+        textarea.value = textBeforeImage + `![正在替换图片...](${fileName})` + textAfterImage;
+
+        fetch('{{ url_for("admin.upload_cover_image") }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const newImageMd = `![${fileName}](${data.image_url})`;
+                textarea.value = textBeforeImage + newImageMd + textAfterImage;
+                showSaveIndicator('图片已替换！');
+            } else {
+                textarea.value = fullText;
+                alert('上传失败: ' + data.message);
+            }
+        })
+        .catch(error => {
+            textarea.value = fullText;
+            alert('上传失败: ' + error.message);
+        })
+        .finally(() => {
+            input.value = '';
+        });
+        return;
+    }
 
     // 检查是否有选中的文字（可能是本地路径）
     const selectedText = getSelectedText(textarea);
@@ -1150,7 +1234,7 @@ function insertContentImage(input) {
         return;
     }
 
-    // 否则使用原有的插入模式
+    // 正常插入模式
     const fileName = file.name.replace(/\.[^/.]+$/, '');
 
     // 创建 FormData 上传文件
@@ -1158,9 +1242,8 @@ function insertContentImage(input) {
     formData.append('cover_image', file);
 
     // 显示上传中状态
-    const cursorPos = textarea.selectionStart;
-    const textBefore = textarea.value.substring(0, cursorPos);
-    const textAfter = textarea.value.substring(cursorPos);
+    const textBefore = textarea.value.substring(0, textarea.selectionStart);
+    const textAfter = textarea.value.substring(textarea.selectionEnd);
 
     // 临时插入上传中提示
     textarea.value = textBefore + `![正在上传图片...](${fileName})` + textAfter;
@@ -1181,7 +1264,7 @@ function insertContentImage(input) {
             textarea.value = textBefore + imageMd + textAfter;
 
             // 设置光标位置到插入的图片后面
-            const newCursorPos = cursorPos + imageMd.length;
+            const newCursorPos = textBefore.length + imageMd.length;
             textarea.setSelectionRange(newCursorPos, newCursorPos);
             textarea.focus();
 
