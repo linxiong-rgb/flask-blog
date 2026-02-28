@@ -88,7 +88,14 @@
             <!-- 封面图 -->
             {% if post.cover_image %}
                 <div class="typora-cover">
-                    <img src="{{ post.cover_image }}" alt="{{ post.title }}">
+                    <img
+                        src="{{ post.cover_image }}"
+                        alt="{{ post.title }}"
+                        loading="lazy"
+                        decoding="async"
+                        class="lazy-image"
+                        onerror="this.onerror=null; this.src='{{ url_for('static', filename='img/default-og.png') }}'; this.classList.add('image-error');"
+                        onload="this.classList.add('image-loaded');">
                 </div>
             {% endif %}
 
@@ -693,5 +700,128 @@ function fallbackCopyLink(text) {
 
     document.body.removeChild(textarea);
 }
+
+// ========================================
+// 图片懒加载优化
+// ========================================
+
+// 为文章内容中的所有图片添加懒加载和错误处理
+function optimizeImages() {
+    const images = document.querySelectorAll('#articleContent img, .typora-content img, article img');
+
+    images.forEach(img => {
+        // 如果已经有 loading 属性则跳过
+        if (img.hasAttribute('data-loading-optimized')) {
+            return;
+        }
+        img.setAttribute('data-loading-optimized', 'true');
+
+        // 添加懒加载属性
+        if (!img.hasAttribute('loading')) {
+            img.setAttribute('loading', 'lazy');
+        }
+
+        // 添加异步解码属性
+        if (!img.hasAttribute('decoding')) {
+            img.setAttribute('decoding', 'async');
+        }
+
+        // 添加加载类
+        img.classList.add('lazy-image');
+
+        // 加载完成处理
+        img.addEventListener('load', function() {
+            this.classList.add('image-loaded');
+            this.classList.remove('lazy-image');
+        });
+
+        // 错误处理 - 图片加载失败时显示默认图片
+        img.addEventListener('error', function() {
+            // 只处理一次错误，避免无限循环
+            if (!this.hasAttribute('data-error-handled')) {
+                this.setAttribute('data-error-handled', 'true');
+                this.classList.add('image-error');
+                this.classList.remove('lazy-image');
+
+                // 设置默认图片
+                const defaultImg = "{{ url_for('static', filename='img/default-og.png') }}";
+                if (this.src !== defaultImg) {
+                    this.src = defaultImg;
+                    this.alt = "图片加载失败";
+                }
+            }
+        });
+    });
+}
+
+// 页面加载完成后优化图片
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', optimizeImages);
+} else {
+    optimizeImages();
+}
+
+// 为相关文章的图片也添加优化
+const relatedImages = document.querySelectorAll('.related-post-img img');
+relatedImages.forEach(img => {
+    if (!img.hasAttribute('loading')) {
+        img.setAttribute('loading', 'lazy');
+    }
+    if (!img.hasAttribute('decoding')) {
+        img.setAttribute('decoding', 'async');
+    }
+    img.classList.add('lazy-image');
+    img.addEventListener('load', function() {
+        this.classList.add('image-loaded');
+    });
+});
+
+// 图片占位符功能
+function createImagePlaceholder(container) {
+    const placeholder = document.createElement('div');
+    placeholder.className = 'image-placeholder';
+    placeholder.innerHTML = '<div class="image-loading-indicator"><i class="bi bi-hourglass-split"></i> 加载中...</div>';
+    return placeholder;
+}
+
+// 图片渐进式加载（可选功能）
+function enableProgressiveLoading() {
+    const images = document.querySelectorAll('img[data-src]');
+
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                const src = img.getAttribute('data-src');
+
+                if (src) {
+                    // 先加载低质量占位图
+                    if (img.hasAttribute('data-src-low')) {
+                        img.src = img.getAttribute('data-src-low');
+                    }
+
+                    // 然后加载高质量图片
+                    const highQualityImg = new Image();
+                    highQualityImg.src = src;
+                    highQualityImg.onload = function() {
+                        img.src = src;
+                        img.classList.add('image-loaded');
+                    };
+
+                    observer.unobserve(img);
+                }
+            }
+        });
+    }, {
+        rootMargin: '50px',
+        threshold: 0.01
+    });
+
+    images.forEach(img => imageObserver.observe(img));
+}
+
+// 启用渐进式加载（如果需要）
+// enableProgressiveLoading();
+
 </script>
 {% endblock %}

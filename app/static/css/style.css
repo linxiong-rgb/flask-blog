@@ -3110,3 +3110,132 @@ select:focus-visible {
     gap: 1rem;
     margin-bottom: 2rem;
 }
+
+/* ========================================
+   图片加载优化
+   ======================================== */
+
+/* 图片懒加载基础样式 */
+.lazy-image {
+    opacity: 0;
+    transition: opacity 0.3s ease, filter 0.3s ease;
+    background: linear-gradient(90deg, var(--bg-color) 25%, var(--border-color) 50%, var(--bg-color) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+/* 图片加载完成 */
+.lazy-image.image-loaded {
+    opacity: 1;
+    background: none;
+    animation: none;
+}
+
+/* 图片加载动画 */
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* 图片加载错误状态 */
+.lazy-image.image-error {
+    opacity: 0.7;
+    background: var(--border-color);
+    filter: grayscale(100%);
+}
+
+/* 文章内容中的图片优化 */
+.typora-content img,
+article img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.typora-content img:hover,
+article img:hover {
+    transform: scale(1.02);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* 封面图优化 */
+.typora-cover img {
+    width: 100%;
+    height: auto;
+    max-height: 400px;
+    object-fit: cover;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* 文章卡片图片优化 */
+.post-card-img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.post-card:hover .post-card-img {
+    transform: scale(1.05);
+}
+
+/* 图片容器 - 用于图片占位符 */
+.image-placeholder {
+    background: var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+.image-placeholder::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+    animation: shimmer 1.5s infinite;
+}
+
+/* 图片加载指示器 */
+.image-loading-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--text-light);
+    font-size: 14px;
+    z-index: 1;
+}
+
+/* 响应式图片 */
+@media (max-width: 768px) {
+    .typora-cover img {
+        max-height: 250px;
+    }
+    
+    .post-card-img {
+        height: 150px;
+    }
+}
+
+/* 深色模式下的图片优化 */
+[data-theme="dark"] .lazy-image {
+    background: linear-gradient(90deg, #2d3748 25%, #4a5568 50%, #2d3748 75%);
+    background-size: 200% 100%;
+}
+
+[data-theme="dark"] .lazy-image.image-error {
+    background: #4a5568;
+}
