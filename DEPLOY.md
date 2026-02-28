@@ -153,6 +153,41 @@ https://你的应用名.onrender.com/auth/login
 3. 点击 "Shell" 进入命令行
 4. 上传字体文件到 `app/static/fonts/` 目录
 
+#### 第六步：配置对象存储（重要）
+
+> **为什么需要对象存储？**
+>
+> Render 免费版的文件系统是临时的，服务重启后上传的图片会丢失。需要使用 Cloudflare R2 等对象存储服务来永久保存图片。
+
+**推荐方案：Cloudflare R2（完全免费）**
+
+1. 创建 Cloudflare R2 存储桶
+   - 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/)
+   - 选择 **R2** → **创建存储桶**
+   - 设置存储桶为公开访问
+
+2. 创建 API Token
+   - 进入 **我的个人资料** → **API 令牌**
+   - 创建 R2 API 令牌，获取：
+     - Account ID
+     - Access Key ID
+     - Secret Access Key
+
+3. 在 Render 添加环境变量：
+
+| 环境变量 | 值 |
+|---------|-----|
+| `R2_ACCOUNT_ID` | 你的 Cloudflare Account ID |
+| `R2_ACCESS_KEY` | R2 Access Key ID |
+| `R2_SECRET_KEY` | R2 Secret Access Key |
+| `R2_BUCKET_NAME` | 存储桶名称（如：`my-blog-images`） |
+| `R2_PUBLIC_DOMAIN` | 自定义域名（可选） |
+
+4. 触发重新部署
+   - 推送代码或点击 Render 的 "Manual Deploy"
+
+**详细配置指南**：查看 [docs/R2_SETUP.md](docs/R2_SETUP.md)
+
 ---
 
 ## 方案二：Vercel + PostgreSQL
@@ -551,6 +586,17 @@ git push 会自动触发重新部署
 - [ ] 图片格式是否支持（PNG、JPG、GIF、WebP）
 - [ ] 图片大小是否超过限制
 - [ ] 查看 Nginx/应用日志
+
+### 12. 图片返回 404 错误
+
+**症状**：图片上传成功，但访问时显示 404
+
+**原因**：Render 免费版文件系统是临时的
+
+**解决方案**：
+1. 配置 Cloudflare R2 对象存储（推荐，完全免费）
+2. 或使用其他对象存储服务（AWS S3、阿里云 OSS 等）
+3. 详见 [docs/R2_SETUP.md](docs/R2_SETUP.md)
 
 ---
 
