@@ -823,5 +823,165 @@ function enableProgressiveLoading() {
 // 启用渐进式加载（如果需要）
 // enableProgressiveLoading();
 
+// ========================================
+// 图片灯箱功能
+// ========================================
+
+// 创建灯箱 HTML 结构
+function createLightbox() {
+    const lightboxHTML = `
+        <div id="imageLightbox" class="lightbox" style="display: none;">
+            <div class="lightbox-overlay" onclick="closeLightbox()"></div>
+            <div class="lightbox-content">
+                <button class="lightbox-close" onclick="closeLightbox()" title="关闭">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+                <button class="lightbox-prev" onclick="showPrevImage()" title="上一张">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <button class="lightbox-next" onclick="showNextImage()" title="下一张">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+                <img id="lightboxImage" src="" alt="" class="lightbox-img">
+                <div class="lightbox-caption" id="lightboxCaption"></div>
+                <div class="lightbox-counter" id="lightboxCounter"></div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', lightboxHTML);
+}
+
+// 灯箱相关变量
+let currentImageIndex = 0;
+let lightboxImages = [];
+
+// 初始化图片灯箱
+function initLightbox() {
+    createLightbox();
+
+    // 为所有可查看的图片添加点击事件
+    const images = document.querySelectorAll('#articleContent img, .typora-content img, .typora-cover img');
+
+    images.forEach((img, index) => {
+        if (!img.hasAttribute('data-lightbox-enabled')) {
+            img.setAttribute('data-lightbox-enabled', 'true');
+            img.style.cursor = 'pointer';
+            img.addEventListener('click', (e) => openLightbox(e, img, images));
+        }
+    });
+}
+
+// 打开灯箱
+function openLightbox(event, clickedImg, allImages) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    // 收集所有图片
+    lightboxImages = Array.from(allImages).filter(img => img.src && !img.src.includes('default-og.png'));
+
+    // 找到当前点击的图片索引
+    currentImageIndex = lightboxImages.findIndex(img => img === clickedImg);
+
+    if (currentImageIndex === -1) {
+        currentImageIndex = 0;
+    }
+
+    // 显示当前图片
+    showCurrentImage();
+
+    // 显示灯箱
+    const lightbox = document.getElementById('imageLightbox');
+    lightbox.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+
+    // 添加键盘事件
+    document.addEventListener('keydown', handleLightboxKeyboard);
+}
+
+// 关闭灯箱
+function closeLightbox() {
+    const lightbox = document.getElementById('imageLightbox');
+    lightbox.style.display = 'none';
+    document.body.style.overflow = '';
+    document.removeEventListener('keydown', handleLightboxKeyboard);
+}
+
+// 显示当前图片
+function showCurrentImage() {
+    if (lightboxImages.length === 0) return;
+
+    const img = lightboxImages[currentImageIndex];
+    const lightboxImg = document.getElementById('lightboxImage');
+    const caption = document.getElementById('lightboxCaption');
+    const counter = document.getElementById('lightboxCounter');
+
+    // 设置图片源
+    lightboxImg.src = img.src;
+    lightboxImg.alt = img.alt || '图片';
+
+    // 设置标题
+    caption.textContent = img.alt || img.title || `图片 ${currentImageIndex + 1}`;
+
+    // 设置计数器
+    if (lightboxImages.length > 1) {
+        counter.textContent = `${currentImageIndex + 1} / ${lightboxImages.length}`;
+    } else {
+        counter.textContent = '';
+    }
+
+    // 更新按钮状态
+    updateLightboxButtons();
+}
+
+// 上一张图片
+function showPrevImage() {
+    if (lightboxImages.length === 0) return;
+    currentImageIndex = (currentImageIndex - 1 + lightboxImages.length) % lightboxImages.length;
+    showCurrentImage();
+}
+
+// 下一张图片
+function showNextImage() {
+    if (lightboxImages.length === 0) return;
+    currentImageIndex = (currentImageIndex + 1) % lightboxImages.length;
+    showCurrentImage();
+}
+
+// 更新按钮状态
+function updateLightboxButtons() {
+    const prevBtn = document.querySelector('.lightbox-prev');
+    const nextBtn = document.querySelector('.lightbox-next');
+
+    if (lightboxImages.length <= 1) {
+        prevBtn.style.display = 'none';
+        nextBtn.style.display = 'none';
+    } else {
+        prevBtn.style.display = 'flex';
+        nextBtn.style.display = 'flex';
+    }
+}
+
+// 键盘事件处理
+function handleLightboxKeyboard(e) {
+    switch(e.key) {
+        case 'Escape':
+            closeLightbox();
+            break;
+        case 'ArrowLeft':
+            showPrevImage();
+            break;
+        case 'ArrowRight':
+            showNextImage();
+            break;
+    }
+}
+
+// 页面加载完成后初始化灯箱
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initLightbox);
+} else {
+    initLightbox();
+}
+
 </script>
 {% endblock %}

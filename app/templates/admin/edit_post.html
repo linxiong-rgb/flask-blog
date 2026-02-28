@@ -115,6 +115,11 @@
                         <textarea class="form-control" id="content" name="content" rows="15"
                                   required>{% if post %}{{ post.content }}{% endif %}</textarea>
                         <div class="form-text">支持 Markdown 格式，可导入 .md 文件 | 快捷键: Ctrl+I 插入图片</div>
+
+                        <!-- 选中本地图片路径时的上传提示按钮 -->
+                        <div id="imageUploadPrompt" class="image-upload-prompt" style="display: none;">
+                            <i class="bi bi-upload"></i> 上传这张图片
+                        </div>
                     </div>
 
                     <div class="mb-3">
@@ -769,6 +774,149 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('contentImageInput').click();
             }
         });
+
+        // 监听文本选择，检测本地图片路径
+        contentTextarea.addEventListener('mouseup', handleTextSelection);
+        contentTextarea.addEventListener('keyup', handleTextSelection);
+    }
+});
+
+// ========================================
+// 本地图片路径上传提示
+// ========================================
+
+let selectionUploadTimeout;
+
+function handleTextSelection() {
+    clearTimeout(selectionUploadTimeout);
+
+    selectionUploadTimeout = setTimeout(() => {
+        const textarea = document.getElementById('content');
+        const selectedText = getSelectedText(textarea);
+
+        if (selectedText && isLocalImagePath(selectedText)) {
+            showImageUploadPrompt(textarea, selectedText);
+        } else {
+            hideImageUploadPrompt();
+        }
+    }, 300);
+}
+
+function getSelectedText(textarea) {
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    return textarea.value.substring(start, end).trim();
+}
+
+function isLocalImagePath(text) {
+    if (!text) return false;
+
+    // 检查是否是 Windows 路径
+    if (text.length >= 2 && text[1] === ':' && text[0].isalpha()) {
+        return true;
+    }
+
+    // 检查是否以 .jpg, .png, .gif 等图片扩展名结尾
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+    const lowerText = text.toLowerCase();
+    return imageExtensions.some(ext => lowerText.endsWith(ext));
+}
+
+function showImageUploadPrompt(textarea, imagePath) {
+    const prompt = document.getElementById('imageUploadPrompt');
+    const textareaRect = textarea.getBoundingClientRect();
+
+    // 设置提示按钮位置
+    prompt.style.top = (textareaRect.top + window.pageYOffset + textareaRect.height + 5) + 'px';
+    prompt.style.left = (textareaRect.left + window.pageXOffset + 10) + 'px';
+    prompt.style.display = 'flex';
+
+    // 设置点击事件
+    prompt.onclick = function() {
+        // 创建文件输入选择对应的图片
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/png,image/jpeg,image/gif,image/webp';
+        input.onchange = function() {
+            replaceLocalImageWithPath(this, imagePath, textarea);
+        };
+        input.click();
+    };
+}
+
+function hideImageUploadPrompt() {
+    const prompt = document.getElementById('imageUploadPrompt');
+    prompt.style.display = 'none';
+}
+
+function replaceLocalImageWithPath(input, oldPath, textarea) {
+    const file = input.files[0];
+    if (!file) return;
+
+    // 验证文件
+    if (file.size > 16 * 1024 * 1024) {
+        alert('文件大小不能超过 16MB');
+        return;
+    }
+
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+        alert('不支持的文件类型');
+        return;
+    }
+
+    // 上传图片
+    const formData = new FormData();
+    formData.append('cover_image', file);
+
+    const originalButtonText = document.getElementById('imageUploadPrompt').innerHTML;
+    document.getElementById('imageUploadPrompt').innerHTML = '<i class="bi bi-hourglass-split"></i> 上传中...';
+
+    fetch('{{ url_for("admin.upload_cover_image") }}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 替换选中的文本为新的图片路径
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const currentValue = textarea.value;
+            const altText = file.name.replace(/\.[^/.]+$/, '');
+
+            // 生成新的 Markdown 图片语法
+            const newImageMd = `![${altText}](${data.image_url})`;
+
+            // 替换内容
+            textarea.value = currentValue.substring(0, start) + newImageMd + currentValue.substring(end);
+
+            // 设置光标位置
+            const newPosition = start + newImageMd.length;
+            textarea.setSelectionRange(newPosition, newPosition);
+            textarea.focus();
+
+            showSaveIndicator('图片已替换');
+        } else {
+            alert('上传失败: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('上传失败: ' + error.message);
+    })
+    .finally(() => {
+        document.getElementById('imageUploadPrompt').innerHTML = originalButtonText;
+        hideImageUploadPrompt();
+    });
+}
+
+// 点击其他地方时隐藏提示
+document.addEventListener('click', function(e) {
+    if (e.target.id !== 'content' && e.target.id !== 'imageUploadPrompt') {
+        hideImageUploadPrompt();
     }
 });
 
