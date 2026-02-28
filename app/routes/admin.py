@@ -21,8 +21,9 @@ from app.models.post import Post, Category, Tag
 from app.models.user import User
 from app.models.friend_link import FriendLink
 from app.models.post_bookmark import PostBookmark
-from app import db
+from app import db, cache
 from app.utils.storage import get_storage, reset_storage
+from app.routes.main import get_hot_posts, get_hot_tags, get_total_views
 from PIL import Image
 from io import BytesIO
 
@@ -592,6 +593,12 @@ def delete_post(post_id):
 
     db.session.delete(post)
     db.session.commit()
+
+    # 清除相关缓存
+    cache.delete_memoized(get_hot_posts)
+    cache.delete_memoized(get_hot_tags)
+    cache.delete_memoized(get_total_views)
+
     flash('文章已删除')
     return redirect(url_for('admin.dashboard'))
 
