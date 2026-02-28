@@ -445,6 +445,9 @@ def new_post():
         # 如果没有封面图，自动生成
         if not cover_image:
             from app.utils.image_generator import generate_cover_image
+            from app.utils.storage import get_storage
+            # 获取存储后端
+            storage = get_storage()
             # 获取分类名称
             category_obj = Category.query.get(category_id) if category_id else None
             category_name = category_obj.name if category_obj else None
@@ -454,8 +457,8 @@ def new_post():
                 tag = Tag.query.get(int(tag_id))
                 if tag:
                     tag_names.append(tag.name)
-            # 生成封面图（传递内容用于提取关键词）
-            cover_image = generate_cover_image(title, category_name, tag_names, content)
+            # 生成封面图（传递存储后端）
+            cover_image = generate_cover_image(title, category_name, tag_names, content, storage=storage)
 
         # 创建文章对象
         post = Post(
@@ -571,13 +574,15 @@ def edit_post(post_id):
         # 如果没有封面图且之前也没有，自动生成
         if not cover_image and not post.cover_image:
             from app.utils.image_generator import generate_cover_image
+            from app.utils.storage import get_storage
+            storage = get_storage()
             # 获取分类名称
             category_obj = Category.query.get(post.category_id) if post.category_id else None
             category_name = category_obj.name if category_obj else None
             # 获取标签名称
             tags = [tag.name for tag in post.tags] if post.tags else []
-            # 生成封面图（传递内容用于提取关键词）
-            cover_image = generate_cover_image(post.title, category_name, tags, post.content)
+            # 生成封面图（传递存储后端）
+            cover_image = generate_cover_image(post.title, category_name, tags, post.content, storage=storage)
 
         # 更新封面图（如果有新的）
         if cover_image:
@@ -689,7 +694,9 @@ def import_markdown():
 
             # 自动生成封面图（传递内容用于提取关键词）
             from app.utils.image_generator import generate_cover_image
-            cover_image = generate_cover_image(title, None, None, body_content)
+            from app.utils.storage import get_storage
+            storage = get_storage()
+            cover_image = generate_cover_image(title, None, None, body_content, storage=storage)
 
             # 创建文章
             post = Post(
@@ -760,7 +767,9 @@ def import_batch():
 
             # 自动生成封面图（传递内容用于提取关键词）
             from app.utils.image_generator import generate_cover_image
-            cover_image = generate_cover_image(title, None, None, body_content)
+            from app.utils.storage import get_storage
+            storage = get_storage()
+            cover_image = generate_cover_image(title, None, None, body_content, storage=storage)
 
             # 创建文章
             post = Post(
@@ -957,6 +966,8 @@ def regenerate_covers():
         return jsonify({'success': True, 'message': '没有文章', 'count': 0})
 
     from app.utils.image_generator import generate_cover_from_post
+    from app.utils.storage import get_storage
+    storage = get_storage()
 
     success_count = 0
     skipped_count = 0  # 跳过的文章数（已有上传的封面图）
@@ -967,20 +978,20 @@ def regenerate_covers():
     for post in posts:
         # 检查是否有封面图
         if post.cover_image:
-            # 判断是否是自动生成的封面图
-            # 自动生成的封面图路径格式：/static/uploads/covers/cover_
-            # 用户上传的封面图通常包含 uploads 但不是 cover_ 开头
+            # 判断是否是本地存储的自动生成封面图
+            # 本地生成的封面图路径格式：/static/uploads/covers/cover_
+            # 用户上传的封面图或 GitHub 图床不匹配此格式
             if '/static/uploads/covers/cover_' in post.cover_image:
-                # 是自动生成的，可以重新生成
+                # 是本地自动生成的，可以重新生成
                 pass
             else:
-                # 是用户上传的图片，跳过
+                # 是用户上传的图片或已上传到 GitHub 的，跳过
                 skipped_count += 1
                 skipped_posts.append(post.title)
                 continue
 
         try:
-            post.cover_image = generate_cover_from_post(post)
+            post.cover_image = generate_cover_from_post(post, storage=storage)
             success_count += 1
         except Exception as e:
             failed_count += 1

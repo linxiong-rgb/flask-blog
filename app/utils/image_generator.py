@@ -3,6 +3,7 @@
 
 根据文章标题生成简约大气的黑色封面图
 支持跨平台中文字体自动检测
+支持自动上传到 GitHub 图床
 """
 
 import os
@@ -10,6 +11,7 @@ import uuid
 import re
 import logging
 from datetime import datetime
+from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 
 # 配置日志
@@ -127,8 +129,20 @@ def get_font(size, bold=True):
     return default_font
 
 
-def generate_cover_image(title, category_name=None, tags=None, content=None):
-    """生成简约黑色风格封面图 - 完整标题显示"""
+def generate_cover_image(title, category_name=None, tags=None, content=None, storage=None):
+    """
+    生成简约黑色风格封面图 - 完整标题显示
+
+    Args:
+        title: 文章标题
+        category_name: 分类名称（可选）
+        tags: 标签列表（可选）
+        content: 文章内容（可选，用于提取关键词）
+        storage: 存储后端对象（可选，如果不提供则自动获取）
+
+    Returns:
+        str: 图片访问 URL（本地路径或 GitHub CDN URL）
+    """
     # 创建纯白背景图片
     image = Image.new('RGB', (COVER_WIDTH, COVER_HEIGHT), (255, 255, 255))
     draw = ImageDraw.Draw(image)
@@ -204,21 +218,58 @@ def generate_cover_image(title, category_name=None, tags=None, content=None):
 
     # 生成文件名
     filename = f"cover_{uuid.uuid4().hex[:12]}_{int(datetime.now().timestamp())}.png"
+
+    # 先保存到内存（用于上传）
+    img_buffer = BytesIO()
+    image.save(img_buffer, format='PNG', optimize=True)
+    img_buffer.seek(0)
+
+    # 如果没有提供存储后端，尝试获取
+    if storage is None:
+        try:
+            from .storage import get_storage
+            storage = get_storage()
+        except:
+            storage = None
+            logger.warning("无法获取存储后端，将使用本地存储")
+
+    # 使用存储后端上传
+    if storage is not None:
+        object_name = f"covers/{filename}"
+
+        # 上传文件对象
+        try:
+            if storage.upload_fileobj(img_buffer, object_name):
+                url = storage.get_url(object_name)
+                logger.info(f"封面图已上传到存储: {filename} (标题: {title})")
+                return url
+            else:
+                logger.warning(f"存储上传失败，回退到本地存储: {filename}")
+        except Exception as e:
+            logger.warning(f"存储上传异常: {e}，回退到本地存储")
+
+    # 回退到本地存储
     filepath = os.path.join(UPLOAD_FOLDER, filename)
-
-    # 保存
     image.save(filepath, 'PNG', optimize=True)
-
-    logger.info(f"封面图已生成: {filename} (标题: {title})")
+    logger.info(f"封面图已保存到本地: {filename} (标题: {title})")
 
     return f"/static/uploads/covers/{filename}"
 
 
-def generate_cover_from_post(post):
-    """从文章对象生成封面图"""
+def generate_cover_from_post(post, storage=None):
+    """
+    从文章对象生成封面图
+
+    Args:
+        post: 文章对象
+        storage: 存储后端对象（可选）
+
+    Returns:
+        str: 图片访问 URL
+    """
     category_name = post.category.name if post.category else None
     tags = [tag.name for tag in post.tags] if post.tags else []
-    return generate_cover_image(post.title, category_name, tags, post.content)
+    return generate_cover_image(post.title, category_name, tags, post.content, storage=storage)
 
 
 def test_font_loading():
