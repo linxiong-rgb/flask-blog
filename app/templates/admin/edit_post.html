@@ -101,14 +101,20 @@
                         <label for="content" class="form-label">
                             文章内容 <span class="text-danger">*</span>
                             <small class="text-muted">(支持 Markdown)</small>
-                            <button type="button" class="btn btn-sm btn-outline-success float-end" onclick="document.getElementById('mdFileInput').click()">
-                                <i class="bi bi-file-earmark-markup"></i> 导入 MD 文件
-                            </button>
+                            <div class="float-end">
+                                <button type="button" class="btn btn-sm btn-outline-primary me-1" onclick="document.getElementById('contentImageInput').click()">
+                                    <i class="bi bi-image"></i> 插入图片
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-success" onclick="document.getElementById('mdFileInput').click()">
+                                    <i class="bi bi-file-earmark-markup"></i> 导入 MD 文件
+                                </button>
+                            </div>
                         </label>
                         <input type="file" id="mdFileInput" accept=".md" style="display: none" onchange="importMarkdown(this)">
+                        <input type="file" id="contentImageInput" accept="image/png,image/jpeg,image/gif,image/webp" style="display: none" onchange="insertContentImage(this)">
                         <textarea class="form-control" id="content" name="content" rows="15"
                                   required>{% if post %}{{ post.content }}{% endif %}</textarea>
-                        <div class="form-text">支持 Markdown 格式，可导入 .md 文件</div>
+                        <div class="form-text">支持 Markdown 格式，可导入 .md 文件 | 快捷键: Ctrl+I 插入图片</div>
                     </div>
 
                     <div class="mb-3">
@@ -647,7 +653,91 @@ document.addEventListener('DOMContentLoaded', function() {
                 saveDraft();
             }, 1000);
         });
+
+        // 添加快捷键 Ctrl+I 插入图片
+        contentTextarea.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'i') {
+                e.preventDefault();
+                document.getElementById('contentImageInput').click();
+            }
+        });
     }
 });
+
+// ========================================
+// 插入图片到文章内容
+// ========================================
+
+function insertContentImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    // 验证文件大小
+    if (file.size > 16 * 1024 * 1024) {
+        alert('文件大小不能超过 16MB');
+        input.value = '';
+        return;
+    }
+
+    // 验证文件类型
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+        alert('不支持的文件类型。请上传 PNG, JPG, GIF 或 WebP 格式的图片');
+        input.value = '';
+        return;
+    }
+
+    // 获取文件名（作为图片 alt 文本）
+    const fileName = file.name.replace(/\.[^/.]+$/, '');
+
+    // 创建 FormData 上传文件
+    const formData = new FormData();
+    formData.append('cover_image', file);
+
+    // 显示上传中状态
+    const textarea = document.getElementById('content');
+    const cursorPos = textarea.selectionStart;
+    const textBefore = textarea.value.substring(0, cursorPos);
+    const textAfter = textarea.value.substring(cursorPos);
+
+    // 临时插入上传中提示
+    textarea.value = textBefore + `![正在上传图片...](${fileName})` + textAfter;
+    showSaveIndicator('正在上传图片...');
+
+    fetch('{{ url_for("admin.upload_cover_image") }}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 生成 Markdown 图片语法
+            const imageMd = `![${fileName}](${data.image_url})`;
+            textarea.value = textBefore + imageMd + textAfter;
+
+            // 设置光标位置到插入的图片后面
+            const newCursorPos = cursorPos + imageMd.length;
+            textarea.setSelectionRange(newCursorPos, newCursorPos);
+            textarea.focus();
+
+            showSaveIndicator('图片插入成功！');
+        } else {
+            // 恢复原内容
+            textarea.value = textBefore + textAfter;
+            alert('上传失败: ' + data.message);
+        }
+    })
+    .catch(error => {
+        // 恢复原内容
+        textarea.value = textBefore + textAfter;
+        alert('上传失败: ' + error.message);
+    })
+    .finally(() => {
+        input.value = '';
+    });
+}
 </script>
 {% endblock %}
