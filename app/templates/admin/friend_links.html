@@ -102,6 +102,70 @@
 </div>
 {% endblock %}
 
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 处理添加友情链接表单提交
+    const linkForm = document.querySelector('#linkModal form');
+    if (linkForm) {
+        linkForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+
+            // 显示加载状态
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>提交中...';
+
+            fetch(this.action, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 关闭模态框
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('linkModal'));
+                    if (modal) {
+                        modal.hide();
+                    }
+
+                    // 显示成功提示并刷新页面
+                    alert(data.message || '友情链接添加成功');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
+                } else {
+                    // 显示错误信息
+                    alert(data.message || '添加失败，请重试');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('网络错误，请重试');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            });
+        });
+    }
+
+    // 处理删除友情链接表单提交
+    const deleteForms = document.querySelectorAll('form[action*="/delete"]');
+    deleteForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            // 已有onclick确认，这里不需要额外处理
+            // 让表单正常提交，服务器会返回JSON
+            // 如果需要AJAX处理，可以在这里添加
+        });
+    });
+});
+</script>
+{% endblock %}
+
 {% block extra_css %}
 <style>
 .friend-link-logo {
