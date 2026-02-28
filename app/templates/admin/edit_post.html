@@ -370,7 +370,10 @@ function importMarkdown(input) {
                 }
                 // 提取 title
                 if (lines[i].startsWith('title:')) {
-                    title = lines[i].split(':', 2)[1].trim().stripQuotes();
+                    let titleValue = lines[i].split(':', 2)[1].trim();
+                    // 移除可能的引号
+                    titleValue = titleValue.replace(/^["']|["']$/g, '');
+                    title = titleValue;
                 }
             }
         } else {
@@ -581,23 +584,16 @@ function openImageUpload() {
     document.getElementById('contentImageInput').click();
 }
 
-// HTML 转义函数
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
 function readWithEncoding(file, reader) {
     // 优先使用 UTF-8
     reader.readAsText(file, 'UTF-8');
 }
 
-// String.prototype.trim polyfill for old browsers
-if (!String.prototype.stripQuotes) {
-    String.prototype.stripQuotes = function() {
-        return this.replace(/^["']|["']$/g, '');
-    };
+// HTML 转义函数 - 移动到这里以便在 showLocalImagesPrompt 之前定义
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // ========================================
@@ -881,9 +877,9 @@ function isLocalImagePath(text) {
 
     // 检查是否是不完整的 Markdown 图片语法（只有 alt 文本部分）
     // 格式：![alt text] 或 ![alt text](
-    const partialMdImageRegex = /^!\[([^\]]*)\]?(\(?=\)?$|^\!\[[^\]]*\]$/;
-    if (partialMdImageRegex.test(text)) {
-        // 这是图片语法的一部分，应该提示替换
+    const incompleteMdRegex1 = /^!\[[^\]]*\]$/;  // ![alt]
+    const incompleteMdRegex2 = /^!\[[^\]]*\]\($/; // ![alt](
+    if (incompleteMdRegex1.test(text) || incompleteMdRegex2.test(text)) {
         return true;
     }
 
