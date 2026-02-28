@@ -37,6 +37,7 @@
                         </div>
                     </div>
                     <form method="POST" action="{{ url_for('admin.delete_friend_link', link_id=link.id) }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('确定删除此友情链接？')">
                             <i class="bi bi-trash"></i>
                         </button>
@@ -64,6 +65,7 @@
                     <h5 class="modal-title">添加友情链接</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="linkName" class="form-label">网站名称 <span class="text-danger">*</span></label>
