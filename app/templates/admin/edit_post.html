@@ -446,50 +446,72 @@ async function detectAndPromptLocalImages(content) {
 
 // 显示本地图片提示对话框
 function showLocalImagesPrompt(localImages) {
-    // 创建模态框
+    // 存储本地图片信息供后续使用
+    window.detectedLocalImages = localImages;
+
+    // 创建增强版模态框
     const modalHtml = `
         <div id="localImagesModal" class="modal" style="display: block; background: rgba(0,0,0,0.5);">
-            <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content">
-                    <div class="modal-header bg-warning text-dark">
+                    <div class="modal-header bg-primary text-white">
                         <h5 class="modal-title">
-                            <i class="bi bi-exclamation-triangle-fill"></i>
-                            检测到本地图片路径
+                            <i class="bi bi-images"></i>
+                            检测到本地图片路径 (${localImages.length} 张)
                         </h5>
-                        <button type="button" class="btn-close" onclick="closeLocalImagesModal()"></button>
+                        <button type="button" class="btn-close btn-close-white" onclick="closeLocalImagesModal()"></button>
                     </div>
                     <div class="modal-body">
-                        <p class="mb-3">检测到 <strong>${localImages.length}</strong> 个本地图片路径，这些图片无法在服务器上显示。</p>
+                        <div class="alert alert-info mb-3">
+                            <i class="bi bi-info-circle-fill"></i>
+                            检测到文章中包含本地图片路径，这些图片无法在服务器上显示。请选择以下方式处理：
+                        </div>
 
-                        <div class="list-group mb-3" style="max-height: 200px; overflow-y: auto;">
-                            ${localImages.map(img => `
-                                <div class="list-group-item">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-file-image me-2 text-muted"></i>
-                                        <div class="flex-grow-1">
-                                            <strong>${escapeHtml(img.filename)}</strong>
-                                            <br>
-                                            <small class="text-muted">${escapeHtml(img.path)}</small>
+                        <!-- 图片列表，每个都有上传按钮 -->
+                        <div class="local-images-list mb-3" style="max-height: 300px; overflow-y: auto;">
+                            ${localImages.map((img, index) => `
+                                <div class="local-image-item" data-index="${index}" data-path="${escapeHtml(img.path)}" data-filename="${escapeHtml(img.filename)}">
+                                    <div class="d-flex align-items-center p-2 border rounded mb-2">
+                                        <div class="image-icon me-3">
+                                            <i class="bi bi-file-image"></i>
+                                        </div>
+                                        <div class="image-info flex-grow-1">
+                                            <div class="image-filename">${escapeHtml(img.filename)}</div>
+                                            <div class="image-path text-muted small">${escapeHtml(img.path)}</div>
+                                        </div>
+                                        <div class="image-actions">
+                                            <input type="file" id="fileInput_${index}" accept="image/png,image/jpeg,image/gif,image/webp"
+                                                class="d-none" onchange="uploadLocalImage(${index}, this)">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="document.getElementById('fileInput_${index}').click()">
+                                                <i class="bi bi-upload"></i> 上传
+                                            </button>
+                                            <span class="upload-status ms-2" id="status_${index}"></span>
                                         </div>
                                     </div>
                                 </div>
                             `).join('')}
                         </div>
 
-                        <div class="alert alert-info mb-0">
-                            <strong>解决方案：</strong>
-                            <ul class="mb-0 mt-2">
-                                <li>使用上方的 <strong>"插入图片"</strong> 按钮手动上传图片</li>
-                                <li>或直接在 Markdown 中修改为网络图片 URL</li>
-                            </ul>
+                        <!-- 批量上传区域 -->
+                        <div class="batch-upload-section mb-3 p-3 bg-light rounded">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-upload"></i> 批量上传
+                            </label>
+                            <p class="small text-muted mb-2">选择多个图片文件，系统会自动匹配文件名并替换对应路径</p>
+                            <input type="file" id="batchFileInput" accept="image/png,image/jpeg,image/gif,image/webp"
+                                   multiple class="form-control mb-2" onchange="batchUploadImages(this)">
+                            <div id="batchProgress" class="progress d-none" style="height: 6px;">
+                                <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <div id="batchStatus" class="form-text"></div>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" onclick="closeLocalImagesModal()">
-                            知道了
+                        <button type="button" class="btn btn-outline-secondary" onclick="closeLocalImagesModal()">
+                            <i class="bi bi-clock"></i> 稍后上传
                         </button>
-                        <button type="button" class="btn btn-primary" onclick="openImageUpload()">
-                            上传第一张图片
+                        <button type="button" class="btn btn-primary" onclick="closeLocalImagesModal()">
+                            <i class="bi bi-check-lg"></i> 完成
                         </button>
                     </div>
                 </div>
@@ -509,12 +531,185 @@ function closeLocalImagesModal() {
     if (modal) {
         modal.remove();
     }
+    // 清除存储的图片信息
+    delete window.detectedLocalImages;
+}
+
+// ========================================
+// 本地图片上传功能
+// ========================================
+
+// 上传单个本地图片
+function uploadLocalImage(index, input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const imageItem = document.querySelector(`.local-image-item[data-index="${index}"]`);
+    const statusEl = document.getElementById(`status_${index}`);
+    const originalPath = imageItem.getAttribute('data-path');
+    const textarea = document.getElementById('content');
+
+    // 显示上传中状态
+    statusEl.innerHTML = '<span class="badge bg-warning text-dark">上传中...</span>';
+
+    const formData = new FormData();
+    formData.append('cover_image', file);
+
+    fetch('{{ url_for("admin.upload_cover_image") }}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 生成新的 Markdown 图片语法
+            const altText = file.name.replace(/\.[^/.]+$/, '');
+            const newImageMd = `![${altText}](${data.image_url})`;
+
+            // 在文章内容中替换所有匹配的路径
+            const currentContent = textarea.value;
+            const newContent = currentContent.split(originalPath).join(newImageMd);
+            textarea.value = newContent;
+
+            // 更新 UI
+            statusEl.innerHTML = '<span class="badge bg-success">✓ 已替换</span>';
+            imageItem.classList.add('upload-success');
+            imageItem.style.opacity = '0.6';
+
+            showSaveIndicator(`已替换: ${file.name}`);
+        } else {
+            statusEl.innerHTML = '<span class="badge bg-danger">✗ 失败</span>';
+            alert('上传失败: ' + data.message);
+        }
+    })
+    .catch(error => {
+        statusEl.innerHTML = '<span class="badge bg-danger">✗ 错误</span>';
+        alert('上传失败: ' + error.message);
+    });
+}
+
+// 批量上传图片
+function batchUploadImages(input) {
+    const files = Array.from(input.files);
+    if (files.length === 0) return;
+
+    const textarea = document.getElementById('content');
+    const currentContent = textarea.value;
+    const localImages = window.detectedLocalImages || [];
+
+    // 匹配图片文件名与本地路径
+    const uploadPromises = files.map(file => {
+        return new Promise((resolve, reject) => {
+            // 查找匹配的本地路径
+            const matchingImage = localImages.find(img => {
+                const pathFilename = img.filename.toLowerCase();
+                const fileFilename = file.name.toLowerCase();
+                return pathFilename === fileFilename ||
+                       pathFilename.replace(/\.[^/.]+$/, '') === fileFilename.replace(/\.[^/.]+$/, '');
+            });
+
+            if (!matchingImage) {
+                resolve({
+                    file: file,
+                    matched: false,
+                    filename: file.name
+                });
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('cover_image', file);
+
+            fetch('{{ url_for("admin.upload_cover_image") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    resolve({
+                        file: file,
+                        matched: true,
+                        originalPath: matchingImage.path,
+                        imageUrl: data.image_url,
+                        filename: file.name
+                    });
+                } else {
+                    reject({
+                        file: file,
+                        error: data.message
+                    });
+                }
+            })
+            .catch(error => {
+                reject({
+                    file: file,
+                    error: error.message
+                });
+            });
+        });
+    });
+
+    // 显示进度
+    const progressBar = document.querySelector('#batchProgress .progress-bar');
+    const progressDiv = document.getElementById('batchProgress');
+    const statusDiv = document.getElementById('batchStatus');
+
+    progressDiv.classList.remove('d-none');
+    let completed = 0;
+
+    uploadPromises.forEach(promise => {
+        promise.then(result => {
+            completed++;
+            const percent = (completed / files.length) * 100;
+            progressBar.style.width = percent + '%';
+
+            if (result.matched) {
+                // 替换文章内容中的路径
+                const altText = result.filename.replace(/\.[^/.]+$/, '');
+                const newImageMd = `![${altText}](${result.imageUrl})`;
+                const newContent = textarea.value.split(result.originalPath).join(newImageMd);
+                textarea.value = newContent;
+
+                // 更新对应的图片项状态
+                const imageItem = document.querySelector(`.local-image-item[data-path*="${result.originalPath}"]`);
+                if (imageItem) {
+                    const index = parseInt(imageItem.getAttribute('data-index'));
+                    const statusEl = document.getElementById(`status_${index}`);
+                    statusEl.innerHTML = '<span class="badge bg-success">✓ 已替换</span>';
+                    imageItem.classList.add('upload-success');
+                    imageItem.style.opacity = '0.6';
+                }
+            }
+
+            // 更新状态显示
+            const matchedCount = Array.from(document.querySelectorAll('.upload-success')).length;
+            statusDiv.textContent = `已完成 ${completed}/${files.length}，成功替换 ${matchedCount} 张`;
+
+            if (completed === files.length) {
+                setTimeout(() => {
+                    showSaveIndicator(`批量上传完成！成功替换 ${matchedCount} 张图片`);
+                }, 500);
+            }
+        }).catch(error => {
+            completed++;
+            progressBar.style.width = (completed / files.length) * 100 + '%';
+            statusDiv.textContent += ` | ${error.file.name} 失败`;
+        });
+    });
 }
 
 // 打开图片上传
 function openImageUpload() {
     closeLocalImagesModal();
     document.getElementById('contentImageInput').click();
+}
 }
 
 // HTML 转义函数
@@ -943,7 +1138,19 @@ function insertContentImage(input) {
         return;
     }
 
-    // 获取文件名（作为图片 alt 文本）
+    const textarea = document.getElementById('content');
+
+    // 检查是否有选中的文字（可能是本地路径）
+    const selectedText = getSelectedText(textarea);
+    const hasSelection = textarea.selectionStart !== textarea.selectionEnd;
+
+    // 如果选中了本地路径，则进行替换模式
+    if (hasSelection && selectedText && isLocalImagePath(selectedText)) {
+        uploadAndReplaceLocalPath(file, selectedText, textarea);
+        return;
+    }
+
+    // 否则使用原有的插入模式
     const fileName = file.name.replace(/\.[^/.]+$/, '');
 
     // 创建 FormData 上传文件
@@ -951,7 +1158,6 @@ function insertContentImage(input) {
     formData.append('cover_image', file);
 
     // 显示上传中状态
-    const textarea = document.getElementById('content');
     const cursorPos = textarea.selectionStart;
     const textBefore = textarea.value.substring(0, cursorPos);
     const textAfter = textarea.value.substring(cursorPos);
@@ -993,6 +1199,58 @@ function insertContentImage(input) {
     })
     .finally(() => {
         input.value = '';
+    });
+}
+
+// 上传图片并替换选中的本地路径
+function uploadAndReplaceLocalPath(file, localPath, textarea) {
+    const formData = new FormData();
+    formData.append('cover_image', file);
+
+    // 显示上传中状态
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const currentValue = textarea.value;
+
+    // 临时替换为上传中提示
+    textarea.value = currentValue.substring(0, start) + `[正在上传: ${file.name}]` + currentValue.substring(end);
+
+    fetch('{{ url_for("admin.upload_cover_image") }}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 生成新的 Markdown 图片语法
+            const altText = file.name.replace(/\.[^/.]+$/, '');
+            const newImageMd = `![${altText}](${data.image_url})`;
+
+            // 替换选中的本地路径
+            textarea.value = currentValue.substring(0, start) + newImageMd + currentValue.substring(end);
+
+            // 设置光标位置
+            const newPosition = start + newImageMd.length;
+            textarea.setSelectionRange(newPosition, newPosition);
+            textarea.focus();
+
+            showSaveIndicator('本地路径已替换为上传的图片');
+        } else {
+            // 恢复原内容
+            textarea.value = currentValue;
+            alert('上传失败: ' + data.message);
+        }
+    })
+    .catch(error => {
+        textarea.value = currentValue;
+        alert('上传失败: ' + error.message);
+    })
+    .finally(() => {
+        input.value = '';
+        hideImageUploadPrompt();
     });
 }
 </script>

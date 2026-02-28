@@ -3470,3 +3470,69 @@ img[data-lightbox-enabled]:hover {
         padding: 8px 12px;
     }
 }
+
+/* ========================================
+   本地图片上传弹窗样式
+   ======================================== */
+
+.local-images-list {
+    background: var(--bg-color);
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.local-image-item {
+    transition: all 0.3s ease;
+}
+
+.local-image-item.upload-success {
+    background: rgba(40, 167, 69, 0.1);
+}
+
+.local-image-item .image-icon {
+    font-size: 24px;
+    color: var(--primary-color);
+}
+
+.local-image-item .image-filename {
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.local-image-item .image-path {
+    font-size: 12px;
+    word-break: break-all;
+}
+
+.local-image-item .image-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.upload-status .badge {
+    font-size: 11px;
+}
+
+.batch-upload-section {
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+}
+
+/* 深色模式下的样式 */
+[data-theme="dark"] .batch-upload-section {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .local-images-list {
+    background: var(--card-bg);
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    .local-image-item .image-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
