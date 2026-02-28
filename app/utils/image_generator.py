@@ -61,10 +61,12 @@ def get_font(size, bold=True):
     # 字体路径列表（按优先级排序）
     font_paths = [
         # === 项目内字体（最高优先级，确保部署可用）===
+        os.path.join(project_font_dir, 'simkai.ttf'),  # 楷体
+        os.path.join(project_font_dir, 'simsunb.ttf'), # 加粗宋体
+        os.path.join(project_font_dir, 'simsun.ttc'),  # 宋体
         os.path.join(project_font_dir, 'msyhbd.ttc'),  # 微软雅黑粗体
         os.path.join(project_font_dir, 'msyh.ttc'),    # 微软雅黑
         os.path.join(project_font_dir, 'simhei.ttf'),  # 黑体
-        os.path.join(project_font_dir, 'simsun.ttf'),  # 宋体
         os.path.join(project_font_dir, 'wqy-zenhei.ttc'),  # 文泉驿正黑
         os.path.join(project_font_dir, '*.ttf'),       # 任意 ttf
         os.path.join(project_font_dir, '*.ttc'),       # 任意 ttc
