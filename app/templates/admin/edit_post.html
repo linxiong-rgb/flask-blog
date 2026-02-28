@@ -600,6 +600,10 @@ function batchUploadImages(input) {
     const currentContent = textarea.value;
     const localImages = window.detectedLocalImages || [];
 
+    // 调试信息：显示检测到的本地图片
+    console.log('本地图片列表:', localImages);
+    console.log('选择的文件:', files.map(f => f.name));
+
     // 匹配图片文件名与本地路径
     const uploadPromises = files.map(file => {
         return new Promise((resolve, reject) => {
@@ -607,11 +611,26 @@ function batchUploadImages(input) {
             const matchingImage = localImages.find(img => {
                 const pathFilename = img.filename.toLowerCase();
                 const fileFilename = file.name.toLowerCase();
-                return pathFilename === fileFilename ||
-                       pathFilename.replace(/\.[^/.]+$/, '') === fileFilename.replace(/\.[^/.]+$/, '');
+
+                // 精确匹配
+                if (pathFilename === fileFilename) {
+                    console.log(`精确匹配: ${pathFilename} = ${fileFilename}`);
+                    return true;
+                }
+
+                // 去除扩展名后匹配
+                const pathBase = pathFilename.replace(/\.[^/.]+$/, '');
+                const fileBase = fileFilename.replace(/\.[^/.]+$/, '');
+                if (pathBase === fileBase && pathBase.length > 0) {
+                    console.log(`基础名匹配: ${pathBase} = ${fileBase}`);
+                    return true;
+                }
+
+                return false;
             });
 
             if (!matchingImage) {
+                console.log(`未找到匹配: ${file.name}`);
                 resolve({
                     file: file,
                     matched: false,
@@ -619,6 +638,8 @@ function batchUploadImages(input) {
                 });
                 return;
             }
+
+            console.log(`找到匹配: ${file.name} -> ${matchingImage.path}`);
 
             const formData = new FormData();
             formData.append('cover_image', file);

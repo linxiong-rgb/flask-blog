@@ -236,9 +236,14 @@ def detect_local_images():
         for match in matches:
             # 检查是否是本地路径
             if is_local_image_path(match):
-                # 提取文件名
+                # 提取文件名（使用 os.path.basename 处理各种路径格式）
                 filename = os.path.basename(match).strip()
                 if filename:
+                    # 进一步清理文件名：移除可能的特殊字符
+                    filename = filename.strip('"').strip("'").strip()
+                    # 移除可能的后缀（如 `):1` 这种控制台输出）
+                    filename = re.sub(r'\)\d+:$', '', filename)
+
                     local_images.append({
                         'path': match,
                         'filename': filename,
