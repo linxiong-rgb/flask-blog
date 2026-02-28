@@ -271,6 +271,19 @@ def new_post():
     if request.method == 'POST':
         title = request.form.get('title')
         content = request.form.get('content')
+
+        # 自动识别并上传本地图片
+        from app.utils.image_uploader import process_markdown_images
+        upload_folder = current_app.config.get('UPLOAD_FOLDER',
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'uploads', 'covers'))
+        content, upload_results = process_markdown_images(content, upload_folder)
+
+        # 显示上传结果提示
+        if upload_results['uploaded'] > 0:
+            flash(f'已自动上传 {upload_results["uploaded"]} 张本地图片', 'success')
+        if upload_results['failed'] > 0:
+            flash(f'有 {upload_results["failed"]} 张图片上传失败', 'warning')
+
         summary = request.form.get('summary', '').strip()
         published = request.form.get('published') == 'on'
         category_id = request.form.get('category_id', type=int)
@@ -374,7 +387,21 @@ def edit_post(post_id):
     if request.method == 'POST':
         # 更新文章基本信息
         post.title = request.form.get('title')
-        post.content = request.form.get('content')
+        content = request.form.get('content')
+
+        # 自动识别并上传本地图片
+        from app.utils.image_uploader import process_markdown_images
+        upload_folder = current_app.config.get('UPLOAD_FOLDER',
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'uploads', 'covers'))
+        content, upload_results = process_markdown_images(content, upload_folder)
+
+        # 显示上传结果提示
+        if upload_results['uploaded'] > 0:
+            flash(f'已自动上传 {upload_results["uploaded"]} 张本地图片', 'success')
+        if upload_results['failed'] > 0:
+            flash(f'有 {upload_results["failed"]} 张图片上传失败', 'warning')
+
+        post.content = content
         summary = request.form.get('summary', '').strip()
 
         # 如果没有提供摘要，自动生成
@@ -597,6 +624,12 @@ def import_batch():
             # 从文件名获取标题
             if not title:
                 title = os.path.splitext(file.filename)[0]
+
+            # 自动识别并上传本地图片
+            from app.utils.image_uploader import process_markdown_images
+            upload_folder = current_app.config.get('UPLOAD_FOLDER',
+                os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'uploads', 'covers'))
+            body_content, upload_results = process_markdown_images(body_content, upload_folder)
 
             # 自动生成封面图（传递内容用于提取关键词）
             from app.utils.image_generator import generate_cover_image
