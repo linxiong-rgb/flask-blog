@@ -418,9 +418,16 @@ async function detectAndPromptLocalImages(content) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
             },
             body: JSON.stringify({ content: content })
         });
+
+        // 检查响应状态
+        if (!response.ok) {
+            console.error('检测本地图片失败:', response.status, response.statusText);
+            return;
+        }
 
         const data = await response.json();
 
