@@ -8,8 +8,11 @@
 
 import os
 import base64
-from flask import current_app
+import logging
 import requests
+
+# 配置日志
+logger = logging.getLogger(__name__)
 
 
 class StorageBackend:
@@ -136,14 +139,14 @@ class GitHubStorage(StorageBackend):
             response = requests.put(url, headers=self.headers, json=data, timeout=30)
 
             if response.status_code in [201, 200]:
-                current_app.logger.info(f'图片已上传到 GitHub: {object_name}')
+                logger.info(f'图片已上传到 GitHub: {object_name}')
                 return True
             else:
-                current_app.logger.error(f'GitHub 上传失败: {response.text}')
+                logger.error(f'GitHub 上传失败: {response.text}')
                 return False
 
         except Exception as e:
-            current_app.logger.error(f'GitHub 上传异常: {str(e)}')
+            logger.error(f'GitHub 上传异常: {str(e)}')
             return False
 
     def upload_file(self, file_path, object_name):
@@ -152,7 +155,7 @@ class GitHubStorage(StorageBackend):
             with open(file_path, 'rb') as f:
                 return self.upload_fileobj(f, object_name)
         except Exception as e:
-            current_app.logger.error(f'读取文件失败: {str(e)}')
+            logger.error(f'读取文件失败: {str(e)}')
             return False
 
     def delete_file(self, object_name):
@@ -180,7 +183,7 @@ class GitHubStorage(StorageBackend):
             return response.status_code == 200
 
         except Exception as e:
-            current_app.logger.error(f'GitHub 删除失败: {str(e)}')
+            logger.error(f'GitHub 删除失败: {str(e)}')
             return False
 
     def get_url(self, object_name):
@@ -213,14 +216,14 @@ def get_storage():
             branch=github_branch,
             path=github_path
         )
-        current_app.logger.info(f'使用 GitHub 图床: {github_repo}/{github_path}')
+        logger.info(f'使用 GitHub 图床: {github_repo}/{github_path}')
         return _storage
 
     # 否则使用本地存储
     from flask import current_app
     upload_folder = current_app.config['UPLOAD_FOLDER']
     _storage = LocalStorage(upload_folder)
-    current_app.logger.info(f'使用本地存储: {upload_folder}')
+    logger.info(f'使用本地存储: {upload_folder}')
     return _storage
 
 
