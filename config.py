@@ -65,10 +65,10 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
 
-    # 生产环境必须设置安全密钥
+    # 生产环境必须设置安全密钥，否则抛出错误
     SECRET_KEY = os.environ.get('SECRET_KEY')
     if not SECRET_KEY:
-        SECRET_KEY = 'production-secret-key-请修改'
+        raise ValueError('生产环境必须设置 SECRET_KEY 环境变量')
 
     # 生产环境 Session 必须使用 HTTPS
     SESSION_COOKIE_SECURE = True

@@ -16,6 +16,7 @@ from werkzeug.utils import secure_filename
 from sqlalchemy import func
 import os
 import re
+import logging
 from datetime import datetime
 from app.models.post import Post, Category, Tag
 from app.models.user import User
@@ -26,6 +27,9 @@ from app.utils.storage import get_storage, reset_storage
 from app.routes.main import get_hot_posts, get_hot_tags, get_total_views
 from PIL import Image
 from io import BytesIO
+
+# 配置日志
+logger = logging.getLogger(__name__)
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -196,7 +200,7 @@ def upload_cover_image():
         })
 
     except Exception as e:
-        current_app.logger.error(f'图片上传失败: {str(e)}')
+        logger.error(f'图片上传失败: {str(e)}')
         return jsonify({'success': False, 'message': f'上传失败: {str(e)}'}), 500
 
 
@@ -1014,7 +1018,7 @@ def api_generate_summary():
         summary = generate_summary(content, max_length=300)
         return jsonify({'summary': summary})
     except Exception as e:
-        current_app.logger.error(f'生成摘要失败: {str(e)}')
+        logger.error(f'生成摘要失败: {str(e)}')
         return jsonify({'error': '生成摘要失败'}), 500
 
 
