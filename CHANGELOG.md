@@ -5,6 +5,25 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.4.0] - 2025-02-28
+
+### 修复
+- **图片上传嵌套语法** - 修复 `![alt](![alt](url))` 嵌套问题
+  - 重写 `uploadAndReplaceLocalPath` 函数
+  - 重写 `uploadLocalImage` 函数
+  - 修复 `insertContentImage` 函数的检测逻辑
+- **JavaScript 错误** - 修复 `.stripQuotes()` 方法不存在
+- **正则表达式语法** - 修复 `isLocalImagePath` 函数
+- **escapeHtml 引用错误** - 修复函数定义位置问题
+
+### 优化
+- **代码质量** - 移除批量上传功能，简化代码
+- **错误处理** - 改进图片上传的错误提示
+- **安全性** - 移除硬编码生产环境密钥回退值，要求必须设置 SECRET_KEY
+
+### 移除
+- **批量上传功能** - 由于持续报错且复杂度较高，暂时移除
+
 ## [1.3.0] - 2025-02-28
 
 ### 新增

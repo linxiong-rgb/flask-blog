@@ -121,13 +121,20 @@
 git clone https://github.com/linxiong-rgb/flask-blog.git
 cd flask-blog
 
-# 2. 安装依赖
+# 2. 创建并激活虚拟环境（推荐）
+python -m venv venv
+# Windows:
+venv\Scripts\activate
+# Linux/Mac:
+source venv/bin/activate
+
+# 3. 安装依赖
 pip install -r requirements.txt
 
-# 3. 初始化数据库
+# 4. 初始化数据库
 python reset_database.py
 
-# 4. 运行应用
+# 5. 运行应用
 python run.py
 ```
 
@@ -150,6 +157,7 @@ flask-blog/
 ├── app/
 │   ├── __init__.py          # 应用工厂
 │   ├── models/              # 数据模型
+│   │   ├── __init__.py      # 模型初始化
 │   │   ├── user.py          # 用户模型
 │   │   ├── post.py          # 文章模型
 │   │   ├── post_bookmark.py # 收藏模型
@@ -157,10 +165,11 @@ flask-blog/
 │   │   ├── tag.py           # 标签模型
 │   │   └── friend_link.py   # 友链模型
 │   ├── routes/              # 路由
+│   │   ├── __init__.py      # 路由初始化
 │   │   ├── main.py          # 主路由
 │   │   ├── auth.py          # 认证路由
 │   │   ├── admin.py         # 管理路由
-│   │   └── export.py        # 导出路由
+│   │   └── export.py        # 导出路由（RSS、Sitemap）
 │   ├── templates/           # 模板
 │   │   ├── base.html        # 基础模板
 │   │   ├── index.html       # 首页
@@ -170,17 +179,27 @@ flask-blog/
 │   │   ├── tag.html         # 标签页
 │   │   ├── archive.html     # 归档页
 │   │   ├── categories.html  # 分类列表
+│   │   ├── about.html       # 关于页面
+│   │   ├── friend_links.html # 友链页
 │   │   └── admin/           # 管理模板
+│   │       ├── dashboard.html
+│   │       ├── edit_post.html
+│   │       ├── edit_category.html
+│   │       ├── bookmarks.html
+│   │       └── friend_links.html
 │   ├── static/              # 静态文件
 │   │   ├── css/             # 样式文件
-│   │   ├── js/              # JavaScript
 │   │   ├── vendor/          # 第三方库
+│   │   │   ├── bootstrap/   # Bootstrap 框架
+│   │   │   └── icons/       # Bootstrap Icons
 │   │   ├── fonts/           # 字体文件
 │   │   ├── img/             # 默认图片
 │   │   └── uploads/         # 上传文件（开发环境）
+│   │       └── covers/     # 封面图片目录
 │   ├── forms.py             # 表单类
 │   ├── utils/               # 工具函数
 │   │   ├── image_generator.py  # 封面图生成器
+│   │   ├── scheduler.py     # 定时任务调度器
 │   │   ├── text.py          # 文本处理工具
 │   │   └── storage.py       # 存储后端（本地/GitHub）
 │   └── security.py          # 安全配置
