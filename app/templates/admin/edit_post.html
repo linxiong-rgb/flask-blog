@@ -39,13 +39,13 @@
                             <div class="mb-2">
                                 <div class="btn-group" role="group">
                                     <input type="radio" class="btn-check" name="cover_image_type" id="coverTypeUrl" value="url" autocomplete="off"
-                                           {% if not post or not post.cover_image or post.cover_image.startswith('http') %}checked{% endif %}>
+                                           {% if not post or not post.cover_image or (post.cover_image.startswith('http') and 'raw.githubusercontent.com' not in post.cover_image and 'githubusercontent.com' not in post.cover_image) %}checked{% endif %}>
                                     <label class="btn btn-outline-secondary" for="coverTypeUrl">
                                         <i class="bi bi-link-45deg"></i> URL链接
                                     </label>
 
                                     <input type="radio" class="btn-check" name="cover_image_type" id="coverTypeFile" value="file" autocomplete="off"
-                                           {% if post and post.cover_image and post.cover_image.startswith('/static/') %}checked{% endif %}>
+                                           {% if post and post.cover_image and (post.cover_image.startswith('/static/') or 'githubusercontent.com' in post.cover_image) %}checked{% endif %}>
                                     <label class="btn btn-outline-secondary" for="coverTypeFile">
                                         <i class="bi bi-upload"></i> 本地上传
                                     </label>
@@ -53,19 +53,19 @@
                             </div>
 
                             <!-- URL输入 -->
-                            <div id="coverImageUrlSection" class="{% if post and post.cover_image and not post.cover_image.startswith('/static/') %}d-none{% endif %}">
+                            <div id="coverImageUrlSection" class="{% if post and post.cover_image and (post.cover_image.startswith('/static/') or 'githubusercontent.com' in post.cover_image) %}d-none{% endif %}">
                                 <input type="url" class="form-control" id="cover_image_url" name="cover_image_url"
-                                       value="{% if post and post.cover_image and not post.cover_image.startswith('/static/') %}{{ post.cover_image }}{% endif %}"
+                                       value="{% if post and post.cover_image and (post.cover_image.startswith('http') and 'githubusercontent.com' not in post.cover_image) %}{{ post.cover_image }}{% endif %}"
                                        placeholder="https://example.com/image.jpg">
                             </div>
 
                             <!-- 文件上传 -->
-                            <div id="coverImageFileSection" class="{% if not post or not post.cover_image or post.cover_image.startswith('http') %}d-none{% endif %}">
+                            <div id="coverImageFileSection" class="{% if not post or not post.cover_image or (post.cover_image.startswith('http') and 'githubusercontent.com' not in post.cover_image) %}d-none{% endif %}">
                                 <input type="file" class="form-control" id="cover_image_file" name="cover_image_file"
                                        accept="image/png,image/jpeg,image/gif,image/webp">
                                 <input type="hidden" id="cover_image" name="cover_image"
                                        value="{% if post and post.cover_image %}{{ post.cover_image }}{% endif %}">
-                                <div class="form-text">支持 PNG, JPG, GIF, WebP 格式，最大 16MB</div>
+                                <div class="form-text">支持 PNG, JPG, GIF, WebP 格式，最大 16MB，上传后保存到 GitHub 图床</div>
                             </div>
 
                             <!-- 图片预览 -->
