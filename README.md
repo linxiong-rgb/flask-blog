@@ -95,6 +95,7 @@
 
 ### 图片功能
 
+- **GitHub 图床** - 免费图床，图片永久保存，无需信用卡
 - **字体优化** - 支持楷体/宋体，跨平台中文字体自动检测
 - **封面图生成** - 一键生成简约风格的封面图
 - **重新生成封面** - 可重新生成文章封面图
@@ -175,10 +176,13 @@ flask-blog/
 │   │   ├── js/              # JavaScript
 │   │   ├── vendor/          # 第三方库
 │   │   ├── fonts/           # 字体文件
-│   │   └── uploads/         # 上传文件
+│   │   ├── img/             # 默认图片
+│   │   └── uploads/         # 上传文件（开发环境）
 │   ├── forms.py             # 表单类
 │   ├── utils/               # 工具函数
-│   │   └── image_generator.py  # 封面图生成器
+│   │   ├── image_generator.py  # 封面图生成器
+│   │   ├── text.py          # 文本处理工具
+│   │   └── storage.py       # 存储后端（本地/GitHub）
 │   └── security.py          # 安全配置
 ├── instance/                # 实例文件夹
 ├── requirements.txt         # 依赖列表
@@ -202,6 +206,15 @@ flask-blog/
 | `DATABASE_URL` | 数据库连接 | `sqlite:///blog.db` |
 | `DEBUG` | 调试模式 | `True` |
 | `FLASK_ENV` | 运行环境 | `development` |
+| `GITHUB_TOKEN` | GitHub Personal Access Token | 无（可选）|
+| `GITHUB_REPO` | GitHub 仓库（用户名/仓庛名） | 无（可选）|
+| `GITHUB_BRANCH` | GitHub 分支名 | `main` |
+| `GITHUB_PATH` | 图片存储路径 | `images` |
+
+**配置 GitHub 图床**（推荐用于生产环境）：
+- 免费图床，图片永久保存
+- 无需信用卡
+- 详见 [docs/GITHUB_STORAGE.md](docs/GITHUB_STORAGE.md)
 
 ### 主题定制
 
@@ -311,7 +324,12 @@ https://你的域名/init-db
    - 部署完成后访问：`https://你的应用.onrender.com/init-db`
    - 使用 `/check-db` 验证数据库状态
 
-6. **登录后台**
+6. **配置 GitHub 图床**（推荐）
+   - 创建 GitHub 仓库和 Personal Access Token
+   - 添加环境变量：`GITHUB_TOKEN`、`GITHUB_REPO`
+   - 详见 [docs/GITHUB_STORAGE.md](docs/GITHUB_STORAGE.md)
+
+7. **登录后台**
    - 访问：`https://你的应用.onrender.com/auth/login`
    - 用户名: `admin01`，密码: `123456`
 
@@ -349,7 +367,16 @@ https://你的域名/init-db
 
 ## 更新日志
 
-### v1.2.0 (最新)
+### v1.3.0 (最新)
+
+- **新增** GitHub 图床支持 - 免费图床，图片永久保存
+- **新增** 存储后端抽象 - 支持本地和 GitHub 存储
+- **优化** 图片上传流程 - 自动选择存储后端
+- **修复** generate-summary API 400 错误
+- **修复** 图片显示后消失的问题
+- **新增** 默认 OG 图片 - 用于社交媒体分享
+
+### v1.2.0
 
 - **新增** 字体优化功能 - 支持楷体/宋体，跨平台字体检测
 - **新增** 重新生成封面图功能
