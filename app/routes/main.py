@@ -8,7 +8,7 @@
 - 搜索功能
 """
 
-from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, Response, current_app
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, Response, current_app, session
 from app.models.post import Post, Category, Tag
 from app.models.user import User
 from app.models.friend_link import FriendLink
@@ -197,7 +197,7 @@ def index():
     return render_template('index.html', posts=posts, hot_posts=hot_posts,
                           categories=categories, tags=tags, hot_tags=hot_tags, total_views=total_views)
 
-@bp.route('/post/<int:post_id>')
+@bp.route('/post/<int:post_id>', methods=['GET', 'POST'])
 def post(post_id):
     """
     文章详情页路由
@@ -207,6 +207,7 @@ def post(post_id):
     - Markdown 转换后的 HTML 内容
     - 浏览量统计
     - 相关文章推荐
+    - 可见性控制（公开/私密/密码保护）
 
     Args:
         post_id: 文章ID
@@ -218,6 +219,32 @@ def post(post_id):
         joinedload(Post.category),
         joinedload(Post.tags)
     ).get_or_404(post_id)
+
+    # 检查文章可见性
+    visibility = post.visibility or 'public'
+
+    # 私密文章：仅作者可见
+    if visibility == 'private':
+        if not current_user.is_authenticated or current_user.id != post.user_id:
+            flash('此文章仅作者可见', 'warning')
+            return redirect(url_for('main.index'))
+
+    # 密码保护文章
+    if visibility == 'password':
+        # 检查会话中是否有正确的密码
+        session_key = f'post_password_{post_id}'
+        if session.get(session_key) != post.access_password:
+            # 处理密码验证提交
+            if request.method == 'POST':
+                password = request.form.get('password', '')
+                if password == post.access_password:
+                    session[session_key] = password
+                    flash('密码验证成功', 'success')
+                else:
+                    flash('密码错误，请重试', 'danger')
+                    return render_template('post_password.html', post=post)
+            else:
+                return render_template('post_password.html', post=post)
 
     # 增加浏览量
     post.views += 1

@@ -103,5 +103,10 @@ class Post(db.Model):
     scheduled_at = db.Column(db.DateTime, nullable=True)
     cover_image = db.Column(db.String(500))
 
+    # 文章可见性: 'public' (所有人可见), 'private' (仅作者可见), 'password' (密码保护)
+    visibility = db.Column(db.String(20), default='public')
+    # 密码保护的访问密码（可选）
+    access_password = db.Column(db.String(100))
+
     def __repr__(self):
         return f'<Post {self.title}>'

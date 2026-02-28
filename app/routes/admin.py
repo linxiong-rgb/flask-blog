@@ -425,6 +425,16 @@ def new_post():
         # 处理封面图片：优先使用上传的文件路径，其次是 URL
         cover_image = request.form.get('cover_image', '') or request.form.get('cover_image_url', '')
 
+        # 处理文章可见性
+        visibility = request.form.get('visibility', 'public')
+        access_password = None
+        if visibility == 'password':
+            access_password = request.form.get('access_password', '')
+            if access_password:
+                access_password = access_password[:100]
+            else:
+                visibility = 'public'
+
         tags = request.form.getlist('tags')
 
         # 如果没有提供摘要，自动生成
@@ -456,7 +466,9 @@ def new_post():
             category_id=category_id if category_id else None,
             cover_image=cover_image,
             published=published,
-            scheduled_at=scheduled_at
+            scheduled_at=scheduled_at,
+            visibility=visibility,
+            access_password=access_password
         )
 
         # 添加标签关联
@@ -538,6 +550,18 @@ def edit_post(post_id):
         else:
             post.scheduled_at = None
             post.published = request.form.get('published') == 'on'
+
+        # 处理文章可见性
+        post.visibility = request.form.get('visibility', 'public')
+        if post.visibility == 'password':
+            access_password = request.form.get('access_password', '')
+            if access_password:
+                # 简单哈希存储密码
+                post.access_password = access_password[:100]  # 限制长度
+            else:
+                post.visibility = 'public'  # 没有密码则设为公开
+        else:
+            post.access_password = None
 
         post.category_id = request.form.get('category_id', type=int) or None
 
