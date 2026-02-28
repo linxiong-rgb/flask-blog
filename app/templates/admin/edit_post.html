@@ -1337,6 +1337,7 @@ function uploadAndReplaceLocalPath(file, localPath, textarea) {
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const currentValue = textarea.value;
+    const selectedText = currentValue.substring(start, end).trim();
 
     // 临时替换为上传中提示
     textarea.value = currentValue.substring(0, start) + `[正在上传: ${file.name}]` + currentValue.substring(end);
@@ -1351,15 +1352,58 @@ function uploadAndReplaceLocalPath(file, localPath, textarea) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // 生成新的 Markdown 图片语法
-            const altText = file.name.replace(/\.[^/.]+$/, '');
-            const newImageMd = `![${altText}](${data.image_url})`;
+            // 检查选中的文本是否是完整的 Markdown 图片语法
+            const mdImageRegex = /^!\[([^\]]*)\]\(([^)]+)\)$/;
+            const isMdImage = mdImageRegex.test(selectedText);
 
-            // 替换选中的本地路径
-            textarea.value = currentValue.substring(0, start) + newImageMd + currentValue.substring(end);
+            let newImageMd;
+            let replaceStart, replaceEnd;
+
+            if (isMdImage) {
+                // 选中的是完整的图片语法，替换整个语法
+                const altText = file.name.replace(/\.[^/.]+$/, '');
+                newImageMd = `![${altText}](${data.image_url})`;
+                replaceStart = start;
+                replaceEnd = end;
+            } else {
+                // 选中的不是完整图片语法，检查是否在图片语法中
+                const textBefore = currentValue.substring(0, start);
+                const textAfter = currentValue.substring(end);
+
+                // 查找是否有完整的图片语法包含选中位置
+                let imageStart = textBefore.lastIndexOf('![');
+                let imageEnd = end + textAfter.indexOf(')') + 1;
+
+                // 检查是否能找到完整的图片语法
+                if (imageStart >= 0 && imageEnd > end && imageEnd <= currentValue.length) {
+                    const potentialImage = currentValue.substring(imageStart, imageEnd);
+                    if (mdImageRegex.test(potentialImage)) {
+                        // 在完整的图片语法中，替换整个语法
+                        const altText = file.name.replace(/\.[^/.]+$/, '');
+                        newImageMd = `![${altText}](${data.image_url})`;
+                        replaceStart = imageStart;
+                        replaceEnd = imageEnd;
+                    } else {
+                        // 不是图片语法，直接替换选中的文本
+                        const altText = file.name.replace(/\.[^/.]+$/, '');
+                        newImageMd = `![${altText}](${data.image_url})`;
+                        replaceStart = start;
+                        replaceEnd = end;
+                    }
+                } else {
+                    // 没有找到完整图片语法，直接替换选中文本
+                    const altText = file.name.replace(/\.[^/.]+$/, '');
+                    newImageMd = `![${altText}](${data.image_url})`;
+                    replaceStart = start;
+                    replaceEnd = end;
+                }
+            }
+
+            // 替换内容
+            textarea.value = currentValue.substring(0, replaceStart) + newImageMd + currentValue.substring(replaceEnd);
 
             // 设置光标位置
-            const newPosition = start + newImageMd.length;
+            const newPosition = replaceStart + newImageMd.length;
             textarea.setSelectionRange(newPosition, newPosition);
             textarea.focus();
 
