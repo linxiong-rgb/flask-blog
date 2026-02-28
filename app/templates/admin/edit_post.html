@@ -721,11 +721,19 @@ async function batchUploadImages(input) {
                 const altText = result.filename.replace(/\.[^/.]+$/, '');
                 const newImageMd = `![${altText}](${result.imageUrl})`;
 
-                // 使用正则表达式全局替换，处理转义字符
-                // 转义路径中的特殊正则字符
-                const escapedPath = result.originalPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const pathRegex = new RegExp(escapedPath, 'g');
-                const newContent = textarea.value.replace(pathRegex, newImageMd);
+                // 使用字符串替换而不是正则表达式，避免特殊字符问题
+                // 将所有出现的原路径替换为新路径
+                let newContent = textarea.value;
+                let lastIndex = 0;
+                let searchIndex = 0;
+                const searchPath = result.originalPath;
+
+                while ((searchIndex = newContent.indexOf(searchPath, searchIndex)) !== -1) {
+                    // 验证这不是误匹配
+                    newContent = newContent.substring(0, searchIndex) + newImageMd + newContent.substring(searchIndex + searchPath.length);
+                    searchIndex += newImageMd.length;
+                }
+
                 textarea.value = newContent;
 
                 // 计数替换
@@ -734,7 +742,10 @@ async function batchUploadImages(input) {
                 console.log(`成功替换: ${result.originalPath} -> ${result.imageUrl}`);
 
                 // 更新对应的图片项状态（如果模态框仍然显示）
-                const imageItem = document.querySelector(`.local-image-item[data-path*="${result.originalPath}"]`);
+                // 使用 data-filename 而不是 data-path 来查找，因为 filename 更安全
+                // 注意：不需要 escapeHtml，因为这是用于 DOM 查询
+                const safeFilename = result.filename.replace(/"/g, '\\"');
+                const imageItem = document.querySelector(`.local-image-item[data-filename="${safeFilename}"]`);
                 if (imageItem) {
                     const index = parseInt(imageItem.getAttribute('data-index'));
                     const statusEl = document.getElementById(`status_${index}`);
