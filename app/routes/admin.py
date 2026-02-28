@@ -157,6 +157,84 @@ def upload_cover_image():
         return jsonify({'success': False, 'message': f'上传失败: {str(e)}'}), 500
 
 
+@bp.route('/api/detect-local-images', methods=['POST'])
+@login_required
+def detect_local_images():
+    """
+    检测 Markdown 内容中的本地图片路径
+
+    分析 MD 内容，找出所有本地图片路径，返回需要上传的图片列表
+
+    Returns:
+        JSON: 包含检测到的本地图片信息
+    """
+    data = request.get_json()
+    content = data.get('content', '')
+
+    if not content:
+        return jsonify({'local_images': [], 'count': 0})
+
+    import re
+
+    local_images = []
+
+    # 匹配 Markdown 图片语法 ![alt](path)
+    md_pattern = r'!\[.*?\]\((.*?)\)'
+    # 匹配 HTML img 标签 <img src="path">
+    html_pattern = r'<img\s+src=["\']([^"\']+)["\']'
+
+    patterns = [
+        (md_pattern, 'markdown'),
+        (html_pattern, 'html')
+    ]
+
+    for pattern, img_type in patterns:
+        matches = re.findall(pattern, content)
+        for match in matches:
+            # 检查是否是本地路径
+            if is_local_image_path(match):
+                # 提取文件名
+                filename = os.path.basename(match).strip()
+                if filename:
+                    local_images.append({
+                        'path': match,
+                        'filename': filename,
+                        'type': img_type
+                    })
+
+    # 去重
+    seen = set()
+    unique_images = []
+    for img in local_images:
+        if img['filename'] not in seen:
+            seen.add(img['filename'])
+            unique_images.append(img)
+
+    return jsonify({
+        'local_images': unique_images,
+        'count': len(unique_images)
+    })
+
+
+def is_local_image_path(path):
+    """判断路径是否是本地文件路径"""
+    path = path.strip()
+
+    # Windows 绝对路径: C:\, D:\ 等
+    if len(path) >= 2 and path[1] == ':' and path[0].isalpha():
+        return True
+
+    # Windows UNC 路径: \\server\share
+    if path.startswith('\\\\'):
+        return True
+
+    # file:// 协议
+    if path.startswith('file://'):
+        return True
+
+    return False
+
+
 # ==================== 分类管理 ====================
 
 @bp.route('/category/new', methods=['GET', 'POST'])

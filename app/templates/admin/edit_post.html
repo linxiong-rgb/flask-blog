@@ -348,7 +348,7 @@ function importMarkdown(input) {
 
     const reader = new FileReader();
 
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
         let content = e.target.result;
 
         // 尝试解析标题和内容
@@ -396,11 +396,11 @@ function importMarkdown(input) {
         // 填充内容
         document.getElementById('content').value = bodyContent;
 
-        // 显示成功提示
-        alert('Markdown 文件导入成功！\n\n' +
-              (title ? '标题: ' + title + '\n' : '') +
-              '内容长度: ' + bodyContent.length + ' 字符\n\n' +
-              '请检查并补充其他信息（分类、标签等）后保存。');
+        // 检测本地图片
+        await detectAndPromptLocalImages(bodyContent);
+
+        // 显示基本成功提示
+        showSaveIndicator('Markdown 文件导入成功！');
     };
 
     reader.onerror = function() {
@@ -409,6 +409,107 @@ function importMarkdown(input) {
 
     // 尝试多种编码读取
     readWithEncoding(file, reader);
+}
+
+// 检测并提示本地图片
+async function detectAndPromptLocalImages(content) {
+    try {
+        const response = await fetch('{{ url_for("admin.detect_local_images") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ content: content })
+        });
+
+        const data = await response.json();
+
+        if (data.count > 0) {
+            showLocalImagesPrompt(data.local_images);
+        }
+    } catch (error) {
+        console.error('检测本地图片失败:', error);
+    }
+}
+
+// 显示本地图片提示对话框
+function showLocalImagesPrompt(localImages) {
+    // 创建模态框
+    const modalHtml = `
+        <div id="localImagesModal" class="modal" style="display: block; background: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning text-dark">
+                        <h5 class="modal-title">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            检测到本地图片路径
+                        </h5>
+                        <button type="button" class="btn-close" onclick="closeLocalImagesModal()"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-3">检测到 <strong>${localImages.length}</strong> 个本地图片路径，这些图片无法在服务器上显示。</p>
+
+                        <div class="list-group mb-3" style="max-height: 200px; overflow-y: auto;">
+                            ${localImages.map(img => `
+                                <div class="list-group-item">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-file-image me-2 text-muted"></i>
+                                        <div class="flex-grow-1">
+                                            <strong>${escapeHtml(img.filename)}</strong>
+                                            <br>
+                                            <small class="text-muted">${escapeHtml(img.path)}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div class="alert alert-info mb-0">
+                            <strong>解决方案：</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>使用上方的 <strong>"插入图片"</strong> 按钮手动上传图片</li>
+                                <li>或直接在 Markdown 中修改为网络图片 URL</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeLocalImagesModal()">
+                            知道了
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="openImageUpload()">
+                            上传第一张图片
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // 添加到页面
+    const modalContainer = document.createElement('div');
+    modalContainer.innerHTML = modalHtml;
+    document.body.appendChild(modalContainer);
+}
+
+// 关闭本地图片提示框
+function closeLocalImagesModal() {
+    const modal = document.getElementById('localImagesModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// 打开图片上传
+function openImageUpload() {
+    closeLocalImagesModal();
+    document.getElementById('contentImageInput').click();
+}
+
+// HTML 转义函数
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 function readWithEncoding(file, reader) {
