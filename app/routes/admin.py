@@ -43,6 +43,11 @@ ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 MAX_IMAGE_SIZE = (3000, 3000)
 
 
+def is_super_admin():
+    """检查当前用户是否是超级管理员"""
+    return current_user.is_authenticated and getattr(current_user, 'is_superuser', False)
+
+
 def allowed_file(filename):
     """检查文件扩展名是否允许"""
     return '.' in filename and \
@@ -99,6 +104,117 @@ def dashboard():
     categories = Category.query.all()
     tags = Tag.query.all()
     return render_template('admin/dashboard.html', posts=posts, categories=categories, tags=tags)
+
+
+# ==================== 超级管理员功能 ====================
+
+@bp.route('/super')
+@login_required
+def super_dashboard():
+    """
+    超级管理员仪表板
+
+    显示所有用户的文章、统计数据
+
+    Returns:
+        str: 渲染后的超级管理员仪表板页面HTML
+    """
+    if not is_super_admin():
+        flash('您没有权限访问此页面', 'danger')
+        return redirect(url_for('main.index'))
+
+    # 获取所有文章及其作者信息
+    posts = Post.query.order_by(Post.created_at.desc()).all()
+    users = User.query.all()
+
+    # 统计数据
+    total_posts = len(posts)
+    total_users = len(users)
+    total_views = sum(p.views for p in posts)
+
+    return render_template('admin/super_dashboard.html',
+                          posts=posts,
+                          users=users,
+                          total_posts=total_posts,
+                          total_users=total_users,
+                          total_views=total_views)
+
+
+@bp.route('/super/posts')
+@login_required
+def super_posts():
+    """
+    超级管理员文章管理
+
+    显示所有用户的文章列表
+
+    Returns:
+        str: 渲染后的文章列表页面HTML
+    """
+    if not is_super_admin():
+        flash('您没有权限访问此页面', 'danger')
+        return redirect(url_for('main.index'))
+
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+
+    pagination = Post.query.order_by(Post.created_at.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+
+    return render_template('admin/super_posts.html',
+                          posts=pagination.items,
+                          pagination=pagination)
+
+
+@bp.route('/super/post/<int:post_id>')
+@login_required
+def super_edit_post(post_id):
+    """
+    超级管理员编辑任意用户的文章
+
+    Args:
+        post_id: 文章ID
+
+    Returns:
+        str: 重定向到文章编辑页面
+    """
+    if not is_super_admin():
+        flash('您没有权限执行此操作', 'danger')
+        return redirect(url_for('main.index'))
+
+    post = Post.query.get_or_404(post_id)
+    # 重定向到正常的编辑页面，但用户是超级管理员
+    return redirect(url_for('admin.edit_post', post_id=post_id))
+
+
+@bp.route('/super/post/<int:post_id>/delete', methods=['POST'])
+@login_required
+def super_delete_post(post_id):
+    """
+    超级管理员删除任意用户的文章
+
+    Args:
+        post_id: 文章ID
+
+    Returns:
+        JSON: 删除结果
+    """
+    if not is_super_admin():
+        return jsonify({'success': False, 'message': '您没有权限执行此操作'}), 403
+
+    post = Post.query.get_or_404(post_id)
+
+    try:
+        # 删除文章
+        db.session.delete(post)
+        db.session.commit()
+
+        return jsonify({'success': True, 'message': '文章已删除'})
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'删除文章失败: {str(e)}')
+        return jsonify({'success': False, 'message': '删除失败'}), 500
 
 
 # ==================== 图片上传 ====================
@@ -511,8 +627,8 @@ def edit_post(post_id):
     """
     post = Post.query.get_or_404(post_id)
 
-    # 权限检查
-    if post.author != current_user:
+    # 权限检查：只有作者或超级管理员可以编辑
+    if post.author != current_user and not is_super_admin():
         flash('你没有权限编辑这篇文章')
         return redirect(url_for('main.index'))
 

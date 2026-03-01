@@ -815,21 +815,37 @@ def init_database():
                     """))
                     conn.commit()
                     current_app.logger.info('access_password 列添加成功')
+
+                # 检查 is_superuser 列是否存在
+                result = conn.execute(text("""
+                    SELECT column_name
+                    FROM information_schema.columns
+                    WHERE table_name = 'user'
+                    AND column_name = 'is_superuser'
+                """))
+                if not result.fetchone():
+                    current_app.logger.info('检测到缺少 is_superuser 列，正在添加...')
+                    conn.execute(text("""
+                        ALTER TABLE "user" ADD COLUMN is_superuser BOOLEAN DEFAULT FALSE
+                    """))
+                    conn.commit()
+                    current_app.logger.info('is_superuser 列添加成功')
         except Exception as migrate_error:
             current_app.logger.warning(f'可见性列迁移检查/执行失败: {str(migrate_error)}')
 
         # 检查管理员是否已存在
         admin = User.query.filter_by(username='admin01').first()
         if not admin:
-            # 创建默认管理员
+            # 创建默认管理员（超级管理员）
             admin = User(
                 username='admin01',
-                email='admin01@blog.local'
+                email='admin01@blog.local',
+                is_superuser=True
             )
             admin.set_password('123456')
             db.session.add(admin)
             db.session.commit()
-            current_app.logger.info('默认管理员账号创建成功')
+            current_app.logger.info('默认管理员账号创建成功（超级管理员）')
 
         return jsonify({
             'success': True,
@@ -898,6 +914,30 @@ def migrate_database():
                 current_app.logger.info('access_password 列添加成功')
             else:
                 results.append('access_password 列已存在')
+
+            # 检查并添加 is_superuser 列到 user 表
+            result = conn.execute(text("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name = 'user'
+                AND column_name = 'is_superuser'
+            """))
+            if not result.fetchone():
+                current_app.logger.info('正在添加 is_superuser 列...')
+                conn.execute(text("""
+                    ALTER TABLE "user" ADD COLUMN is_superuser BOOLEAN DEFAULT FALSE
+                """))
+                conn.commit()
+                results.append('is_superuser 列添加成功')
+                # 将 admin01 设置为超级管理员
+                conn.execute(text("""
+                    UPDATE "user" SET is_superuser = TRUE WHERE username = 'admin01'
+                """))
+                conn.commit()
+                results.append('admin01 已设置为超级管理员')
+                current_app.logger.info('is_superuser 列添加成功')
+            else:
+                results.append('is_superuser 列已存在')
 
         return jsonify({
             'success': True,
