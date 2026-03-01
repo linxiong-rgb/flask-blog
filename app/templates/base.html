@@ -609,16 +609,36 @@
 
     // 检查浏览器是否支持推送通知
     function checkPushSupport() {
-        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-            console.log('推送通知不支持');
-            return false;
+        const hasServiceWorker = 'serviceWorker' in navigator;
+        const hasPushManager = 'PushManager' in window;
+        const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
+
+        console.log('推送支持检测:', {
+            hasServiceWorker,
+            hasPushManager,
+            isSecure,
+            protocol: window.location.protocol
+        });
+
+        if (!hasServiceWorker) {
+            console.warn('浏览器不支持 Service Worker');
         }
-        return true;
+        if (!hasPushManager) {
+            console.warn('浏览器不支持 PushManager');
+        }
+        if (!isSecure) {
+            console.warn('需要 HTTPS 连接才能使用推送通知');
+        }
+
+        return hasServiceWorker && hasPushManager && isSecure;
     }
 
     // 注册 Service Worker 并初始化推送
     async function initPushNotifications() {
+        console.log('初始化推送通知...');
+
         if (!checkPushSupport()) {
+            console.log('推送通知不支持，跳过初始化');
             return;
         }
 
@@ -631,6 +651,7 @@
 
             // 检查订阅状态
             const subscription = await registration.pushManager.getSubscription();
+            console.log('当前订阅状态:', !!subscription);
             updatePushButton(!!subscription);
 
         } catch (error) {
