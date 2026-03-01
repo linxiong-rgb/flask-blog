@@ -1,0 +1,213 @@
+/* ============================================================================
+技术栈徽章样式
+=========================================================================== */
+
+/* 基础徽章样式 */
+.tech-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+    cursor: default;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tech-badge i {
+    font-size: 1rem;
+}
+
+.tech-badge:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* 颜色主题 */
+.tech-badge-flask {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.tech-badge-python {
+    background: linear-gradient(135deg, #3776ab 0%, #ffd43b 100%);
+    color: white;
+}
+
+.tech-badge-sqlalchemy {
+    background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+    color: white;
+}
+
+.tech-badge-bootstrap {
+    background: linear-gradient(135deg, #7952b3 0%, #563d7c 100%);
+    color: white;
+}
+
+.tech-badge-postgres {
+    background: linear-gradient(135deg, #336791 0%, #008470 100%);
+    color: white;
+}
+
+.tech-badge-sqlite {
+    background: linear-gradient(135deg, #0f80cc 0%, #0796e0 100%);
+    color: white;
+}
+
+.tech-badge-markdown {
+    background: linear-gradient(135deg, #083fa1 0%, #00a1e0 100%);
+    color: white;
+}
+
+.tech-badge-license {
+    background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+    color: #2c3e50;
+}
+
+.tech-badge-mit {
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    color: #2c3e50;
+}
+
+/* GitHub 社交徽章 */
+.tech-badge-stars {
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    color: #2c3e50;
+}
+
+.tech-badge-forks {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    color: white;
+}
+
+.tech-badge-issues {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+}
+
+/* 徽章组容器 */
+.tech-badge-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 徽章容器（用于页面展示） */
+.tech-badges-container {
+    background: var(--card-bg, #ffffff);
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 16px;
+    padding: 2rem;
+    margin: 2rem 0;
+}
+
+[data-theme="dark"] .tech-badges-container {
+    background: var(--card-bg, #1a1a2e);
+    border-color: var(--border-color, #2d2d44);
+}
+
+.tech-badges-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-color, #2d3748);
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+/* 徽章尺寸变体 */
+.tech-badge-sm {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.7rem;
+    border-radius: 6px;
+}
+
+.tech-badge-sm i {
+    font-size: 0.8rem;
+}
+
+.tech-badge-lg {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.95rem;
+    border-radius: 10px;
+}
+
+.tech-badge-lg i {
+    font-size: 1.2rem;
+}
+
+/* 状态徽章 */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.status-badge-success {
+    background: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+}
+
+.status-badge-warning {
+    background: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+}
+
+.status-badge-error {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
+.status-badge-info {
+    background: rgba(23, 162, 184, 0.1);
+    color: #17a2b8;
+}
+
+.status-badge::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    .tech-badge-group {
+        gap: 0.5rem;
+    }
+
+    .tech-badge {
+        font-size: 0.75rem;
+        padding: 0.35rem 0.7rem;
+    }
+}
+
+/* 动画效果 */
+@keyframes badge-shine {
+    0% {
+        background-position: -200% center;
+    }
+    100% {
+        background-position: 200% center;
+    }
+}
+
+.tech-badge-shine {
+    background: linear-gradient(
+        90deg,
+        var(--badge-color-1) 0%,
+        var(--badge-color-2) 50%,
+        var(--badge-color-1) 100%
+    );
+    background-size: 200% auto;
+    animation: badge-shine 3s linear infinite;
+}

@@ -1,0 +1,92 @@
+{#
+自定义徽章组件
+使用方法：{% include 'components/badges.html' %}
+#}
+
+{# Flask 徽章 #}
+<div class="tech-badge tech-badge-flask">
+    <i class="bi bi-server"></i>
+    <span>Flask 3.0</span>
+</div>
+
+{# Python 徽章 #}
+<div class="tech-badge tech-badge-python">
+    <i class="bi bi-braces"></i>
+    <span>Python 3.10+</span>
+</div>
+
+{# 数据库徽章 #}
+<div class="tech-badge tech-badge-db">
+    <i class="bi bi-database"></i>
+    <span>SQLAlchemy</span>
+</div>
+
+{# MIT License 徽章 #}
+<div class="tech-badge tech-badge-license">
+    <i class="bi bi-shield-check"></i>
+    <span>MIT License</span>
+</div>
+
+{# 徽章样式 #}
+<style>
+.tech-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.tech-badge i {
+    font-size: 0.9rem;
+}
+
+.tech-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tech-badge-flask {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.tech-badge-python {
+    background: linear-gradient(135deg, #3776ab 0%, #ffd43b 100%);
+    color: white;
+}
+
+.tech-badge-db {
+    background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+    color: white;
+}
+
+.tech-badge-license {
+    background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+    color: #2c3e50;
+}
+
+/* 徽章组 */
+.tech-badge-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* 小徽章 */
+.tech-badge-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+}
+
+/* 大徽章 */
+.tech-badge-lg {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+</style>

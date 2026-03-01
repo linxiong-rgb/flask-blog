@@ -4,11 +4,13 @@
 
 **现代化、功能完整的 Flask 博客系统**
 
-[![Flask](https://img.shields.io/badge/Flask-3.0.0-blue?logo=flask)](https://flask.palletsprojects.com/)
-[![Python](https://img.shields.io/badge/Python-3.10+-green?logo=python)](https://www.python.org/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/linxiong-rgb/flask-blog?style=social)](https://github.com/linxiong-rgb/flask-blog/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/linxiong-rgb/flask-blog?style=social)](https://github.com/linxiong-rgb/flask-blog/network/members)
+![Flask](https://img.shields.io/badge/Flask-3.0.0-blue?logo=flask&cacheSeconds=3600)
+![Python](https://img.shields.io/badge/Python-3.10+-green?logo=python&cacheSeconds=3600)
+![License](https://img.shields.io/badge/License-MIT-yellow?cacheSeconds=3600)
+![GitHub stars](https://img.shields.io/github/stars/linxiong-rgb/flask-blog?style=social&cacheSeconds=3600)
+![GitHub forks](https://img.shields.io/github/forks/linxiong-rgb/flask-blog?style=social&cacheSeconds=3600)
+
+*如果徽章无法显示，请检查网络连接或使用 VPN 访问 shields.io*
 
 </div>
 
