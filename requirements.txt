@@ -34,3 +34,6 @@ requests>=2.31.0
 
 # PostgreSQL 数据库（Render 部署使用）
 psycopg2-binary==2.9.10
+
+# Web Push 推送通知
+pywebpush==1.14.0

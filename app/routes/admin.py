@@ -274,6 +274,10 @@ def super_reset_all_data():
 
         db.session.commit()
 
+        # 清除所有缓存
+        cache.clear()
+        current_app.logger.info('已清除所有缓存')
+
         current_app.logger.info(
             f'数据重置完成: 删除了 {posts_count} 篇文章, {categories_count} 个分类, '
             f'{tags_count} 个标签, {links_count} 个友情链接, {bookmarks_count} 个收藏记录'
