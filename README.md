@@ -12,9 +12,9 @@
 |------|------|
 | 🐍 **Python** | 3.10+ |
 | 🌶 **Flask** | 3.0.0 |
-| 📄 **License** | MIT |
-| ⭐ **Stars** | [![GitHub stars](https://img.shields.io/github/stars/linxiong-rgb/flask-blog?style=social)](https://github.com/linxiong-rgb/flask-blog/stargazers) |
-| 🍴 **Forks** | [![GitHub forks](https://img.shields.io/github/forks/linxiong-rgb/flask-blog?style=social)](https://github.com/linxiong-rgb/flask-blog/network/members) |
+| 📄 **License** | [MIT](LICENSE) |
+| ⭐ **Stars** | [给个 Star](https://github.com/linxiong-rgb/flask-blog/stargazers) |
+| 🍴 **Forks** | [欢迎 Fork](https://github.com/linxiong-rgb/flask-blog/network/members) |
 
 ---
 
