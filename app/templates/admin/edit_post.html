@@ -1438,9 +1438,10 @@ function uploadAndReplaceLocalPath(file, localPath, textarea) {
 <style>
 /* 可见性选项卡片样式 */
 .radio-card {
-    cursor: pointer;
+    cursor: pointer !important;
     transition: all 0.2s ease;
     position: relative;
+    user-select: none;
 }
 
 .radio-card:hover {
@@ -1450,15 +1451,15 @@ function uploadAndReplaceLocalPath(file, localPath, textarea) {
 }
 
 .radio-card input[type="radio"] {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
+    position: absolute !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
 
 .radio-card label {
-    cursor: pointer;
-    user-select: none;
-    pointer-events: none;
+    cursor: pointer !important;
+    user-select: none !important;
+    pointer-events: none !important;
 }
 
 .radio-card.border-primary {
