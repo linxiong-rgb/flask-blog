@@ -21,12 +21,10 @@
             <!-- 文章列表 -->
             {% if posts.items %}
                 {% for post in posts.items %}
-                    <article class="post-card {% if post.is_new() %}post-card-new{% endif %}">
-                        {% if post.is_new() %}
-                            <div class="post-new-badge">
-                                <span class="new-badge">NEW</span>
-                            </div>
-                        {% endif %}
+                    <article class="post-card" data-post-id="{{ post.id }}">
+                        <div class="post-new-badge" style="display: none;">
+                            <span class="new-badge">NEW</span>
+                        </div>
                         {% if post.cover_image %}
                             <img src="{{ post.cover_image }}" alt="{{ post.title }}" class="post-card-img" loading="lazy">
                         {% endif %}
@@ -49,7 +47,7 @@
                             </div>
 
                             <h2 class="post-card-title">
-                                <a href="{{ url_for('main.post', post_id=post.id) }}">{{ post.title }}</a>
+                                <a href="{{ url_for('main.post', post_id=post.id) }}" class="post-link" data-post-id="{{ post.id }}">{{ post.title }}</a>
                             </h2>
 
                             {% if post.summary %}
@@ -66,7 +64,7 @@
                                 </div>
                             {% endif %}
 
-                            <a href="{{ url_for('main.post', post_id=post.id) }}" class="btn btn-outline-primary btn-sm">
+                            <a href="{{ url_for('main.post', post_id=post.id) }}" class="btn btn-outline-primary btn-sm post-link" data-post-id="{{ post.id }}">
                                 阅读全文 <i class="bi bi-arrow-right"></i>
                             </a>
                         </div>
@@ -139,15 +137,15 @@
                     </div>
                 {% endif %}
 
-                <!-- 新文章提示 -->
+                <!-- 未读文章提示 -->
                 {% set latest_post = posts.items[0] if posts.items else none %}
-                {% if latest_post and latest_post.is_new() %}
-                    <div class="sidebar-widget" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                {% if latest_post %}
+                    <div class="sidebar-widget unread-notice" id="unreadNotice" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; display: none;">
                         <h5 class="sidebar-widget-title" style="color: white;">
-                            <i class="bi bi-stars"></i> 有新文章
+                            <i class="bi bi-stars"></i> 有未读文章
                         </h5>
                         <div class="new-post-notice">
-                            <a href="{{ url_for('main.post', post_id=latest_post.id) }}" style="color: white; text-decoration: none; display: block;">
+                            <a href="{{ url_for('main.post', post_id=latest_post.id) }}" class="post-link" data-post-id="{{ latest_post.id }}" style="color: white; text-decoration: none; display: block;">
                                 <div style="font-weight: 600; margin-bottom: 8px;">
                                     {{ latest_post.title }}
                                 </div>
@@ -297,5 +295,102 @@
     transition: all 0.3s ease;
 }
 </style>
+
+<script>
+// 阅读追踪功能
+(function() {
+    const STORAGE_KEY = 'blog_read_posts';
+    const MAX_READ_POSTS = 500; // 最多存储500篇已读文章
+
+    // 获取已读文章列表
+    function getReadPosts() {
+        try {
+            const data = localStorage.getItem(STORAGE_KEY);
+            return data ? JSON.parse(data) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    // 保存已读文章列表
+    function saveReadPosts(readPosts) {
+        try {
+            // 限制存储数量
+            if (readPosts.length > MAX_READ_POSTS) {
+                readPosts = readPosts.slice(-MAX_READ_POSTS);
+            }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(readPosts));
+        } catch (e) {
+            console.error('保存已读文章失败:', e);
+        }
+    }
+
+    // 检查文章是否已读
+    function isPostRead(postId) {
+        const readPosts = getReadPosts();
+        return readPosts.includes(postId);
+    }
+
+    // 标记文章为已读
+    function markAsRead(postId) {
+        const readPosts = getReadPosts();
+        if (!readPosts.includes(postId)) {
+            readPosts.push(postId);
+            saveReadPosts(readPosts);
+        }
+    }
+
+    // 检查是否有未读文章
+    function hasUnreadPosts() {
+        const postCards = document.querySelectorAll('.post-card[data-post-id]');
+        for (let card of postCards) {
+            const postId = parseInt(card.getAttribute('data-post-id'));
+            if (!isPostRead(postId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // 更新NEW标记显示
+    function updateNewBadges() {
+        const postCards = document.querySelectorAll('.post-card[data-post-id]');
+        postCards.forEach(card => {
+            const postId = parseInt(card.getAttribute('data-post-id'));
+            const badge = card.querySelector('.post-new-badge');
+
+            if (!isPostRead(postId)) {
+                badge.style.display = 'block';
+                card.classList.add('post-card-new');
+            } else {
+                badge.style.display = 'none';
+                card.classList.remove('post-card-new');
+            }
+        });
+
+        // 更新未读文章提示
+        const unreadNotice = document.getElementById('unreadNotice');
+        if (unreadNotice) {
+            unreadNotice.style.display = hasUnreadPosts() ? 'block' : 'none';
+        }
+    }
+
+    // 页面加载时更新NEW标记
+    document.addEventListener('DOMContentLoaded', function() {
+        updateNewBadges();
+
+        // 为所有文章链接添加点击事件
+        const postLinks = document.querySelectorAll('.post-link');
+        postLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                const postId = parseInt(this.getAttribute('data-post-id'));
+                if (postId) {
+                    markAsRead(postId);
+                }
+            });
+        });
+    });
+})();
+</script>
 
 {% endblock %}
