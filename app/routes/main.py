@@ -272,7 +272,14 @@ def about():
     Returns:
         str: 渲染后的关于页面HTML
     """
-    return render_template('about.html')
+    from app.models.post import Post
+    from app.models.user import User
+
+    total_posts = Post.query.filter_by(published=True).count()
+    total_users = User.query.count()
+    total_views = db.session.query(func.sum(Post.views)).filter_by(published=True).scalar() or 0
+
+    return render_template('about.html', total_posts=total_posts, total_users=total_users, total_views=total_views)
 
 
 @bp.route('/category/<int:category_id>')

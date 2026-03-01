@@ -10,48 +10,64 @@ import re
 from collections import Counter
 
 
-def generate_summary(content, max_length=100):
+def generate_summary(content, max_length=80):
     """
-    从文章内容智能生成摘要
+    从文章内容生成精炼摘要（一句话）
 
-    使用基于关键词和句子位置的算法，智能提取最具代表性的句子
+    提取关键词和核心句子，生成体现主题的精炼摘要
 
     Args:
         content: 文章内容（Markdown格式）
-        max_length: 摘要最大长度（默认200字符）
+        max_length: 摘要最大长度（默认80字符）
 
     Returns:
-        str: 生成的摘要（1-3句话，无特殊符号）
+        str: 生成的摘要（一句话，体现核心关键词）
     """
     if not content:
         return ''
 
-    # 步骤1: 清理 Markdown 和特殊符号
-    cleaned_content = _clean_content(content)
+    # 清理内容
+    cleaned = _clean_content(content)
 
-    # 步骤2: 分割成句子
-    sentences = _split_sentences(cleaned_content)
-
-    if not sentences:
-        return ''
-
-    # 步骤3: 提取关键词用于评分
-    keywords = _extract_keywords(cleaned_content)
+    # 分句
+    sentences = _split_sentences(cleaned)
 
     if not sentences:
-        return ''
+        return cleaned[:max_length].rstrip() + '...' if len(cleaned) > max_length else cleaned
 
-    # 步骤4: 智能选择句子
-    selected_sentences = _select_best_sentences(sentences, keywords, max_length)
+    # 提取关键词
+    keywords = _extract_keywords(cleaned)[:5]
 
-    if not selected_sentences:
-        # 降级方案：使用首句
-        selected_sentences = [sentences[0]] if sentences else []
+    # 评分选择最佳句子
+    best = None
+    best_score = -1
 
-    # 步骤5: 组合并优化摘要
-    summary = ' '.join(selected_sentences)
+    for i, sentence in enumerate(sentences):
+        if len(sentence) < 10 or len(sentence) > max_length + 20:
+            continue
 
-    return _finalize_summary(summary, max_length)
+        score = 0
+        # 首句加分
+        if i == 0:
+            score += 10
+        # 关键词密度
+        score += sum(5 for kw in keywords if kw in sentence)
+        # 句子长度适中
+        if 20 <= len(sentence) <= 60:
+            score += 5
+
+        if score > best_score:
+            best = sentence
+            best_score = score
+
+    if not best:
+        best = sentences[0]
+
+    # 截断到最大长度
+    if len(best) > max_length:
+        best = best[:max_length - 2].rstrip('，。、；：') + '...'
+
+    return best
 
 
 def _extract_keywords(content, max_keywords=10):

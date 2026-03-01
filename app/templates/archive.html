@@ -329,12 +329,6 @@
                                     <a href="{{ url_for('main.post', post_id=post.id) }}">{{ post.title }}</a>
                                 </h3>
 
-                                {% if post.summary %}
-                                <div class="timeline-summary">
-                                    {{ post.summary }}
-                                </div>
-                                {% endif %}
-
                                 <div class="timeline-meta">
                                     {% if post.category %}
                                         <span class="timeline-meta-item">
