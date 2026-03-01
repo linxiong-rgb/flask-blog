@@ -140,20 +140,17 @@
                 <!-- 未读文章提示 -->
                 {% set latest_post = posts.items[0] if posts.items else none %}
                 {% if latest_post %}
-                    <div class="sidebar-widget unread-notice" id="unreadNotice" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; display: none;">
-                        <h5 class="sidebar-widget-title" style="color: white;">
-                            <i class="bi bi-stars"></i> 有未读文章
+                    <div class="sidebar-widget" id="unreadNotice" style="display: none;">
+                        <h5 class="sidebar-widget-title">
+                            <i class="bi bi-bell"></i> 未读文章
                         </h5>
-                        <div class="new-post-notice">
-                            <a href="{{ url_for('main.post', post_id=latest_post.id) }}" class="post-link" data-post-id="{{ latest_post.id }}" style="color: white; text-decoration: none; display: block;">
-                                <div style="font-weight: 600; margin-bottom: 8px;">
+                        <ul class="hot-posts-list">
+                            <li>
+                                <a href="{{ url_for('main.post', post_id=latest_post.id) }}" class="post-link" data-post-id="{{ latest_post.id }}">
                                     {{ latest_post.title }}
-                                </div>
-                                <div style="font-size: 0.85rem; opacity: 0.9;">
-                                    <i class="bi bi-clock"></i> {{ latest_post.created_at.strftime('%Y-%m-%d') }}
-                                </div>
-                            </a>
-                        </div>
+                                </a>
+                            </li>
+                        </ul>
                     </div>
                 {% endif %}
 
@@ -286,13 +283,6 @@
     50% {
         transform: scale(1.05);
     }
-}
-
-/* 新文章提示样式 */
-.new-post-notice a:hover {
-    opacity: 0.9;
-    transform: translateX(3px);
-    transition: all 0.3s ease;
 }
 </style>
 

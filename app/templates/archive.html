@@ -4,204 +4,139 @@
 
 {% block content %}
 <style>
-.archive-page {
+.archive-container {
     padding: 20px 0;
 }
 
 .archive-header {
     text-align: center;
-    padding: 40px 20px;
-    background: linear-gradient(135deg, var(--primary-color, #667eea) 0%, var(--secondary-color, #764ba2) 100%);
-    border-radius: 16px;
-    color: white;
+    padding: 30px 20px;
     margin-bottom: 30px;
 }
 
 .archive-header h1 {
-    font-size: 2.5rem;
+    font-size: 2rem;
     font-weight: 700;
-    margin-bottom: 10px;
-}
-
-.archive-header p {
-    font-size: 1.1rem;
-    opacity: 0.9;
-}
-
-.archive-timeline {
-    position: relative;
-    padding-left: 30px;
-}
-
-.archive-timeline::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: linear-gradient(to bottom, var(--primary-color, #667eea), var(--secondary-color, #764ba2));
-    border-radius: 3px;
-}
-
-.archive-year {
-    margin-bottom: 40px;
-    position: relative;
-}
-
-.archive-year-marker {
-    position: absolute;
-    left: -38px;
-    top: 5px;
-    width: 20px;
-    height: 20px;
-    background: var(--primary-color, #667eea);
-    border: 4px solid white;
-    border-radius: 50%;
-    box-shadow: 0 0 0 3px var(--primary-color, #667eea);
-}
-
-.archive-year-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    padding: 15px 20px;
-    background: linear-gradient(135deg, var(--primary-color, #667eea) 0%, var(--secondary-color, #764ba2) 100%);
-    border-radius: 12px;
-    color: white;
-}
-
-.archive-year-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin: 0;
-}
-
-.archive-year-count {
-    background: rgba(255, 255, 255, 0.2);
-    padding: 5px 15px;
-    border-radius: 20px;
-    font-size: 0.9rem;
-    font-weight: 600;
-}
-
-.archive-month {
-    margin-bottom: 25px;
-}
-
-.archive-month-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 15px;
-    padding: 10px 15px;
-    background: var(--card-bg, #f8f9fa);
-    border-radius: 8px;
-    border-left: 4px solid var(--primary-color, #667eea);
-}
-
-.archive-month-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin: 0;
+    margin-bottom: 8px;
     color: var(--text-color);
 }
 
-.archive-month-count {
+.archive-header p {
     color: var(--text-muted, #6c757d);
-    font-size: 0.85rem;
+    font-size: 0.95rem;
 }
 
-.archive-post-list {
+/* 归档列表 */
+.archive-list {
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
-.archive-post-item {
+.archive-item {
     background: var(--card-bg, #ffffff);
-    border-radius: 10px;
-    padding: 15px 20px;
-    margin-bottom: 12px;
-    border-left: 3px solid transparent;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 15px;
+    border-left: 4px solid var(--primary-color, #667eea);
     transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 15px;
 }
 
-.archive-post-item:hover {
-    border-left-color: var(--primary-color, #667eea);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+.archive-item:hover {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     transform: translateX(5px);
 }
 
-.archive-post-date {
-    flex-shrink: 0;
-    width: 60px;
-    text-align: center;
-    padding: 8px;
-    background: linear-gradient(135deg, var(--primary-color, #667eea) 0%, var(--secondary-color, #764ba2) 100%);
-    color: white;
-    border-radius: 8px;
-    font-weight: 700;
-    font-size: 0.9rem;
-}
-
-.archive-post-content {
-    flex: 1;
-    min-width: 0;
-}
-
-.archive-post-title {
-    font-weight: 600;
-    color: var(--text-color);
-    text-decoration: none;
-    display: block;
-    margin-bottom: 8px;
-    font-size: 1.05rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.archive-post-title:hover {
-    color: var(--primary-color, #667eea);
-}
-
-.archive-post-meta {
+.archive-item-header {
     display: flex;
     align-items: center;
     gap: 15px;
+    margin-bottom: 12px;
+}
+
+.archive-date {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--text-muted, #6c757d);
+    font-weight: 600;
+    padding: 6px 12px;
+    background: var(--badge-bg, #f8f9fa);
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.archive-date-icon {
+    color: var(--primary-color, #667eea);
+}
+
+.archive-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin: 0;
+    flex: 1;
+}
+
+.archive-title a {
+    color: var(--text-color);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.archive-title a:hover {
+    color: var(--primary-color, #667eea);
+}
+
+.archive-meta {
+    display: flex;
+    align-items: center;
+    gap: 20px;
     flex-wrap: wrap;
     font-size: 0.85rem;
     color: var(--text-muted, #6c757d);
 }
 
-.archive-post-category {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    color: var(--primary-color, #667eea);
-}
-
-.archive-post-views {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.archive-post-tags {
+.archive-meta-item {
     display: flex;
+    align-items: center;
     gap: 5px;
+}
+
+.archive-meta-item i {
+    font-size: 0.9rem;
+}
+
+.archive-category {
+    color: var(--primary-color, #667eea);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.archive-category:hover {
+    text-decoration: underline;
+}
+
+.archive-summary {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color, #e9ecef);
+    font-size: 0.9rem;
+    color: var(--text-muted, #6c757d);
+    line-height: 1.6;
+}
+
+.archive-tags {
+    margin-top: 10px;
+    display: flex;
+    gap: 6px;
     flex-wrap: wrap;
 }
 
-.badge-tag-sm {
+.archive-tag {
     display: inline-block;
-    padding: 2px 8px;
-    background: var(--badge-bg, #e9ecef);
+    padding: 3px 10px;
+    background: var(--badge-bg, #f8f9fa);
     color: var(--text-color);
     border-radius: 4px;
     font-size: 0.75rem;
@@ -209,91 +144,110 @@
     transition: all 0.2s ease;
 }
 
-.badge-tag-sm:hover {
+.archive-tag:hover {
     background: var(--primary-color, #667eea);
     color: white;
 }
 
+/* 空状态 */
 .empty-archive {
     text-align: center;
-    padding: 80px 20px;
+    padding: 60px 20px;
 }
 
 .empty-archive i {
-    font-size: 5rem;
+    font-size: 4rem;
     color: var(--text-muted, #6c757d);
-    margin-bottom: 20px;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    .archive-item {
+        padding: 15px;
+    }
+
+    .archive-date {
+        font-size: 0.8rem;
+        padding: 5px 10px;
+    }
+
+    .archive-title {
+        font-size: 1rem;
+    }
+
+    .archive-meta {
+        gap: 12px;
+    }
 }
 </style>
 
-<div class="archive-page">
+<div class="archive-container">
     <!-- 归档头部 -->
     <div class="archive-header">
-        <h1><i class="bi bi-archive-fill"></i> 文章归档</h1>
-        <p>共 {{ total_posts }} 篇文章，记录技术与成长的点滴</p>
+        <h1><i class="bi bi-archive"></i> 文章归档</h1>
+        <p>共 {{ total_posts }} 篇文章</p>
     </div>
 
     {% if archive %}
-        <div class="archive-timeline">
+        <ul class="archive-list">
             {% for year, year_data in archive.items()|sort(reverse=true) %}
-                <div class="archive-year">
-                    <div class="archive-year-marker"></div>
-                    <div class="archive-year-header">
-                        <h2 class="archive-year-title">
-                            <i class="bi bi-calendar-event"></i> {{ year }} 年
-                        </h2>
-                        <span class="archive-year-count">{{ year_data.count }} 篇文章</span>
-                    </div>
-
-                    {% for month_key, month_data in year_data.months.items()|sort(reverse=true) %}
-                        <div class="archive-month">
-                            <div class="archive-month-header">
-                                <h3 class="archive-month-title">
-                                    {{ month_data.name }}
-                                </h3>
-                                <span class="archive-month-count">{{ month_data.posts|length }} 篇</span>
+                {% for month_key, month_data in year_data.months.items()|sort(reverse=true) %}
+                    {% for post in month_data.posts %}
+                        <li class="archive-item">
+                            <div class="archive-item-header">
+                                <div class="archive-date">
+                                    <i class="bi bi-calendar3 archive-date-icon"></i>
+                                    <span>{{ post.created_at.strftime('%Y') }}年{{ post.created_at.strftime('%m') }}月{{ post.created_at.strftime('%d') }}日</span>
+                                    <span>{{ post.created_at.strftime('%H:%M') }}</span>
+                                </div>
+                                <h2 class="archive-title">
+                                    <a href="{{ url_for('main.post', post_id=post.id) }}">{{ post.title }}</a>
+                                </h2>
                             </div>
 
-                            <ul class="archive-post-list">
-                                {% for post in month_data.posts %}
-                                    <li class="archive-post-item">
-                                        <div class="archive-post-date">
-                                            {{ post.created_at.strftime('%m-%d') }}
-                                        </div>
-                                        <div class="archive-post-content">
-                                            <a href="{{ url_for('main.post', post_id=post.id) }}" class="archive-post-title">
-                                                {{ post.title }}
-                                            </a>
-                                            <div class="archive-post-meta">
-                                                {% if post.category %}
-                                                    <span class="archive-post-category">
-                                                        <i class="bi bi-folder"></i> {{ post.category.name }}
-                                                    </span>
-                                                {% endif %}
-                                                <span class="archive-post-views">
-                                                    <i class="bi bi-eye"></i> {{ post.views }}
-                                                </span>
-                                                {% if post.tags %}
-                                                    <div class="archive-post-tags">
-                                                        {% for tag in post.tags[:3] %}
-                                                            <span class="badge-tag-sm">{{ tag.name }}</span>
-                                                        {% endfor %}
-                                                    </div>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        </div>
+                            <div class="archive-meta">
+                                {% if post.category %}
+                                    <span class="archive-meta-item">
+                                        <i class="bi bi-folder"></i>
+                                        <a href="{{ url_for('main.category', category_id=post.category.id) }}" class="archive-category">
+                                            {{ post.category.name }}
+                                        </a>
+                                    </span>
+                                {% endif %}
+                                <span class="archive-meta-item">
+                                    <i class="bi bi-person"></i>
+                                    {{ post.author.username }}
+                                </span>
+                                <span class="archive-meta-item">
+                                    <i class="bi bi-eye"></i>
+                                    {{ post.views }}
+                                </span>
+                            </div>
+
+                            {% if post.summary %}
+                                <div class="archive-summary">
+                                    {{ post.summary }}
+                                </div>
+                            {% endif %}
+
+                            {% if post.tags %}
+                                <div class="archive-tags">
+                                    {% for tag in post.tags[:4] %}
+                                        <a href="{{ url_for('main.tag', tag_id=tag.id) }}" class="archive-tag">
+                                            #{{ tag.name }}
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </li>
                     {% endfor %}
-                </div>
+                {% endfor %}
             {% endfor %}
-        </div>
+        </ul>
     {% else %}
         <div class="empty-archive">
             <i class="bi bi-inbox"></i>
-            <p class="text-muted">还没有发布任何文章</p>
+            <p class="text-muted mt-3">还没有发布任何文章</p>
             {% if current_user.is_authenticated %}
                 <a href="{{ url_for('admin.new_post') }}" class="btn btn-primary">
                     <i class="bi bi-plus-lg"></i> 创建第一篇文章
