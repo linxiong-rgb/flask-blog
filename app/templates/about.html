@@ -4,7 +4,7 @@
 
 {% block extra_css %}
 <style>
-/* 面包屑导航样式 - 全新设计 */
+/* 面包屑导航样式 */
 .breadcrumb-wrapper {
     background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
     border-radius: 12px;
@@ -62,148 +62,304 @@
     padding: 0.4rem 0.8rem;
 }
 
-/* 关于页面标题 */
-.about-page-title {
-    font-size: 1.75rem;
+/* Hero 区域 */
+.about-hero {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #764ba2 100%);
+    border-radius: 20px;
+    padding: 3rem 2rem;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+    color: white;
+    text-align: center;
+}
+
+.about-hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 400px;
+    height: 400px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+}
+
+.about-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -30%;
+    left: -10%;
+    width: 300px;
+    height: 300px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+}
+
+.about-hero-content {
+    position: relative;
+    z-index: 1;
+}
+
+.about-hero-title {
+    font-size: 2.5rem;
     font-weight: 700;
     margin-bottom: 0.5rem;
-    color: var(--text-color);
 }
 
-.about-page-subtitle {
-    color: var(--text-light);
-    font-size: 0.95rem;
-    margin-bottom: 2rem;
-}
-
-/* 卡片通用样式 */
-.info-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 1.5rem;
+.about-hero-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.95;
     margin-bottom: 1.5rem;
 }
 
-.info-card-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--text-color);
+.about-hero-badge {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    backdrop-filter: blur(10px);
 }
 
-.info-card-content {
-    color: var(--text-light);
-    line-height: 1.7;
+/* 统计数据 */
+.stats-section {
+    margin-bottom: 2rem;
 }
 
-.info-card-content p {
-    margin-bottom: 0.75rem;
-}
-
-.info-card-content p:last-child {
-    margin-bottom: 0;
-}
-
-/* 功能网格 */
-.features-grid {
+.stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
 }
 
-.feature-item {
+.stat-card {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 1.25rem;
+    border-radius: 16px;
+    padding: 2rem 1.5rem;
     text-align: center;
     transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
 }
 
-.feature-item:hover {
-    border-color: var(--primary-color);
-    transform: translateY(-3px);
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-color), #764ba2);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
     box-shadow: var(--shadow-lg);
+    border-color: var(--primary-color);
 }
 
-.feature-icon {
+.stat-card:hover::before {
+    transform: scaleX(1);
+}
+
+.stat-icon {
     width: 50px;
     height: 50px;
     border-radius: 50%;
-    background: rgba(102, 126, 234, 0.1);
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
     color: var(--primary-color);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.3rem;
+    margin: 0 auto 1rem;
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary-color), #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    font-weight: 500;
+}
+
+/* 内容卡片 */
+.content-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    transition: all 0.3s ease;
+}
+
+.content-card:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-color);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--primary-color), #764ba2);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+
+.card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0;
+}
+
+/* 博客简介 */
+.about-intro {
+    color: var(--text-light);
+    line-height: 1.8;
+    font-size: 1.05rem;
+}
+
+.about-intro p {
+    margin-bottom: 1rem;
+}
+
+.about-intro p:last-child {
+    margin-bottom: 0;
+}
+
+/* 功能特色 */
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+}
+
+.feature-item {
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.feature-item:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-color);
+}
+
+.feature-icon {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
     margin: 0 auto 0.75rem;
 }
 
 .feature-item h4 {
     font-size: 0.95rem;
     font-weight: 600;
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.25rem;
     color: var(--text-color);
 }
 
 .feature-item p {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--text-light);
     margin: 0;
 }
 
-/* 技术栈列表 */
-.tech-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
+/* 技术栈 */
+.tech-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
 }
 
 .tech-item {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 0.5rem;
     background: var(--bg-color);
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    font-size: 0.85rem;
+    border: 1px solid var(--border-color);
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
     color: var(--text-color);
+    transition: all 0.2s ease;
+}
+
+.tech-item:hover {
+    border-color: var(--primary-color);
+    background: rgba(102, 126, 234, 0.05);
 }
 
 .tech-item i {
     color: var(--primary-color);
+    font-size: 1.1rem;
 }
 
 /* 联系卡片 */
-.contact-card {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color, #764ba2) 100%);
-    border-radius: 12px;
+.contact-section {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+    border-radius: 16px;
     padding: 2rem;
-    color: white;
     text-align: center;
 }
 
-.contact-card-title {
-    font-size: 1.3rem;
-    font-weight: 700;
+.contact-section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-color);
     margin-bottom: 0.5rem;
 }
 
-.contact-card-desc {
-    opacity: 0.9;
+.contact-section-desc {
+    color: var(--text-light);
     margin-bottom: 1.5rem;
 }
 
 .contact-btn {
-    display: inline-block;
-    padding: 0.6rem 2rem;
-    background: white;
-    color: var(--primary-color);
-    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 2rem;
+    background: linear-gradient(135deg, var(--primary-color), #764ba2);
+    color: white;
+    border-radius: 25px;
     font-weight: 600;
     text-decoration: none;
     transition: all 0.3s ease;
@@ -211,82 +367,119 @@
 
 .contact-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    color: white;
 }
 
-.contact-info {
+.contact-links {
     display: flex;
     justify-content: center;
     gap: 2rem;
+    margin-top: 1.5rem;
     flex-wrap: wrap;
-    margin-top: 1rem;
 }
 
-.contact-item {
+.contact-link {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.9rem;
-}
-
-.contact-item a {
-    color: white;
+    color: var(--text-light);
     text-decoration: none;
-    opacity: 0.9;
-    transition: opacity 0.2s;
+    transition: color 0.2s;
+    font-size: 0.95rem;
 }
 
-.contact-item a:hover {
-    opacity: 1;
+.contact-link:hover {
+    color: var(--primary-color);
 }
 
-/* 统计数据 */
-.stats-grid {
+.contact-link i {
+    font-size: 1.1rem;
+}
+
+/* 快速链接 */
+.quick-links {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
-    margin-bottom: 1.5rem;
 }
 
-.stat-card {
-    background: var(--card-bg);
+.quick-link-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--bg-color);
     border: 1px solid var(--border-color);
     border-radius: 10px;
-    padding: 1.25rem;
-    text-align: center;
+    color: var(--text-color);
+    text-decoration: none;
+    transition: all 0.2s ease;
 }
 
-.stat-number {
-    font-size: 2rem;
-    font-weight: 700;
+.quick-link-item:hover {
+    border-color: var(--primary-color);
+    background: rgba(102, 126, 234, 0.05);
     color: var(--primary-color);
-    line-height: 1;
-    margin-bottom: 0.35rem;
 }
 
-.stat-label {
-    font-size: 0.85rem;
-    color: var(--text-light);
+.quick-link-item i {
+    font-size: 1.1rem;
 }
 
 /* 响应式 */
 @media (max-width: 768px) {
+    .about-hero-title {
+        font-size: 1.8rem;
+    }
+
+    .about-hero-subtitle {
+        font-size: 1rem;
+    }
+
     .stats-grid {
         grid-template-columns: repeat(3, 1fr);
-        gap: 0.75rem;
+        gap: 1rem;
+    }
+
+    .stat-card {
+        padding: 1.5rem 1rem;
     }
 
     .stat-number {
-        font-size: 1.5rem;
+        font-size: 1.8rem;
     }
 
-    .stat-label {
-        font-size: 0.75rem;
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.1rem;
     }
 
-    .contact-info {
+    .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+
+    .feature-item {
+        padding: 1.25rem 0.75rem;
+    }
+
+    .tech-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .quick-links {
+        grid-template-columns: 1fr;
+    }
+
+    .contact-links {
         flex-direction: column;
         gap: 0.75rem;
+    }
+
+    .content-card {
+        padding: 1.5rem;
     }
 }
 </style>
@@ -304,46 +497,71 @@
         </nav>
     </div>
 
-    <!-- 页面标题 -->
-    <h1 class="about-page-title">
-        <i class="bi bi-info-circle"></i> 关于本站
-    </h1>
-    <p class="about-page-subtitle">记录技术成长，分享学习心得</p>
+    <!-- Hero 区域 -->
+    <div class="about-hero">
+        <div class="about-hero-content">
+            <h1 class="about-hero-title">
+                <i class="bi bi-info-circle"></i> 关于本站
+            </h1>
+            <p class="about-hero-subtitle">记录技术成长，分享学习心得</p>
+            <span class="about-hero-badge">
+                <i class="bi bi-code-slash"></i> 技术博客
+            </span>
+        </div>
+    </div>
 
     <!-- 统计数据 -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-number">{{ total_posts }}</div>
-            <div class="stat-label">文章</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number">{{ total_users }}</div>
-            <div class="stat-label">用户</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number">{{ total_views }}</div>
-            <div class="stat-label">浏览</div>
+    <div class="stats-section">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="bi bi-file-earmark-text"></i>
+                </div>
+                <div class="stat-number">{{ total_posts }}</div>
+                <div class="stat-label">篇文章</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="bi bi-people"></i>
+                </div>
+                <div class="stat-number">{{ total_users }}</div>
+                <div class="stat-label">位用户</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="bi bi-eye"></i>
+                </div>
+                <div class="stat-number">{{ total_views }}</div>
+                <div class="stat-label">次浏览</div>
+            </div>
         </div>
     </div>
 
     <div class="row g-4">
         <div class="col-lg-8">
-            <!-- 博客介绍 -->
-            <div class="info-card">
-                <h5 class="info-card-title">
-                    <i class="bi bi-chat-quote"></i> 博客简介
-                </h5>
-                <div class="info-card-content">
+            <!-- 博客简介 -->
+            <div class="content-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="bi bi-chat-quote"></i>
+                    </div>
+                    <h2 class="card-title">博客简介</h2>
+                </div>
+                <div class="about-intro">
                     <p>这是一个基于 Flask 开发的个人技术博客，用于记录和分享学习笔记、实践经验和技术见解。</p>
                     <p>博客支持 Markdown 写作、代码高亮、夜间模式、响应式设计等功能，为读者提供良好的阅读体验。</p>
+                    <p>在这里，我会分享编程学习心得、项目开发经验以及技术探索过程。</p>
                 </div>
             </div>
 
             <!-- 功能特色 -->
-            <div class="info-card">
-                <h5 class="info-card-title">
-                    <i class="bi bi-stars"></i> 功能特色
-                </h5>
+            <div class="content-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="bi bi-stars"></i>
+                    </div>
+                    <h2 class="card-title">功能特色</h2>
+                </div>
                 <div class="features-grid">
                     <div class="feature-item">
                         <div class="feature-icon">
@@ -391,11 +609,14 @@
             </div>
 
             <!-- 技术栈 -->
-            <div class="info-card">
-                <h5 class="info-card-title">
-                    <i class="bi bi-code-square"></i> 技术栈
-                </h5>
-                <div class="tech-list">
+            <div class="content-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="bi bi-code-square"></i>
+                    </div>
+                    <h2 class="card-title">技术栈</h2>
+                </div>
+                <div class="tech-grid">
                     <div class="tech-item">
                         <i class="bi bi-braces"></i> Python 3.10+
                     </div>
@@ -420,39 +641,46 @@
 
         <div class="col-lg-4">
             <!-- 联系方式 -->
-            <div class="contact-card">
-                <h5 class="contact-card-title">
-                    <i class="bi bi-envelope"></i> 联系我
-                </h5>
-                <p class="contact-card-desc">有问题或建议？欢迎随时联系</p>
-                <a href="mailto:3497875641@qq.com" class="contact-btn">
-                    <i class="bi bi-send"></i> 发送邮件
-                </a>
-                <div class="contact-info">
-                    <span class="contact-item">
-                        <i class="bi bi-envelope"></i> 3497875641@qq.com
-                    </span>
-                    <span class="contact-item">
-                        <i class="bi bi-github"></i>
-                        <a href="https://github.com/linxiong-rgb" target="_blank">@linxiong-rgb</a>
-                    </span>
+            <div class="content-card">
+                <div class="contact-section">
+                    <h3 class="contact-section-title">
+                        <i class="bi bi-envelope"></i> 联系我
+                    </h3>
+                    <p class="contact-section-desc">有问题或建议？欢迎随时联系</p>
+                    <a href="mailto:3497875641@qq.com" class="contact-btn">
+                        <i class="bi bi-send"></i> 发送邮件
+                    </a>
+                    <div class="contact-links">
+                        <a href="mailto:3497875641@qq.com" class="contact-link">
+                            <i class="bi bi-envelope"></i> 3497875641@qq.com
+                        </a>
+                        <a href="https://github.com/linxiong-rgb" target="_blank" class="contact-link">
+                            <i class="bi bi-github"></i> @linxiong-rgb
+                        </a>
+                    </div>
                 </div>
             </div>
 
             <!-- 快速链接 -->
-            <div class="info-card">
-                <h5 class="info-card-title">
-                    <i class="bi bi-link-45deg"></i> 快速链接
-                </h5>
-                <div class="d-flex flex-column gap-2">
-                    <a href="{{ url_for('main.archive') }}" class="btn btn-outline-primary btn-sm">
+            <div class="content-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="bi bi-link-45deg"></i>
+                    </div>
+                    <h2 class="card-title">快速链接</h2>
+                </div>
+                <div class="quick-links">
+                    <a href="{{ url_for('main.archive') }}" class="quick-link-item">
                         <i class="bi bi-archive"></i> 文章归档
                     </a>
-                    <a href="{{ url_for('main.categories') }}" class="btn btn-outline-primary btn-sm">
+                    <a href="{{ url_for('main.categories') }}" class="quick-link-item">
                         <i class="bi bi-folder"></i> 分类目录
                     </a>
-                    <a href="{{ url_for('main.rss') }}" class="btn btn-outline-warning btn-sm">
+                    <a href="{{ url_for('main.rss') }}" class="quick-link-item">
                         <i class="bi bi-rss"></i> RSS 订阅
+                    </a>
+                    <a href="{{ url_for('main.index') }}" class="quick-link-item">
+                        <i class="bi bi-house-door"></i> 返回首页
                     </a>
                 </div>
             </div>
