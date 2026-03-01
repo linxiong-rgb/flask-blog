@@ -674,8 +674,12 @@ def new_post():
             published=published,
             scheduled_at=scheduled_at,
             visibility=visibility,
-            access_password=access_password
+            access_password=access_password,
+            slug=None  # 将在 commit 前自动生成
         )
+
+        # 自动生成 slug
+        post.slug = post.get_slug()
 
         # 添加标签关联
         for tag_id in tags:
@@ -721,9 +725,14 @@ def edit_post(post_id):
 
     if request.method == 'POST':
         # 更新文章基本信息
+        old_title = post.title
         post.title = request.form.get('title')
         post.content = request.form.get('content')
         summary = request.form.get('summary', '').strip()
+
+        # 如果标题改变，重新生成 slug
+        if old_title != post.title:
+            post.slug = post.get_slug()
 
         # 如果没有提供摘要，自动生成
         if not summary:

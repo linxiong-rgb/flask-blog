@@ -197,10 +197,10 @@ def index():
     return render_template('index.html', posts=posts, hot_posts=hot_posts,
                           categories=categories, tags=tags, hot_tags=hot_tags, total_views=total_views)
 
-@bp.route('/post/<int:post_id>', methods=['GET', 'POST'])
-def post(post_id):
+@bp.route('/post/<path:post_slug>', methods=['GET', 'POST'])
+def post(post_slug):
     """
-    文章详情页路由
+    文章详情页路由（支持 slug）
 
     显示单篇文章的完整内容，包含：
     - 文章信息（标题、作者、分类、标签）
@@ -210,15 +210,28 @@ def post(post_id):
     - 可见性控制（公开/私密/密码保护）
 
     Args:
-        post_id: 文章ID
+        post_slug: 文章的 URL slug
 
     Returns:
         str: 渲染后的文章详情页HTML
     """
+    # 尝试通过 slug 查找文章
     post = Post.query.options(
         joinedload(Post.category),
         joinedload(Post.tags)
-    ).get_or_404(post_id)
+    ).filter_by(slug=post_slug).first()
+
+    # 如果 slug 没找到，尝试通过 ID 查找（向后兼容）
+    if not post:
+        try:
+            post_id = int(post_slug)
+            post = Post.query.options(
+                joinedload(Post.category),
+                joinedload(Post.tags)
+            ).get_or_404(post_id)
+        except (ValueError, TypeError):
+            from werkzeug.exceptions import NotFound
+            raise NotFound()
 
     # 检查文章可见性
     visibility = post.visibility or 'public'
@@ -232,7 +245,7 @@ def post(post_id):
     # 密码保护文章
     if visibility == 'password':
         # 检查会话中是否有正确的密码
-        session_key = f'post_password_{post_id}'
+        session_key = f'post_password_{post.id}'
         if session.get(session_key) != post.access_password:
             # 处理密码验证提交
             if request.method == 'POST':
