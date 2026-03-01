@@ -217,6 +217,82 @@ def super_delete_post(post_id):
         return jsonify({'success': False, 'message': '删除失败'}), 500
 
 
+@bp.route('/super/reset-all-data', methods=['POST'])
+@login_required
+def super_reset_all_data():
+    """
+    超级管理员一键初始化所有数据
+
+    删除以下内容：
+    - 所有文章（包括超级管理员的）
+    - 所有分类
+    - 所有标签
+    - 所有友情链接
+    - 所有文章收藏记录
+
+    保留：
+    - 所有用户账号（包括超级管理员）
+    - 用户表数据
+
+    Returns:
+        JSON: 操作结果
+    """
+    if not is_super_admin():
+        return jsonify({'success': False, 'message': '您没有权限执行此操作'}), 403
+
+    try:
+        # 记录删除前的统计数据
+        posts_count = Post.query.count()
+        categories_count = Category.query.count()
+        tags_count = Tag.query.count()
+        links_count = FriendLink.query.count()
+        bookmarks_count = PostBookmark.query.count()
+
+        current_app.logger.info(f'超级管理员 {current_user.username} 开始重置所有数据')
+
+        # 删除所有文章收藏记录（先删除，因为有关联）
+        PostBookmark.query.delete()
+
+        # 删除所有文章
+        Post.query.delete()
+
+        # 删除所有分类
+        Category.query.delete()
+
+        # 删除所有标签
+        Tag.query.delete()
+
+        # 删除所有友情链接
+        FriendLink.query.delete()
+
+        db.session.commit()
+
+        current_app.logger.info(
+            f'数据重置完成: 删除了 {posts_count} 篇文章, {categories_count} 个分类, '
+            f'{tags_count} 个标签, {links_count} 个友情链接, {bookmarks_count} 个收藏记录'
+        )
+
+        return jsonify({
+            'success': True,
+            'message': '所有数据已成功重置',
+            'deleted': {
+                'posts': posts_count,
+                'categories': categories_count,
+                'tags': tags_count,
+                'friend_links': links_count,
+                'bookmarks': bookmarks_count
+            }
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'重置数据失败: {str(e)}')
+        return jsonify({
+            'success': False,
+            'message': f'重置失败: {str(e)}'
+        }), 500
+
+
 # ==================== 图片上传 ====================
 
 @bp.route('/upload/cover', methods=['POST'])

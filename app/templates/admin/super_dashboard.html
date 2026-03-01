@@ -16,6 +16,19 @@
         </div>
     </div>
 
+    <!-- 危险操作区域 -->
+    <div class="sidebar-widget mb-4" style="border: 2px solid #dc3545; background: #fff5f5;">
+        <h5 class="mb-3 text-danger">
+            <i class="bi bi-exclamation-triangle-fill"></i> 危险操作区域
+        </h5>
+        <p class="text-muted small mb-3">
+            以下操作会影响所有数据，请谨慎操作。所有用户账号将被保留，但其他数据将被永久删除。
+        </p>
+        <button type="button" class="btn btn-danger" onclick="showResetConfirm()">
+            <i class="bi bi-trash3"></i> 一键初始化所有数据
+        </button>
+    </div>
+
     <!-- 统计数据 -->
     <div class="row mb-4">
         <div class="col-md-4">
@@ -164,6 +177,153 @@ function deletePost(postId) {
             alert('删除失败: ' + error.message);
         });
     }
+}
+
+function showResetConfirm() {
+    // 创建确认对话框
+    const modalHtml = `
+        <div id="resetConfirmModal" class="modal" style="display: block; background: rgba(0,0,0,0.5); z-index: 9999;">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            最后确认：重置所有数据
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" onclick="closeResetModal()"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-danger mb-3">
+                            <strong>⚠️ 警告：此操作无法撤销！</strong>
+                        </div>
+
+                        <p class="mb-3">您即将删除以下所有数据：</p>
+                        <ul class="list-group list-group-flush mb-3">
+                            <li class="list-group-item"><i class="bi bi-file-earmark-text text-danger"></i> 所有文章（{{ total_posts }} 篇）</li>
+                            <li class="list-group-item"><i class="bi bi-folder text-danger"></i> 所有分类</li>
+                            <li class="list-group-item"><i class="bi bi-tag text-danger"></i> 所有标签</li>
+                            <li class="list-group-item"><i class="bi bi-link-45deg text-danger"></i> 所有友情链接</li>
+                            <li class="list-group-item"><i class="bi bi-bookmark text-danger"></i> 所有收藏记录</li>
+                        </ul>
+
+                        <div class="alert alert-success">
+                            <strong>✓ 保留内容：</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>所有用户账号（{{ total_users }} 个）</li>
+                                <li>超级管理员权限</li>
+                            </ul>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="confirmResetCheck">
+                            <label class="form-check-label" for="confirmResetCheck">
+                                <strong>我已了解此操作的后果，确认执行重置</strong>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" onclick="closeResetModal()">
+                            <i class="bi bi-x-lg"></i> 取消
+                        </button>
+                        <button type="button" class="btn btn-danger" id="confirmResetBtn" onclick="executeReset()" disabled>
+                            <i class="bi bi-trash3"></i> 确认重置所有数据
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // 添加到页面
+    const modalContainer = document.createElement('div');
+    modalContainer.innerHTML = modalHtml;
+    document.body.appendChild(modalContainer);
+
+    // 绑定复选框事件
+    document.getElementById('confirmResetCheck').addEventListener('change', function() {
+        document.getElementById('confirmResetBtn').disabled = !this.checked;
+    });
+}
+
+function closeResetModal() {
+    const modal = document.getElementById('resetConfirmModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function executeReset() {
+    const btn = document.getElementById('confirmResetBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> 正在重置...';
+
+    fetch('{{ url_for("admin.super_reset_all_data") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        closeResetModal();
+        if (data.success) {
+            // 显示成功消息
+            const resultModal = `
+                <div id="resultModal" class="modal" style="display: block; background: rgba(0,0,0,0.5); z-index: 9999;">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    重置成功
+                                </h5>
+                            </div>
+                            <div class="modal-body">
+                                <p class="mb-3">${data.message}</p>
+                                <ul class="list-group">
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>已删除文章：</span>
+                                        <strong>${data.deleted.posts} 篇</strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>已删除分类：</span>
+                                        <strong>${data.deleted.categories} 个</strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>已删除标签：</span>
+                                        <strong>${data.deleted.tags} 个</strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>已删除友情链接：</span>
+                                        <strong>${data.deleted.friend_links} 个</strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>已删除收藏记录：</span>
+                                        <strong>${data.deleted.bookmarks} 个</strong>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-primary" onclick="location.reload()">
+                                    <i class="bi bi-arrow-clockwise"></i> 刷新页面
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            const resultContainer = document.createElement('div');
+            resultContainer.innerHTML = resultModal;
+            document.body.appendChild(resultContainer);
+        } else {
+            alert('重置失败: ' + (data.message || '未知错误'));
+        }
+    })
+    .catch(error => {
+        closeResetModal();
+        alert('重置失败: ' + error.message);
+    });
 }
 </script>
 {% endblock %}
