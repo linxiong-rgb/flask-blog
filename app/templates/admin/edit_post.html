@@ -181,33 +181,33 @@
                         </label>
                         <div class="row g-2" id="visibilityOptions">
                             <div class="col-4">
-                                <div class="form-check radio-card p-2 rounded border text-center {% if not post or post.visibility == 'public' or post.visibility is none %}border-primary bg-light{% endif %}" onclick="selectVisibility('public')">
-                                    <input class="form-check-input" type="radio" name="visibility" id="vis_public" value="public"
+                                <div class="radio-card p-2 rounded border text-center {% if not post or post.visibility == 'public' or post.visibility is none %}border-primary bg-light{% endif %}" onclick="selectVisibility('public')">
+                                    <input type="radio" name="visibility" id="vis_public" value="public"
                                            {% if not post or post.visibility == 'public' or post.visibility is none %}checked{% endif %}
                                            onchange="togglePasswordField()">
-                                    <label class="form-check-label mb-0 d-block" for="vis_public">
+                                    <label class="mb-0 d-block" for="vis_public">
                                         <i class="bi bi-globe d-block mb-1" style="font-size: 1.5rem;"></i>
                                         <small>所有人可见</small>
                                     </label>
                                 </div>
                             </div>
                             <div class="col-4">
-                                <div class="form-check radio-card p-2 rounded border text-center {% if post and post.visibility == 'private' %}border-primary bg-light{% endif %}" onclick="selectVisibility('private')">
-                                    <input class="form-check-input" type="radio" name="visibility" id="vis_private" value="private"
+                                <div class="radio-card p-2 rounded border text-center {% if post and post.visibility == 'private' %}border-primary bg-light{% endif %}" onclick="selectVisibility('private')">
+                                    <input type="radio" name="visibility" id="vis_private" value="private"
                                            {% if post and post.visibility == 'private' %}checked{% endif %}
                                            onchange="togglePasswordField()">
-                                    <label class="form-check-label mb-0 d-block" for="vis_private">
+                                    <label class="mb-0 d-block" for="vis_private">
                                         <i class="bi bi-lock d-block mb-1" style="font-size: 1.5rem;"></i>
                                         <small>仅作者可见</small>
                                     </label>
                                 </div>
                             </div>
                             <div class="col-4">
-                                <div class="form-check radio-card p-2 rounded border text-center {% if post and post.visibility == 'password' %}border-primary bg-light{% endif %}" onclick="selectVisibility('password')">
-                                    <input class="form-check-input" type="radio" name="visibility" id="vis_password" value="password"
+                                <div class="radio-card p-2 rounded border text-center {% if post and post.visibility == 'password' %}border-primary bg-light{% endif %}" onclick="selectVisibility('password')">
+                                    <input type="radio" name="visibility" id="vis_password" value="password"
                                            {% if post and post.visibility == 'password' %}checked{% endif %}
                                            onchange="togglePasswordField()">
-                                    <label class="form-check-label mb-0 d-block" for="vis_password">
+                                    <label class="mb-0 d-block" for="vis_password">
                                         <i class="bi bi-key d-block mb-1" style="font-size: 1.5rem;"></i>
                                         <small>密码保护</small>
                                     </label>
@@ -724,10 +724,27 @@ function togglePasswordField() {
 
 // 选择可见性选项（处理卡片点击）
 function selectVisibility(value) {
+    // 先取消所有 radio 的选中状态
+    const allRadios = document.querySelectorAll('input[name="visibility"]');
+    allRadios.forEach(radio => {
+        radio.checked = false;
+    });
+
+    // 移除所有卡片的选中样式
+    const allCards = document.querySelectorAll('.radio-card');
+    allCards.forEach(card => {
+        card.classList.remove('border-primary', 'bg-light');
+    });
+
     // 选中对应的单选按钮
     const radioButton = document.getElementById('vis_' + value);
     if (radioButton) {
         radioButton.checked = true;
+        // 添加选中样式到父卡片
+        const parentCard = radioButton.closest('.radio-card');
+        if (parentCard) {
+            parentCard.classList.add('border-primary', 'bg-light');
+        }
         // 触发 change 事件
         radioButton.dispatchEvent(new Event('change'));
     }
