@@ -850,8 +850,50 @@ def init_database():
                     """))
                     conn.commit()
                     current_app.logger.info('is_superuser 列添加成功')
+
+                # 检查 slug 列是否存在
+                result = conn.execute(text("""
+                    SELECT column_name
+                    FROM information_schema.columns
+                    WHERE table_name = 'post'
+                    AND column_name = 'slug'
+                """))
+                if not result.fetchone():
+                    current_app.logger.info('检测到缺少 slug 列，正在添加...')
+                    conn.execute(text("""
+                        ALTER TABLE post ADD COLUMN slug VARCHAR(200) UNIQUE
+                    """))
+                    # 创建索引以提高查询性能
+                    conn.execute(text("""
+                        CREATE INDEX ix_post_slug ON post(slug)
+                    """))
+                    conn.commit()
+                    current_app.logger.info('slug 列添加成功')
+
+                    # 为现有文章生成 slug
+                    posts_without_slug = conn.execute(text("""
+                        SELECT id, title FROM post WHERE slug IS NULL
+                    """)).fetchall()
+                    for post_id, title in posts_without_slug:
+                        # 生成简单的 slug
+                        import re
+                        import unicodedata
+                        from datetime import datetime
+
+                        slug_title = unicodedata.normalize('NFKD', title).encode('ascii', 'ignore').decode('ascii')
+                        slug_title = re.sub(r'[^a-z0-9\s-]', '', slug_title.lower())
+                        slug_title = re.sub(r'\s+', '-', slug_title)[:150].strip('-')
+
+                        if not slug_title:
+                            slug_title = f'post-{post_id}-{int(datetime.now().timestamp())}'
+
+                        conn.execute(text("""
+                            UPDATE post SET slug = :slug WHERE id = :id
+                        """), {'slug': slug_title, 'id': post_id})
+                    conn.commit()
+                    current_app.logger.info(f'为 {len(posts_without_slug)} 篇文章生成 slug 成功')
         except Exception as migrate_error:
-            current_app.logger.warning(f'可见性列迁移检查/执行失败: {str(migrate_error)}')
+            current_app.logger.warning(f'迁移检查/执行失败: {str(migrate_error)}')
 
         # 检查管理员是否已存在
         admin = User.query.filter_by(username='admin01').first()
