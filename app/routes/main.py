@@ -200,7 +200,7 @@ def index():
 @bp.route('/post/<path:post_slug>', methods=['GET', 'POST'])
 def post(post_slug):
     """
-    文章详情页路由（支持 slug）
+    文章详情页路由（同时支持 slug 和 ID 向后兼容）
 
     显示单篇文章的完整内容，包含：
     - 文章信息（标题、作者、分类、标签）
@@ -210,25 +210,24 @@ def post(post_slug):
     - 可见性控制（公开/私密/密码保护）
 
     Args:
-        post_slug: 文章的 URL slug
+        post_slug: 文章的 URL slug 或数字 ID
 
     Returns:
         str: 渲染后的文章详情页HTML
     """
-    # 尝试通过 slug 查找文章
-    post = Post.query.options(
-        joinedload(Post.category),
-        joinedload(Post.tags)
-    ).filter_by(slug=post_slug).first()
-
-    # 如果 slug 没找到，尝试通过 ID 查找（向后兼容）
-    if not post:
-        try:
-            post_id = int(post_slug)
-            post = Post.query.options(
-                joinedload(Post.category),
-                joinedload(Post.tags)
-            ).get_or_404(post_id)
+    # 首先尝试转换为 ID（用于纯数字的 slug）
+    try:
+        post_id = int(post_slug)
+        post = Post.query.options(
+            joinedload(Post.category),
+            joinedload(Post.tags)
+        ).get_or_404(post_id)
+    except (ValueError, TypeError):
+        # 不是纯数字，尝试通过 slug 查找
+        post = Post.query.options(
+            joinedload(Post.category),
+            joinedload(Post.tags)
+        ).filter_by(slug=post_slug).first_or_404()
         except (ValueError, TypeError):
             from werkzeug.exceptions import NotFound
             raise NotFound()
