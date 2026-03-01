@@ -14,14 +14,14 @@ def generate_summary(content, max_length=80):
     """
     从文章内容生成精炼摘要（一句话）
 
-    提取关键词和核心句子，生成体现主题的精炼摘要
+    使用智能算法选择最能概括文章内容的句子
 
     Args:
         content: 文章内容（Markdown格式）
         max_length: 摘要最大长度（默认80字符）
 
     Returns:
-        str: 生成的摘要（一句话，体现核心关键词）
+        str: 生成的摘要（一句话，概括文章核心内容）
     """
     if not content:
         return ''
@@ -29,45 +29,159 @@ def generate_summary(content, max_length=80):
     # 清理内容
     cleaned = _clean_content(content)
 
+    if not cleaned or len(cleaned) < 10:
+        return ''
+
     # 分句
     sentences = _split_sentences(cleaned)
 
     if not sentences:
-        return cleaned[:max_length].rstrip() + '...' if len(cleaned) > max_length else cleaned
+        # 如果没有有效句子，直接截取
+        return _truncate_cleanly(cleaned, max_length)
 
     # 提取关键词
-    keywords = _extract_keywords(cleaned)[:5]
+    keywords = _extract_keywords(cleaned)[:8]
 
-    # 评分选择最佳句子
-    best = None
-    best_score = -1
-
+    # 为每个句子计算综合得分
+    scored_sentences = []
     for i, sentence in enumerate(sentences):
-        if len(sentence) < 10 or len(sentence) > max_length + 20:
+        # 跳过过短或过长的句子
+        if len(sentence) < 8 or len(sentence) > max_length + 30:
             continue
 
-        score = 0
-        # 首句加分
-        if i == 0:
-            score += 10
-        # 关键词密度
-        score += sum(5 for kw in keywords if kw in sentence)
-        # 句子长度适中
-        if 20 <= len(sentence) <= 60:
+        score = _calculate_sentence_score(sentence, i, len(sentences), keywords)
+
+        # 长度惩罚：过长或过短的句子降低得分
+        length = len(sentence)
+        if 15 <= length <= 50:
+            score *= 1.3  # 理想长度
+        elif 10 <= length <= 70:
+            score *= 1.1  # 可接受长度
+        elif length > max_length:
+            score *= 0.7  # 过长需要截断
+
+        scored_sentences.append((score, i, sentence))
+
+    # 按得分排序
+    scored_sentences.sort(key=lambda x: x[0], reverse=True)
+
+    # 选择得分最高的句子
+    if scored_sentences:
+        best = scored_sentences[0][2]
+        # 截断到最大长度
+        return _truncate_cleanly(best, max_length)
+
+    # 后备方案：返回第一个有效句子
+    return _truncate_cleanly(sentences[0], max_length)
+
+
+def _calculate_sentence_score(sentence, index, total_sentences, keywords):
+    """
+    计算句子的综合得分
+
+    Args:
+        sentence: 待评分的句子
+        index: 句子在原文中的位置
+        total_sentences: 总句子数
+        keywords: 提取的关键词列表
+
+    Returns:
+        float: 句子得分
+    """
+    score = 0.0
+
+    # 1. 位置得分（首尾句更重要）
+    if index == 0:
+        score += 15  # 首句最重要
+    elif index == total_sentences - 1:
+        score += 10  # 尾句通常是总结
+    elif index < total_sentences * 0.15:
+        score += 7   # 前15%的句子
+    elif index > total_sentences * 0.85:
+        score += 7   # 后15%的句子
+
+    # 2. 关键词密度得分（最高25分）
+    keyword_count = sum(1 for kw in keywords if kw in sentence)
+    score += min(keyword_count * 6, 25)
+
+    # 3. 核心指示词得分
+    core_indicators = [
+        # 总结性词汇
+        '总结', '结论', '总之', '简言之', '概括', '综上',
+        # 重点强调词
+        '关键', '核心', '主要', '重要', '基本',
+        # 定义性词汇
+        '是指', '是', '就是', '即',
+        # 结果性词汇
+        '实现', '完成', '达到', '获得',
+        # 功能性词汇
+        '功能', '特点', '优势', '作用', '效果'
+    ]
+    for indicator in core_indicators:
+        if indicator in sentence:
             score += 5
+            break  # 只计算一次
 
-        if score > best_score:
-            best = sentence
-            best_score = score
+    # 4. 陈述性句子加分（包含"是""可以"等判断词）
+    if any(word in sentence for word in ['是', '可以', '能够', '用于', '实现', '完成']):
+        score += 4
 
-    if not best:
-        best = sentences[0]
+    # 5. 数字和具体信息加分（但不是纯技术内容）
+    if re.search(r'\d+[个项条人次篇]', sentence):
+        score += 3
 
-    # 截断到最大长度
-    if len(best) > max_length:
-        best = best[:max_length - 2].rstrip('，。、；：') + '...'
+    # 6. 负面得分：技术配置、命令等内容降低得分
+    tech_patterns = [
+        r'^\s*\w+\s*=',  # 配置项
+        r'https?://',  # URL
+        r'\d{1,3}\.\d{1,3}\.',  # IP地址
+        r'^\w+\.\w+',  # 文件名或域名
+    ]
+    for pattern in tech_patterns:
+        if re.search(pattern, sentence):
+            score -= 10
+            break
 
-    return best
+    return score
+
+
+def _truncate_cleanly(text, max_length):
+    """
+    干净地截断文本，确保在合适的边界截断
+
+    Args:
+        text: 原文本
+        max_length: 最大长度
+
+    Returns:
+        str: 截断后的文本
+    """
+    if len(text) <= max_length:
+        text = text.strip('，。、；：!!---""''《》')
+        # 确保以句号结尾
+        if text and text[-1] not in '。！？.!?.。':
+            text += '。'
+        return text
+
+    # 先移除首尾标点
+    text = text.strip('，。、；：!!---""''《》')
+
+    # 尝试在最近的标点处截断
+    for i in range(max_length - 1, max(0, max_length - 20), -1):
+        if i < len(text) and text[i] in '。，、；':
+            result = text[:i + 1].strip()
+            if result and result[-1] not in '。！？':
+                result += '。'
+            return result
+
+    # 如果找不到标点，直接截断并添加省略号
+    result = text[:max_length - 1].strip()
+    if len(result) > 5:
+        result += '...'
+    elif result and result[-1] not in '。！？':
+        result += '。'
+
+    return result
 
 
 def _extract_keywords(content, max_keywords=10):
@@ -95,81 +209,6 @@ def _extract_keywords(content, max_keywords=10):
 
     # 返回最重要的关键词
     return [word for word, count in word_count.most_common(max_keywords)]
-
-
-def _select_best_sentences(sentences, keywords, max_length):
-    """智能选择最佳句子"""
-    if not sentences:
-        return []
-
-    # 为每个句子计算得分
-    scored_sentences = []
-    for i, sentence in enumerate(sentences):
-        score = 0
-
-        # 1. 位置得分：首句和尾句得分更高
-        if i == 0:
-            score += 10  # 首句最重要
-        elif i == len(sentences) - 1:
-            score += 8   # 尾句通常是总结
-        elif i < len(sentences) * 0.2:
-            score += 5   # 前20%的句子
-        elif i > len(sentences) * 0.8:
-            score += 5   # 后20%的句子
-
-        # 2. 关键词密度得分
-        keyword_count = sum(1 for kw in keywords if kw in sentence)
-        score += keyword_count * 3
-
-        # 3. 句子长度得分：适中长度的句子更好
-        length = len(sentence)
-        if 15 <= length <= 50:
-            score += 5
-        elif 10 <= length <= 80:
-            score += 3
-
-        # 4. 特征词加分（包含特定词汇的句子更重要）
-        feature_words = ['总结', '结论', '因此', '总之', '简言之', '概括',
-                        '首先', '其次', '最后', '关键', '核心', '主要',
-                        '实现', '功能', '特点', '优势', '作用', '意义']
-        if any(fw in sentence for fw in feature_words):
-            score += 4
-
-        scored_sentences.append((score, i, sentence))
-
-    # 按得分排序
-    scored_sentences.sort(key=lambda x: x[0], reverse=True)
-
-    # 选择最佳句子
-    selected = []
-    total_length = 0
-
-    # 优先选择得分最高的句子
-    for score, idx, sentence in scored_sentences:
-        if total_length + len(sentence) > max_length:
-            # 如果加上这句会超出长度，尝试缩短
-            remaining = max_length - total_length - 5
-            if remaining > 15:  # 至少保留15个字符
-                shortened = sentence[:remaining]
-                if len(shortened) > 5:
-                    selected.append(shortened)
-                    break
-            else:
-                break
-
-        selected.append(sentence)
-        total_length += len(sentence)
-
-        # 限制最多3句话
-        if len(selected) >= 3:
-            break
-
-    # 按原文顺序排序
-    selected_with_idx = [(s, next((i for i, _, sent in scored_sentences if sent == s), 999))
-                         for s in selected]
-    selected_with_idx.sort(key=lambda x: x[1])
-
-    return [s for s, _ in selected_with_idx]
 
 
 def _clean_content(content):
@@ -258,34 +297,6 @@ def _split_sentences(content):
         filtered_sentences.append(s)
 
     return filtered_sentences
-
-
-def _finalize_summary(summary, max_length):
-    """最终处理摘要"""
-    # 去除多余空格
-    summary = re.sub(r'\s+', ' ', summary).strip()
-
-    # 移除开头和结尾的特殊符号
-    summary = summary.strip('，。、；：!!---""''《》')
-
-    # 截断到最大长度
-    if len(summary) > max_length:
-        summary = summary[:max_length - 1].strip()
-        # 确保不在词中间截断（对中文）
-        if summary and summary[-1] not in '。，！？':
-            # 尝试找到最近的标点
-            for i in range(len(summary) - 1, max(0, len(summary) - 20), -1):
-                if summary[i] in '。，、；':
-                    summary = summary[:i + 1]
-                    break
-            else:
-                summary += '...'
-
-    # 添加结尾标点
-    if summary and summary[-1] not in '。！？.!?.。':
-        summary += '。'
-
-    return summary
 
 
 def strip_markdown(content):

@@ -643,7 +643,7 @@ def new_post():
         # 如果没有提供摘要，自动生成
         if not summary:
             from app.utils.text import generate_summary
-            summary = generate_summary(content, max_length=300)
+            summary = generate_summary(content)
 
         # 如果没有封面图，自动生成
         if not cover_image:
@@ -1254,7 +1254,7 @@ def api_generate_summary():
         return jsonify({'error': '内容不能为空'}), 400
 
     try:
-        summary = generate_summary(content, max_length=300)
+        summary = generate_summary(content)
         return jsonify({'summary': summary})
     except Exception as e:
         logger.error(f'生成摘要失败: {str(e)}')
