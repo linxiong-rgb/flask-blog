@@ -9,9 +9,9 @@
 - 密码重置
 """
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, current_app
-from flask_login import login_user, logout_user, current_user
-from app.forms import LoginForm, RegisterForm, ResetPasswordRequestForm, ResetPasswordForm
+from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, current_app, jsonify
+from flask_login import login_required, login_user, logout_user, current_user
+from app.forms import LoginForm, RegisterForm, ResetPasswordRequestForm, ResetPasswordForm, ChangePasswordForm, DeleteAccountForm
 from app.models.user import User
 from app import db
 from app.security import get_client_ip, record_login_attempt, login_rate_limit
@@ -192,3 +192,99 @@ def reset_password(token):
         return redirect(url_for('auth.login'))
 
     return render_template('auth/reset_password.html', form=form, token=token)
+
+
+@bp.route('/settings')
+@login_required
+def settings():
+    """
+    用户设置页面
+
+    显示用户账号设置选项，包括：
+    - 修改密码
+    - 注销账号
+
+    Returns:
+        str: 渲染后的设置页面HTML
+    """
+    return render_template('auth/settings.html')
+
+
+@bp.route('/change-password', methods=['POST'])
+@login_required
+def change_password():
+    """
+    修改密码路由
+
+    处理已登录用户的密码修改请求：
+    - 验证当前密码
+    - 更新为新密码
+
+    Returns:
+        JSON: 修改结果
+    """
+    form = ChangePasswordForm()
+    if form.validate_on_submit():
+        # 验证当前密码
+        if not current_user.check_password(form.current_password.data):
+            return jsonify({'success': False, 'message': '当前密码错误'}), 400
+
+        # 更新密码
+        current_user.set_password(form.new_password.data)
+        db.session.commit()
+
+        flash('密码修改成功，请重新登录')
+        return jsonify({'success': True, 'message': '密码修改成功'})
+    else:
+        errors = []
+        for field, errors_list in form.errors.items():
+            for error in errors_list:
+                errors.append(error)
+        return jsonify({'success': False, 'message': errors[0] if errors else '修改失败'}), 400
+
+
+@bp.route('/delete-account', methods=['POST'])
+@login_required
+def delete_account():
+    """
+    注销账号路由
+
+    处理用户的账号注销请求：
+    - 验证用户名和密码
+    - 删除用户及其相关数据
+    - 保留文章内容（移除作者关联）
+
+    Returns:
+        JSON: 删除结果
+    """
+    form = DeleteAccountForm()
+    if form.validate_on_submit():
+        # 验证用户名
+        if form.confirm_username.data != current_user.username:
+            return jsonify({'success': False, 'message': '用户名不匹配'}), 400
+
+        # 验证密码
+        if not current_user.check_password(form.confirm_password.data):
+            return jsonify({'success': False, 'message': '密码错误'}), 400
+
+        try:
+            # 删除用户的收藏记录
+            from app.models.post_bookmark import PostBookmark
+            PostBookmark.query.filter_by(user_id=current_user.id).delete()
+
+            # 删除用户
+            db.session.delete(current_user)
+            db.session.commit()
+
+            flash('账号已注销')
+            return jsonify({'success': True, 'message': '账号已注销'})
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f'注销账号失败: {str(e)}')
+            return jsonify({'success': False, 'message': '注销失败，请稍后重试'}), 500
+    else:
+        errors = []
+        for field, errors_list in form.errors.items():
+            for error in errors_list:
+                errors.append(error)
+        return jsonify({'success': False, 'message': errors[0] if errors else '操作失败'}), 400

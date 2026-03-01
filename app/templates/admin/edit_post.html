@@ -176,23 +176,44 @@
 
                     <!-- 文章可见性 -->
                     <div class="mb-3">
-                        <label for="visibility" class="form-label">
+                        <label class="form-label">
                             <i class="bi bi-eye"></i> 文章可见性
                         </label>
-                        <select class="form-select" id="visibility" name="visibility" onchange="togglePasswordField()">
-                            <option value="public"
-                                    {% if not post or post.visibility == 'public' or post.visibility is none %}selected{% endif %}>
-                                <i class="bi bi-globe"></i> 所有人可见
-                            </option>
-                            <option value="private"
-                                    {% if post and post.visibility == 'private' %}selected{% endif %}>
-                                <i class="bi bi-lock"></i> 仅作者可见
-                            </option>
-                            <option value="password"
-                                    {% if post and post.visibility == 'password' %}selected{% endif %}>
-                                <i class="bi bi-key"></i> 密码保护
-                            </option>
-                        </select>
+                        <div class="row g-2" id="visibilityOptions">
+                            <div class="col-4">
+                                <div class="form-check radio-card p-2 rounded border text-center {% if not post or post.visibility == 'public' or post.visibility is none %}border-primary bg-light{% endif %}" onclick="selectVisibility('public')">
+                                    <input class="form-check-input" type="radio" name="visibility" id="vis_public" value="public"
+                                           {% if not post or post.visibility == 'public' or post.visibility is none %}checked{% endif %}
+                                           onchange="togglePasswordField()">
+                                    <label class="form-check-label mb-0 d-block" for="vis_public">
+                                        <i class="bi bi-globe d-block mb-1" style="font-size: 1.5rem;"></i>
+                                        <small>所有人可见</small>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="form-check radio-card p-2 rounded border text-center {% if post and post.visibility == 'private' %}border-primary bg-light{% endif %}" onclick="selectVisibility('private')">
+                                    <input class="form-check-input" type="radio" name="visibility" id="vis_private" value="private"
+                                           {% if post and post.visibility == 'private' %}checked{% endif %}
+                                           onchange="togglePasswordField()">
+                                    <label class="form-check-label mb-0 d-block" for="vis_private">
+                                        <i class="bi bi-lock d-block mb-1" style="font-size: 1.5rem;"></i>
+                                        <small>仅作者可见</small>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="form-check radio-card p-2 rounded border text-center {% if post and post.visibility == 'password' %}border-primary bg-light{% endif %}" onclick="selectVisibility('password')">
+                                    <input class="form-check-input" type="radio" name="visibility" id="vis_password" value="password"
+                                           {% if post and post.visibility == 'password' %}checked{% endif %}
+                                           onchange="togglePasswordField()">
+                                    <label class="form-check-label mb-0 d-block" for="vis_password">
+                                        <i class="bi bi-key d-block mb-1" style="font-size: 1.5rem;"></i>
+                                        <small>密码保护</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- 密码保护输入 -->
@@ -688,7 +709,7 @@ function escapeHtml(text) {
 
 // 切换密码输入框显示
 function togglePasswordField() {
-    const visibility = document.getElementById('visibility').value;
+    const visibility = document.querySelector('input[name="visibility"]:checked').value;
     const passwordField = document.getElementById('passwordField');
 
     if (visibility === 'password') {
@@ -698,6 +719,17 @@ function togglePasswordField() {
         passwordField.style.display = 'none';
         document.getElementById('access_password').removeAttribute('required');
         document.getElementById('access_password').value = '';
+    }
+}
+
+// 选择可见性选项（处理卡片点击）
+function selectVisibility(value) {
+    // 选中对应的单选按钮
+    const radioButton = document.getElementById('vis_' + value);
+    if (radioButton) {
+        radioButton.checked = true;
+        // 触发 change 事件
+        radioButton.dispatchEvent(new Event('change'));
     }
 }
 
@@ -1402,4 +1434,41 @@ function uploadAndReplaceLocalPath(file, localPath, textarea) {
     });
 }
 </script>
+
+<style>
+/* 可见性选项卡片样式 */
+.radio-card {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.radio-card:hover {
+    border-color: #667eea !important;
+    background: var(--bg-color);
+    transform: translateY(-2px);
+}
+
+.radio-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+}
+
+.radio-card label {
+    cursor: pointer;
+    user-select: none;
+}
+
+.radio-card.border-primary {
+    border-color: var(--primary-color, #667eea) !important;
+}
+
+.radio-card .bi {
+    color: var(--text-light);
+}
+
+.radio-card.border-primary .bi {
+    color: var(--primary-color, #667eea);
+}
+</style>
 {% endblock %}

@@ -137,3 +137,37 @@ class ContactForm(FlaskForm):
             Length(min=10, max=1000, message='留言内容长度必须在10-1000个字符之间')
         ]
     )
+
+
+class ChangePasswordForm(FlaskForm):
+    """修改密码表单"""
+    current_password = PasswordField(
+        '当前密码',
+        validators=[DataRequired(message='请输入当前密码')]
+    )
+    new_password = PasswordField(
+        '新密码',
+        validators=[
+            DataRequired(message='请输入新密码'),
+            Length(min=6, message='密码长度不能少于6个字符')
+        ]
+    )
+    confirm_password = PasswordField(
+        '确认新密码',
+        validators=[
+            DataRequired(message='请确认新密码'),
+            EqualTo('new_password', message='两次输入的密码不一致')
+        ]
+    )
+
+
+class DeleteAccountForm(FlaskForm):
+    """注销账号表单"""
+    confirm_username = StringField(
+        '确认用户名',
+        validators=[DataRequired(message='请输入用户名以确认')]
+    )
+    confirm_password = PasswordField(
+        '确认密码',
+        validators=[DataRequired(message='请输入密码以确认')]
+    )
