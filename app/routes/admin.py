@@ -250,19 +250,26 @@ def super_reset_all_data():
 
         current_app.logger.info(f'超级管理员 {current_user.username} 开始重置所有数据')
 
-        # 删除所有文章收藏记录（先删除，因为有关联）
+        from sqlalchemy import text
+
+        # 顺序很重要：先删除子表记录，再删除父表记录
+
+        # 1. 先删除多对多关联表 post_tags 中的所有记录
+        db.session.execute(text('DELETE FROM post_tags'))
+
+        # 2. 删除所有文章收藏记录
         PostBookmark.query.delete()
 
-        # 删除所有文章
+        # 3. 删除所有文章
         Post.query.delete()
 
-        # 删除所有分类
+        # 4. 删除所有分类
         Category.query.delete()
 
-        # 删除所有标签
+        # 5. 删除所有标签
         Tag.query.delete()
 
-        # 删除所有友情链接
+        # 6. 删除所有友情链接
         FriendLink.query.delete()
 
         db.session.commit()
