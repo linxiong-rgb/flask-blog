@@ -223,14 +223,11 @@ def post(post_slug):
             joinedload(Post.tags)
         ).get_or_404(post_id)
     except (ValueError, TypeError):
-        # 不是纯数字，尝试通过 slug 查找
+        # 不是纯数字，通过 slug 查找
         post = Post.query.options(
             joinedload(Post.category),
             joinedload(Post.tags)
         ).filter_by(slug=post_slug).first_or_404()
-        except (ValueError, TypeError):
-            from werkzeug.exceptions import NotFound
-            raise NotFound()
 
     # 检查文章可见性
     visibility = post.visibility or 'public'
