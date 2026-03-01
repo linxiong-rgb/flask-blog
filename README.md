@@ -191,7 +191,6 @@ flask-blog/
 │   │   ├── tag.html         # 标签页
 │   │   ├── archive.html     # 归档页
 │   │   ├── categories.html  # 分类列表
-│   │   ├── about.html       # 关于页面
 │   │   ├── friend_links.html # 友链页
 │   │   └── admin/           # 管理模板
 │   │       ├── dashboard.html

@@ -264,64 +264,6 @@ def post(post_id):
 
     return render_template('post.html', post=post, related_posts=related_posts)
 
-@bp.route('/about')
-def about():
-    """
-    关于页面路由
-
-    Returns:
-        str: 渲染后的关于页面HTML
-    """
-    # 初始化默认值
-    total_posts = 0
-    total_users = 0
-    total_views = 0
-
-    # 查询文章数量
-    try:
-        total_posts = Post.query.filter_by(published=True).count()
-    except Exception as e:
-        current_app.logger.error(f'关于页面查询文章数量失败: {str(e)}')
-        total_posts = 0
-
-    # 查询用户数量
-    try:
-        total_users = User.query.count()
-    except Exception as e:
-        current_app.logger.error(f'关于页面查询用户数量失败: {str(e)}')
-        total_users = 0
-
-    # 计算总浏览量
-    try:
-        posts = Post.query.filter_by(published=True).all()
-        total_views = sum(post.views or 0 for post in posts)
-    except Exception as e:
-        current_app.logger.error(f'关于页面计算浏览量失败: {str(e)}')
-        total_views = 0
-
-    # 渲染模板
-    try:
-        return render_template('about.html',
-                             total_posts=total_posts,
-                             total_users=total_users,
-                             total_views=total_views)
-    except Exception as e:
-        current_app.logger.error(f'关于页面渲染模板失败: {str(e)}')
-        # 如果模板渲染失败，返回简化版本
-        return '''
-        <!DOCTYPE html>
-        <html>
-        <head><title>关于 - 我的博客</title></head>
-        <body>
-        <h1>关于本站</h1>
-        <p>这是一个基于 Flask 开发的个人技术博客。</p>
-        <p>文章: {} | 用户: {} | 浏览: {}</p>
-        <a href="/">返回首页</a>
-        </body>
-        </html>
-        '''.format(total_posts, total_users, total_views)
-
-
 @bp.route('/category/<int:category_id>')
 def category(category_id):
     """
