@@ -674,11 +674,10 @@ def new_post():
             published=published,
             scheduled_at=scheduled_at,
             visibility=visibility,
-            access_password=access_password,
-            slug=None  # 将在 commit 前自动生成
+            access_password=access_password
         )
 
-        # 自动生成 slug
+        # 自动生成 slug（在添加到数据库之前）
         post.slug = post.get_slug()
 
         # 添加标签关联
