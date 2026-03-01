@@ -272,27 +272,28 @@ def about():
     Returns:
         str: 渲染后的关于页面HTML
     """
+    # 使用简单的查询方式，避免聚合函数可能的问题
     try:
-        from app.models.post import Post
-        from app.models.user import User
-
         total_posts = Post.query.filter_by(published=True).count()
+    except Exception:
+        total_posts = 0
+
+    try:
         total_users = User.query.count()
+    except Exception:
+        total_users = 0
 
-        # 更健壮的总浏览量计算
-        try:
-            total_views = db.session.query(func.sum(Post.views)).filter_by(published=True).scalar()
-            total_views = total_views if total_views is not None else 0
-        except Exception:
-            # 如果聚合查询失败，使用Python求和
-            posts = Post.query.filter_by(published=True).all()
-            total_views = sum(post.views or 0 for post in posts)
+    try:
+        # 使用更简单的方式计算总浏览量
+        posts = Post.query.filter_by(published=True).all()
+        total_views = sum(post.views or 0 for post in posts)
+    except Exception:
+        total_views = 0
 
-        return render_template('about.html', total_posts=total_posts, total_users=total_users, total_views=total_views)
-    except Exception as e:
-        current_app.logger.error(f'关于页面错误: {str(e)}')
-        # 出错时返回默认值
-        return render_template('about.html', total_posts=0, total_users=0, total_views=0)
+    return render_template('about.html',
+                         total_posts=total_posts,
+                         total_users=total_users,
+                         total_views=total_views)
 
 
 @bp.route('/category/<int:category_id>')
