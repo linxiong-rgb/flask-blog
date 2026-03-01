@@ -884,15 +884,18 @@ def init_database():
         admin = User.query.filter_by(username='admin01').first()
         if not admin:
             # 创建默认管理员（超级管理员）
+            import secrets
+            default_password = secrets.token_urlsafe(12)
             admin = User(
                 username='admin01',
                 email='admin01@blog.local',
                 is_superuser=True
             )
-            admin.set_password('123456')
+            admin.set_password(default_password)
             db.session.add(admin)
             db.session.commit()
-            current_app.logger.info('默认管理员账号创建成功（超级管理员）')
+            current_app.logger.warning(f'默认管理员账号创建成功！用户名: admin01, 密码: {default_password}')
+            current_app.logger.warning('请立即登录后修改默认密码！')
 
         return jsonify({
             'success': True,

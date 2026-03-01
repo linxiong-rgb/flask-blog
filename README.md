@@ -5,7 +5,7 @@
 **现代化、功能完整的 Flask 博客系统**
 
 [![Flask](https://img.shields.io/badge/Flask-3.0.0-blue?logo=flask)](https://flask.palletsprojects.com/)
-[![Python](https://img.shields.io/badge/Python-3.8+-green?logo=python)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.10+-green?logo=python)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/linxiong-rgb/flask-blog?style=social)](https://github.com/linxiong-rgb/flask-blog/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/linxiong-rgb/flask-blog?style=social)](https://github.com/linxiong-rgb/flask-blog/network/members)
@@ -27,6 +27,7 @@
 - **响应式设计** - 完美适配手机、平板和电脑
 - **用户认证** - Flask-Login 用户认证系统
 - **数据统计** - 文章浏览量统计
+- **安全防护** - CSRF 保护、XSS 防护、SQL 注入防护
 
 ---
 
@@ -82,17 +83,27 @@
 - **阅读进度条** - 顶部显示阅读进度
 - **代码高亮** - 代码块语法高亮
 - **字体调节** - 支持字体大小调节
+- **统一导航** - 美观的面包屑导航设计
 
 ### 管理功能
 
 - **仪表板** - 数据统计和快速操作
 - **文章管理** - 列表视图，删除确认
 - **Markdown 导入** - 支持单个/批量导入 .md 文件
-- **智能摘要** - 自动生成文章摘要
+- **智能摘要** - 自动生成一句话文章摘要
 - **封面图生成** - 自动生成简约封面图
 - **收藏管理** - 查看用户收藏列表
 - **数据导出** - 导出 Markdown/HTML
 - **友链管理** - 后台管理友情链接
+
+### 安全特性
+
+- **CSRF 保护** - 所有表单都受到 CSRF 保护
+- **XSS 防护** - 使用 bleach 清理 HTML 内容
+- **SQL 注入防护** - 使用 SQLAlchemy ORM
+- **密码安全** - 使用 werkzeug 安全哈希
+- **登录保护** - 登录速率限制和 IP 记录
+- **随机密码** - 初始化时生成安全的随机密码
 
 ### 图片功能
 

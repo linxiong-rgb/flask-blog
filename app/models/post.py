@@ -7,7 +7,7 @@
 - Post: 文章（支持多对多标签关系）
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from app import db
 
 # 多对多关系表：文章-标签
@@ -121,7 +121,6 @@ class Post(db.Model):
         Returns:
             bool: 如果文章发布在指定天数内，返回True
         """
-        from datetime import timedelta
         if not self.created_at:
             return False
         return self.created_at >= (datetime.now() - timedelta(days=days))
