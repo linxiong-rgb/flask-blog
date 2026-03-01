@@ -110,3 +110,18 @@ class Post(db.Model):
 
     def __repr__(self):
         return f'<Post {self.title}>'
+
+    def is_new(self, days=7):
+        """
+        判断文章是否为新文章（默认7天内）
+
+        Args:
+            days: 判断天数，默认7天
+
+        Returns:
+            bool: 如果文章发布在指定天数内，返回True
+        """
+        from datetime import timedelta
+        if not self.created_at:
+            return False
+        return self.created_at >= (datetime.now() - timedelta(days=days))

@@ -10,7 +10,7 @@ import re
 from collections import Counter
 
 
-def generate_summary(content, max_length=200):
+def generate_summary(content, max_length=100):
     """
     从文章内容智能生成摘要
 

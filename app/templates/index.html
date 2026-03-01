@@ -21,7 +21,12 @@
             <!-- 文章列表 -->
             {% if posts.items %}
                 {% for post in posts.items %}
-                    <article class="post-card">
+                    <article class="post-card {% if post.is_new() %}post-card-new{% endif %}">
+                        {% if post.is_new() %}
+                            <div class="post-new-badge">
+                                <span class="new-badge">NEW</span>
+                            </div>
+                        {% endif %}
                         {% if post.cover_image %}
                             <img src="{{ post.cover_image }}" alt="{{ post.title }}" class="post-card-img" loading="lazy">
                         {% endif %}
@@ -134,6 +139,26 @@
                     </div>
                 {% endif %}
 
+                <!-- 新文章提示 -->
+                {% set latest_post = posts.items[0] if posts.items else none %}
+                {% if latest_post and latest_post.is_new() %}
+                    <div class="sidebar-widget" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                        <h5 class="sidebar-widget-title" style="color: white;">
+                            <i class="bi bi-stars"></i> 有新文章
+                        </h5>
+                        <div class="new-post-notice">
+                            <a href="{{ url_for('main.post', post_id=latest_post.id) }}" style="color: white; text-decoration: none; display: block;">
+                                <div style="font-weight: 600; margin-bottom: 8px;">
+                                    {{ latest_post.title }}
+                                </div>
+                                <div style="font-size: 0.85rem; opacity: 0.9;">
+                                    <i class="bi bi-clock"></i> {{ latest_post.created_at.strftime('%Y-%m-%d') }}
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                {% endif %}
+
                 <!-- 分类 -->
                 {% if categories %}
                     <div class="sidebar-widget">
@@ -219,4 +244,58 @@
         </div>
     </div>
 </div>
+
+<style>
+/* NEW 标记样式 */
+.post-card-new {
+    position: relative;
+}
+
+.post-new-badge {
+    position: absolute;
+    top: 15px;
+    left: -5px;
+    z-index: 10;
+}
+
+.new-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 3px;
+    box-shadow: 0 2px 8px rgba(238, 90, 111, 0.4);
+    animation: pulse-new 2s ease-in-out infinite;
+}
+
+.new-badge::before {
+    content: '';
+    position: absolute;
+    left: -3px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-width: 6px 6px 6px 0;
+    border-style: solid;
+    border-color: transparent #ee5a6f transparent transparent;
+}
+
+@keyframes pulse-new {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* 新文章提示样式 */
+.new-post-notice a:hover {
+    opacity: 0.9;
+    transform: translateX(3px);
+    transition: all 0.3s ease;
+}
+</style>
+
 {% endblock %}
