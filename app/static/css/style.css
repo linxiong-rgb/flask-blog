@@ -25,6 +25,7 @@
     --border-color: #5a6578;
     --badge-bg: rgba(102, 126, 234, 0.2);
     --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 6px 15px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
