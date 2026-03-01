@@ -108,7 +108,7 @@ class Post(db.Model):
     # 密码保护的访问密码（可选）
     access_password = db.Column(db.String(100))
     # URL slug（用于友好的URL）
-    slug = db.Column(db.String(200), unique=True, nullable=True)
+    slug = db.Column(db.String(200), nullable=True)
 
     def __repr__(self):
         return f'<Post {self.title}>'
