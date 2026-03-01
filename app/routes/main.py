@@ -971,7 +971,7 @@ def check_database():
 
         # 获取所有用户
         users = User.query.all()
-        user_list = [{'id': u.id, 'username': u.username, 'email': u.email} for u in users]
+        user_list = [{'id': u.id, 'username': u.username, 'email': u.email, 'is_superuser': getattr(u, 'is_superuser', False)} for u in users]
 
         # 检查 admin01 是否存在
         admin = User.query.filter_by(username='admin01').first()
@@ -987,11 +987,57 @@ def check_database():
                 'id': admin.id,
                 'username': admin.username,
                 'email': admin.email,
-                'has_password': bool(admin.password_hash)
+                'has_password': bool(admin.password_hash),
+                'is_superuser': getattr(admin, 'is_superuser', False)
             } if admin else None
         })
     except Exception as e:
         return jsonify({
             'success': False,
             'message': str(e)
+        }), 500
+
+
+@bp.route('/set-superuser')
+def set_superuser():
+    """
+    设置 admin01 为超级管理员
+
+    Returns:
+        JSON: 操作结果
+    """
+    from app import db
+
+    try:
+        admin = User.query.filter_by(username='admin01').first()
+        if not admin:
+            return jsonify({
+                'success': False,
+                'message': 'admin01 用户不存在'
+            }), 404
+
+        # 检查是否已经有 is_superuser 属性
+        if not hasattr(admin, 'is_superuser'):
+            return jsonify({
+                'success': False,
+                'message': '数据库缺少 is_superuser 列，请先访问 /migrate-db'
+            }), 400
+
+        admin.is_superuser = True
+        db.session.commit()
+
+        current_app.logger.info(f'用户 {admin.username} 已设置为超级管理员')
+
+        return jsonify({
+            'success': True,
+            'message': f'用户 {admin.username} 已成功设置为超级管理员',
+            'username': admin.username,
+            'is_superuser': admin.is_superuser
+        })
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'设置超级管理员失败: {str(e)}')
+        return jsonify({
+            'success': False,
+            'message': f'设置失败: {str(e)}'
         }), 500
