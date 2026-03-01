@@ -882,10 +882,15 @@ def init_database():
 
         # 检查管理员是否已存在
         admin = User.query.filter_by(username='admin01').first()
+        # 用于返回的管理员密码信息
+        admin_password = None
+        admin_created = False
+
         if not admin:
             # 创建默认管理员（超级管理员）
             import secrets
             default_password = secrets.token_urlsafe(12)
+            admin_password = default_password
             admin = User(
                 username='admin01',
                 email='admin01@blog.local',
@@ -896,11 +901,15 @@ def init_database():
             db.session.commit()
             current_app.logger.warning(f'默认管理员账号创建成功！用户名: admin01, 密码: {default_password}')
             current_app.logger.warning('请立即登录后修改默认密码！')
+            admin_created = True
 
         return jsonify({
             'success': True,
             'message': '数据库初始化成功！',
-            'admin_created': admin is not None or User.query.filter_by(username='admin01').first() is not None
+            'admin_created': admin_created or admin is not None,
+            'admin_username': 'admin01',
+            'admin_password': admin_password if admin_created else '（已存在）',
+            'admin_hint': '请保存密码并及时登录修改'
         })
     except Exception as e:
         db.session.rollback()
@@ -1028,18 +1037,26 @@ def check_database():
 
         return jsonify({
             'success': True,
-            'tables': tables,
-            'table_count': len(tables),
-            'users': user_list,
-            'user_count': len(users),
-            'admin_exists': admin is not None,
-            'admin_info': {
-                'id': admin.id,
-                'username': admin.username,
-                'email': admin.email,
-                'has_password': bool(admin.password_hash),
-                'is_superuser': getattr(admin, 'is_superuser', False)
-            } if admin else None
+            'message': '数据库状态检查完成',
+            'database': {
+                'tables': tables,
+                'table_count': len(tables),
+                'status': '正常'
+            },
+            'users': {
+                'list': user_list,
+                'count': len(users)
+            },
+            'admin': {
+                'exists': admin is not None,
+                'info': {
+                    'id': admin.id,
+                    'username': admin.username,
+                    'email': admin.email,
+                    'is_superuser': getattr(admin, 'is_superuser', False)
+                } if admin else None
+            },
+            'hint': '如需初始化数据库，请访问 /init-db'
         })
     except Exception as e:
         return jsonify({
