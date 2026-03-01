@@ -677,9 +677,6 @@ def new_post():
             access_password=access_password
         )
 
-        # 自动生成 slug（在添加到数据库之前）
-        post.slug = post.get_slug()
-
         # 添加标签关联
         for tag_id in tags:
             tag = Tag.query.get(int(tag_id))
@@ -728,10 +725,6 @@ def edit_post(post_id):
         post.title = request.form.get('title')
         post.content = request.form.get('content')
         summary = request.form.get('summary', '').strip()
-
-        # 如果标题改变，重新生成 slug
-        if old_title != post.title:
-            post.slug = post.get_slug()
 
         # 如果没有提供摘要，自动生成
         if not summary:

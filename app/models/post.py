@@ -107,8 +107,6 @@ class Post(db.Model):
     visibility = db.Column(db.String(20), default='public')
     # 密码保护的访问密码（可选）
     access_password = db.Column(db.String(100))
-    # URL slug（用于友好的URL）
-    slug = db.Column(db.String(200), nullable=True)
 
     def __repr__(self):
         return f'<Post {self.title}>'
@@ -128,51 +126,3 @@ class Post(db.Model):
             return False
         return self.created_at >= (datetime.now() - timedelta(days=days))
 
-    def generate_slug(self):
-        """
-        根据文章标题生成 URL slug
-
-        Returns:
-            str: 生成的 slug
-        """
-        import re
-        import unicodedata
-        from datetime import datetime
-
-        # 转换为ASCII并移除特殊字符
-        title = self.title
-
-        # 音译为ASCII
-        title = unicodedata.normalize('NFKD', title).encode('ascii', 'ignore').decode('ascii')
-
-        # 转换为小写
-        title = title.lower()
-
-        # 移除特殊字符，保留字母、数字、空格和连字符
-        title = re.sub(r'[^a-z0-9\s-]', '', title)
-
-        # 将空格替换为连字符
-        title = re.sub(r'\s+', '-', title)
-
-        # 移除多余的连字符
-        title = re.sub(r'-+', '-', title)
-
-        # 截断到150字符
-        title = title[:150].strip('-')
-
-        # 如果标题为空，使用日期作为后备
-        if not title:
-            title = 'post-' + datetime.now().strftime('%Y%m%d-%H%M%S')
-
-        return title
-
-    def get_slug(self):
-        """
-        获取或生成文章的 slug
-
-        Returns:
-            str: 文章的 slug
-        """
-        if not self.slug:
-            self.slug = self.generate_slug()
-        return self.slug

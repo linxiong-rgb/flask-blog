@@ -197,10 +197,10 @@ def index():
     return render_template('index.html', posts=posts, hot_posts=hot_posts,
                           categories=categories, tags=tags, hot_tags=hot_tags, total_views=total_views)
 
-@bp.route('/post/<path:post_slug>', methods=['GET', 'POST'])
-def post(post_slug):
+@bp.route('/post/<int:post_id>', methods=['GET', 'POST'])
+def post(post_id):
     """
-    文章详情页路由（同时支持 slug 和 ID 向后兼容）
+    文章详情页路由
 
     显示单篇文章的完整内容，包含：
     - 文章信息（标题、作者、分类、标签）
@@ -210,24 +210,15 @@ def post(post_slug):
     - 可见性控制（公开/私密/密码保护）
 
     Args:
-        post_slug: 文章的 URL slug 或数字 ID
+        post_id: 文章ID
 
     Returns:
         str: 渲染后的文章详情页HTML
     """
-    # 首先尝试转换为 ID（用于纯数字的 slug）
-    try:
-        post_id = int(post_slug)
-        post = Post.query.options(
-            joinedload(Post.category),
-            joinedload(Post.tags)
-        ).get_or_404(post_id)
-    except (ValueError, TypeError):
-        # 不是纯数字，通过 slug 查找
-        post = Post.query.options(
-            joinedload(Post.category),
-            joinedload(Post.tags)
-        ).filter_by(slug=post_slug).first_or_404()
+    post = Post.query.options(
+        joinedload(Post.category),
+        joinedload(Post.tags)
+    ).get_or_404(post_id)
 
     # 检查文章可见性
     visibility = post.visibility or 'public'
@@ -846,48 +837,6 @@ def init_database():
                     """))
                     conn.commit()
                     current_app.logger.info('is_superuser 列添加成功')
-
-                # 检查 slug 列是否存在
-                result = conn.execute(text("""
-                    SELECT column_name
-                    FROM information_schema.columns
-                    WHERE table_name = 'post'
-                    AND column_name = 'slug'
-                """))
-                if not result.fetchone():
-                    current_app.logger.info('检测到缺少 slug 列，正在添加...')
-                    conn.execute(text("""
-                        ALTER TABLE post ADD COLUMN slug VARCHAR(200) UNIQUE
-                    """))
-                    # 创建索引以提高查询性能
-                    conn.execute(text("""
-                        CREATE INDEX ix_post_slug ON post(slug)
-                    """))
-                    conn.commit()
-                    current_app.logger.info('slug 列添加成功')
-
-                    # 为现有文章生成 slug
-                    posts_without_slug = conn.execute(text("""
-                        SELECT id, title FROM post WHERE slug IS NULL
-                    """)).fetchall()
-                    for post_id, title in posts_without_slug:
-                        # 生成简单的 slug
-                        import re
-                        import unicodedata
-                        from datetime import datetime
-
-                        slug_title = unicodedata.normalize('NFKD', title).encode('ascii', 'ignore').decode('ascii')
-                        slug_title = re.sub(r'[^a-z0-9\s-]', '', slug_title.lower())
-                        slug_title = re.sub(r'\s+', '-', slug_title)[:150].strip('-')
-
-                        if not slug_title:
-                            slug_title = f'post-{post_id}-{int(datetime.now().timestamp())}'
-
-                        conn.execute(text("""
-                            UPDATE post SET slug = :slug WHERE id = :id
-                        """), {'slug': slug_title, 'id': post_id})
-                    conn.commit()
-                    current_app.logger.info(f'为 {len(posts_without_slug)} 篇文章生成 slug 成功')
         except Exception as migrate_error:
             current_app.logger.warning(f'迁移检查/执行失败: {str(migrate_error)}')
 
