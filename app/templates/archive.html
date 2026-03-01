@@ -2,254 +2,376 @@
 
 {% block title %}文章归档 - 我的博客{% endblock %}
 
-{% block content %}
+{% block extra_css %}
 <style>
-.archive-container {
-    padding: 20px 0;
+/* 面包屑导航样式保持一致 */
+.breadcrumb {
+    background: transparent;
+    padding: 0;
+    margin-bottom: 1.5rem;
 }
 
-.archive-header {
-    text-align: center;
-    padding: 30px 20px;
-    margin-bottom: 30px;
+.breadcrumb-item a {
+    color: var(--text-light);
+    text-decoration: none;
+    transition: color 0.2s;
 }
 
-.archive-header h1 {
-    font-size: 2rem;
+.breadcrumb-item a:hover {
+    color: var(--primary-color);
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: ">";
+    padding: 0 0.75rem;
+    color: var(--text-light);
+}
+
+.breadcrumb-item.active {
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+/* 归档页面标题 */
+.archive-page-title {
+    font-size: 1.75rem;
     font-weight: 700;
-    margin-bottom: 8px;
+    margin-bottom: 0.5rem;
     color: var(--text-color);
 }
 
-.archive-header p {
-    color: var(--text-muted, #6c757d);
+.archive-page-subtitle {
+    color: var(--text-light);
     font-size: 0.95rem;
+    margin-bottom: 2rem;
 }
 
-/* 归档列表 */
-.archive-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+/* 时间轴容器 */
+.timeline-container {
+    position: relative;
 }
 
-.archive-item {
-    background: var(--card-bg, #ffffff);
+/* 时间轴线条 */
+.timeline-container::before {
+    content: '';
+    position: absolute;
+    left: 20px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--primary-color) 0%, var(--border-color) 100%);
+}
+
+/* 时间轴项目 */
+.timeline-item {
+    position: relative;
+    padding-left: 60px;
+    padding-bottom: 2rem;
+}
+
+.timeline-item:last-child {
+    padding-bottom: 0;
+}
+
+/* 时间轴节点 */
+.timeline-dot {
+    position: absolute;
+    left: 12px;
+    top: 6px;
+    width: 18px;
+    height: 18px;
+    background: white;
+    border: 3px solid var(--primary-color);
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.timeline-item.new .timeline-dot {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+}
+
+/* 时间轴卡片 */
+.timeline-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 15px;
-    border-left: 4px solid var(--primary-color, #667eea);
+    padding: 1.25rem 1.5rem;
     transition: all 0.3s ease;
 }
 
-.archive-item:hover {
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    transform: translateX(5px);
+.timeline-card:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-color);
+    transform: translateX(4px);
 }
 
-.archive-item-header {
+/* 时间轴头部 */
+.timeline-header {
     display: flex;
     align-items: center;
-    gap: 15px;
-    margin-bottom: 12px;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
 }
 
-.archive-date {
-    display: flex;
+.timeline-date {
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
-    font-size: 0.9rem;
-    color: var(--text-muted, #6c757d);
+    gap: 0.4rem;
+    font-size: 0.85rem;
     font-weight: 600;
-    padding: 6px 12px;
-    background: var(--badge-bg, #f8f9fa);
-    border-radius: 8px;
-    flex-shrink: 0;
+    color: var(--primary-color);
+    background: rgba(102, 126, 234, 0.1);
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
 }
 
-.archive-date-icon {
-    color: var(--primary-color, #667eea);
+.timeline-time {
+    font-size: 0.8rem;
+    color: var(--text-light);
 }
 
-.archive-title {
+.timeline-author {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--text-light);
+}
+
+.timeline-author i {
+    font-size: 0.9rem;
+}
+
+/* 时间轴标题 */
+.timeline-title {
     font-size: 1.15rem;
     font-weight: 600;
-    margin: 0;
-    flex: 1;
+    margin-bottom: 0.5rem;
 }
 
-.archive-title a {
+.timeline-title a {
     color: var(--text-color);
     text-decoration: none;
-    transition: color 0.2s ease;
+    transition: color 0.2s;
 }
 
-.archive-title a:hover {
-    color: var(--primary-color, #667eea);
+.timeline-title a:hover {
+    color: var(--primary-color);
 }
 
-.archive-meta {
+/* 时间轴摘要 */
+.timeline-summary {
+    color: var(--text-light);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin-bottom: 0.75rem;
+}
+
+/* 时间轴元信息 */
+.timeline-meta {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 1rem;
     flex-wrap: wrap;
     font-size: 0.85rem;
-    color: var(--text-muted, #6c757d);
+    color: var(--text-light);
 }
 
-.archive-meta-item {
-    display: flex;
+.timeline-meta-item {
+    display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 0.35rem;
 }
 
-.archive-meta-item i {
-    font-size: 0.9rem;
-}
-
-.archive-category {
-    color: var(--primary-color, #667eea);
+.timeline-category {
+    color: var(--primary-color);
     text-decoration: none;
     font-weight: 500;
 }
 
-.archive-category:hover {
+.timeline-category:hover {
     text-decoration: underline;
 }
 
-.archive-summary {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border-color, #e9ecef);
-    font-size: 0.9rem;
-    color: var(--text-muted, #6c757d);
-    line-height: 1.6;
-}
-
-.archive-tags {
-    margin-top: 10px;
+/* 时间轴标签 */
+.timeline-tags {
     display: flex;
-    gap: 6px;
+    gap: 0.5rem;
     flex-wrap: wrap;
+    margin-top: 0.75rem;
 }
 
-.archive-tag {
+.timeline-tag {
     display: inline-block;
-    padding: 3px 10px;
-    background: var(--badge-bg, #f8f9fa);
+    padding: 0.25rem 0.65rem;
+    background: var(--bg-color);
     color: var(--text-color);
     border-radius: 4px;
     font-size: 0.75rem;
     text-decoration: none;
-    transition: all 0.2s ease;
+    transition: all 0.2s;
 }
 
-.archive-tag:hover {
-    background: var(--primary-color, #667eea);
+.timeline-tag:hover {
+    background: var(--primary-color);
     color: white;
+}
+
+/* 新文章标记 */
+.timeline-badge {
+    display: inline-block;
+    background: var(--primary-color);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    margin-left: 0.5rem;
 }
 
 /* 空状态 */
 .empty-archive {
     text-align: center;
-    padding: 60px 20px;
+    padding: 4rem 2rem;
+    background: var(--card-bg);
+    border: 2px dashed var(--border-color);
+    border-radius: 16px;
 }
 
 .empty-archive i {
     font-size: 4rem;
-    color: var(--text-muted, #6c757d);
+    color: var(--text-light);
+    margin-bottom: 1rem;
+}
+
+.empty-archive h4 {
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+}
+
+.empty-archive p {
+    color: var(--text-light);
 }
 
 /* 响应式 */
 @media (max-width: 768px) {
-    .archive-item {
-        padding: 15px;
+    .timeline-container::before {
+        left: 12px;
     }
 
-    .archive-date {
-        font-size: 0.8rem;
-        padding: 5px 10px;
+    .timeline-item {
+        padding-left: 40px;
     }
 
-    .archive-title {
-        font-size: 1rem;
+    .timeline-dot {
+        left: 4px;
+        width: 16px;
+        height: 16px;
     }
 
-    .archive-meta {
-        gap: 12px;
+    .timeline-card {
+        padding: 1rem 1.25rem;
+    }
+
+    .timeline-header {
+        gap: 0.5rem;
+    }
+
+    .timeline-title {
+        font-size: 1.05rem;
     }
 }
 </style>
+{% endblock %}
 
-<div class="archive-container">
-    <!-- 归档头部 -->
-    <div class="archive-header">
-        <h1><i class="bi bi-archive"></i> 文章归档</h1>
-        <p>共 {{ total_posts }} 篇文章</p>
-    </div>
+{% block content %}
+<div class="main-container">
+    <!-- 面包屑导航 -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}"><i class="bi bi-house-door"></i> 首页</a></li>
+            <li class="breadcrumb-item active">文章归档</li>
+        </ol>
+    </nav>
 
+    <!-- 页面标题 -->
+    <h1 class="archive-page-title">
+        <i class="bi bi-archive"></i> 文章归档
+    </h1>
+    <p class="archive-page-subtitle">共 {{ total_posts }} 篇文章</p>
+
+    <!-- 时间轴内容 -->
     {% if archive %}
-        <ul class="archive-list">
+        <div class="timeline-container">
             {% for year, year_data in archive.items()|sort(reverse=true) %}
                 {% for month_key, month_data in year_data.months.items()|sort(reverse=true) %}
                     {% for post in month_data.posts %}
-                        <li class="archive-item">
-                            <div class="archive-item-header">
-                                <div class="archive-date">
-                                    <i class="bi bi-calendar3 archive-date-icon"></i>
-                                    <span>{{ post.created_at.strftime('%Y') }}年{{ post.created_at.strftime('%m') }}月{{ post.created_at.strftime('%d') }}日</span>
-                                    <span>{{ post.created_at.strftime('%H:%M') }}</span>
-                                </div>
-                                <h2 class="archive-title">
-                                    <a href="{{ url_for('main.post', post_id=post.id) }}">{{ post.title }}</a>
-                                </h2>
-                            </div>
-
-                            <div class="archive-meta">
-                                {% if post.category %}
-                                    <span class="archive-meta-item">
-                                        <i class="bi bi-folder"></i>
-                                        <a href="{{ url_for('main.category', category_id=post.category.id) }}" class="archive-category">
-                                            {{ post.category.name }}
-                                        </a>
+                        <div class="timeline-item{% if post.is_new() %} new{% endif %}">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-card">
+                                <div class="timeline-header">
+                                    <span class="timeline-date">
+                                        <i class="bi bi-calendar3"></i>
+                                        {{ post.created_at.strftime('%Y年%m月%d日') }}
+                                        <span class="timeline-badge">NEW</span>
                                     </span>
-                                {% endif %}
-                                <span class="archive-meta-item">
-                                    <i class="bi bi-person"></i>
-                                    {{ post.author.username }}
-                                </span>
-                                <span class="archive-meta-item">
-                                    <i class="bi bi-eye"></i>
-                                    {{ post.views }}
-                                </span>
-                            </div>
+                                    <span class="timeline-time">{{ post.created_at.strftime('%H:%M') }}</span>
+                                    <span class="timeline-author">
+                                        <i class="bi bi-person-circle"></i>
+                                        {{ post.author.username }}
+                                    </span>
+                                </div>
 
-                            {% if post.summary %}
-                                <div class="archive-summary">
+                                <h3 class="timeline-title">
+                                    <a href="{{ url_for('main.post', post_id=post.id) }}">{{ post.title }}</a>
+                                </h3>
+
+                                {% if post.summary %}
+                                <div class="timeline-summary">
                                     {{ post.summary }}
                                 </div>
-                            {% endif %}
+                                {% endif %}
 
-                            {% if post.tags %}
-                                <div class="archive-tags">
+                                <div class="timeline-meta">
+                                    {% if post.category %}
+                                        <span class="timeline-meta-item">
+                                            <i class="bi bi-folder"></i>
+                                            <a href="{{ url_for('main.category', category_id=post.category.id) }}" class="timeline-category">
+                                                {{ post.category.name }}
+                                            </a>
+                                        </span>
+                                    {% endif %}
+                                    <span class="timeline-meta-item">
+                                        <i class="bi bi-eye"></i>
+                                        {{ post.views }}
+                                    </span>
+                                </div>
+
+                                {% if post.tags %}
+                                <div class="timeline-tags">
                                     {% for tag in post.tags[:4] %}
-                                        <a href="{{ url_for('main.tag', tag_id=tag.id) }}" class="archive-tag">
+                                        <a href="{{ url_for('main.tag', tag_id=tag.id) }}" class="timeline-tag">
                                             #{{ tag.name }}
                                         </a>
                                     {% endfor %}
                                 </div>
-                            {% endif %}
-                        </li>
+                                {% endif %}
+                            </div>
+                        </div>
                     {% endfor %}
                 {% endfor %}
             {% endfor %}
-        </ul>
+        </div>
     {% else %}
         <div class="empty-archive">
             <i class="bi bi-inbox"></i>
-            <p class="text-muted mt-3">还没有发布任何文章</p>
+            <h4>暂无文章</h4>
+            <p>还没有发布任何文章，敬请期待...</p>
             {% if current_user.is_authenticated %}
-                <a href="{{ url_for('admin.new_post') }}" class="btn btn-primary">
+                <a href="{{ url_for('admin.new_post') }}" class="btn btn-primary" style="margin-top: 1rem;">
                     <i class="bi bi-plus-lg"></i> 创建第一篇文章
                 </a>
             {% endif %}
