@@ -63,27 +63,36 @@ ALLOWED_TAGS = [
     'sup', 'sub',
 ]
 
+# 使用字典推导式动态生成允许的属性
 ALLOWED_ATTRIBUTES = {
     'a': ['href', 'title', 'target'],
-    'img': ['src', 'alt', 'title', 'width', 'height', 'class', 'loading'],  # 添加 class 和 loading 属性
-    'div': ['class', 'style'],  # 添加 style 属性
-    'span': ['class', 'style'],  # 添加 style 属性
+    'img': ['src', 'alt', 'title', 'width', 'height', 'class', 'loading', 'style'],
+    'div': ['class', 'style'],
+    'span': ['class', 'style'],
     'pre': ['class'],
     'code': ['class'],
-    'table': ['class', 'style'],  # 添加 style 属性
-    'th': ['colspan', 'rowspan', 'class'],  # 添加 class 属性
-    'td': ['colspan', 'rowspan', 'class'],  # 添加 class 属性
+    'table': ['class', 'style'],
+    'th': ['colspan', 'rowspan', 'class'],
+    'td': ['colspan', 'rowspan', 'class'],
 }
 
 # 清理 HTML 防止 XSS 攻击
 def clean_html(html_content):
     """使用 bleach 清理 HTML，防止 XSS 攻击"""
-    return bleach.clean(
-        html_content,
-        tags=ALLOWED_TAGS,
-        attributes=ALLOWED_ATTRIBUTES,
-        strip=True
-    )
+    if not html_content:
+        return ''
+
+    try:
+        # 简化配置，确保所有必要的属性都被允许
+        return bleach.clean(
+            html_content,
+            tags=ALLOWED_TAGS,
+            attributes=ALLOWED_ATTRIBUTES,
+            strip=True
+        )
+    except Exception as e:
+        current_app.logger.error(f'HTML 清理失败: {str(e)}')
+        return html_content  # 出错时返回原始内容
 
 
 @cache.memoize(timeout=300)
