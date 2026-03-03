@@ -19,7 +19,7 @@
 
 [data-theme="dark"] {
     --text-color: #ffffff;
-    --text-light: #cbd5e0;
+    --text-light: #e2e8f0;
     --bg-color: #1a202c;
     --card-bg: #2d3748;
     --border-color: #5a6578;
@@ -27,6 +27,81 @@
     --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 6px 15px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* 暗色主题下的链接和文字颜色优化 */
+[data-theme="dark"] a {
+    color: #60a5fa;
+}
+
+[data-theme="dark"] a:hover {
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .text-muted {
+    color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .text-light {
+    color: #cbd5e0 !important;
+}
+
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6 {
+    color: #ffffff;
+}
+
+[data-theme="dark"] .navbar-brand,
+[data-theme="dark"] .nav-link {
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .nav-link:hover {
+    color: #ffffff;
+}
+
+[data-theme="dark"] .card-body,
+[data-theme="dark"] .sidebar-widget {
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+    color: #ffffff;
+    background-color: #2d3748;
+}
+
+[data-theme="dark"] .form-control::placeholder {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .form-control:focus {
+    color: #ffffff;
+    background-color: #2d3748;
+}
+
+[data-theme="dark"] .post-card-title,
+[data-theme="dark"] .post-title {
+    color: #ffffff;
+}
+
+[data-theme="dark"] .post-meta {
+    color: #cbd5e0;
+}
+
+[data-theme="dark"] code {
+    color: #e6edf3;
+    background-color: #374151;
+}
+
+[data-theme="dark"] pre {
+    color: #e6edf3;
+    background-color: #1f2937;
 }
 
 * {
@@ -2627,11 +2702,15 @@ select:focus-visible {
 
 [data-theme="dark"] .codehilite .c,
 [data-theme="dark"] .codehilite .cm {
-    color: #8b949e;
+    color: #b0bac5;
 }
 
 [data-theme="dark"] .codehilite .p {
-    color: #c9d1d9;
+    color: #ffffff;
+}
+
+[data-theme="dark"] .codehilite {
+    color: #e6edf3;
 }
 
 /* 代码块语言标签 */
