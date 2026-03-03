@@ -22,16 +22,23 @@
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="category_id" class="form-label">分类</label>
-                            <select class="form-select" id="category_id" name="category_id">
-                                <option value="">选择分类（可选）</option>
-                                {% for category in categories %}
-                                    <option value="{{ category.id }}"
-                                            {% if post and post.category_id == category.id %}selected{% endif %}>
-                                        {{ category.name }}
-                                    </option>
-                                {% endfor %}
-                            </select>
+                            <div id="categorySection">
+                                <label for="category_id" class="form-label">
+                                    <i class="bi bi-folder"></i> 文章分类
+                                </label>
+                                <select class="form-select" id="category_id" name="category_id">
+                                    <option value="">选择分类（可选）</option>
+                                    {% for category in categories %}
+                                        <option value="{{ category.id }}"
+                                                {% if post and post.category_id == category.id %}selected{% endif %}>
+                                            {{ category.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                {% if categories|length == 0 %}
+                                    <small class="text-muted">还没有分类，请先在管理后台创建</small>
+                                {% endif %}
+                            </div>
                         </div>
 
                         <div class="col-md-6 mb-3">
@@ -123,23 +130,27 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">标签</label>
-                        <div>
-                            {% for tag in tags %}
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="checkbox" name="tags" value="{{ tag.id }}" id="tag{{ tag.id }}"
-                                           {% if post and tag in post.tags %}checked{% endif %}>
-                                    <label class="form-check-label badge-tag" for="tag{{ tag.id }}">
-                                        {{ tag.name }}
-                                    </label>
-                                </div>
-                            {% endfor %}
+                        <div id="tagsSection">
+                            <label class="form-label">
+                                <i class="bi bi-tags"></i> 文章标签
+                            </label>
+                            <div>
+                                {% for tag in tags %}
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" name="tags" value="{{ tag.id }}" id="tag{{ tag.id }}"
+                                               {% if post and tag in post.tags %}checked{% endif %}>
+                                        <label class="form-check-label badge-tag" for="tag{{ tag.id }}">
+                                            <i class="bi bi-tag"></i> {{ tag.name }}
+                                        </label>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            {% if tags|length == 0 %}
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i> 还没有标签，请先在管理后台创建
+                                </small>
+                            {% endif %}
                         </div>
-                        {% if tags|length == 0 %}
-                            <small class="text-muted">
-                                还没有标签，在管理后台创建
-                            </small>
-                        {% endif %}
                     </div>
 
                     <!-- 定时发布 -->
@@ -1453,6 +1464,88 @@ function uploadAndReplaceLocalPath(file, localPath, textarea) {
 </script>
 
 <style>
+/* 标签选择器美化样式 */
+.form-check-inline {
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.badge-tag {
+    display: inline-block;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.badge-tag:hover {
+    background: rgba(102, 126, 234, 0.1);
+    border-color: var(--primary-color, #667eea);
+    transform: translateY(-1px);
+}
+
+/* 标签复选框样式 */
+input[type="checkbox"].form-check-input {
+    width: 1.1rem;
+    height: 1.1rem;
+    cursor: pointer;
+}
+
+input[type="checkbox"].form-check-input:checked + .badge-tag {
+    background: linear-gradient(135deg, var(--primary-color, #667eea), #764ba2);
+    color: white;
+    border-color: var(--primary-color, #667eea);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+/* 分类选择框美化 */
+.form-select {
+    border-radius: 8px;
+    border-color: var(--border-color);
+    padding: 0.6rem 0.8rem;
+    transition: all 0.2s ease;
+}
+
+.form-select:focus {
+    border-color: var(--primary-color, #667eea);
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+}
+
+/* 标签区域美化 */
+#tagsSection {
+    background: var(--bg-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+}
+
+#tagsSection .form-label {
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 1rem;
+}
+
+/* 分类区域美化 */
+#categorySection {
+    background: var(--bg-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+}
+
+#categorySection .form-label {
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+}
+
+
 /* 可见性选项卡片样式 */
 .radio-card {
     cursor: pointer !important;

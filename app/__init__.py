@@ -47,6 +47,9 @@ def create_app(config_name='default'):
     # 注册蓝图
     _register_blueprints(app)
 
+    # 注册模板过滤器
+    _register_filters(app)
+
     # 配置日志
     _init_logging(app)
 
@@ -109,6 +112,44 @@ def _register_blueprints(app):
     app.register_blueprint(main.bp)
     app.register_blueprint(admin.bp)
     app.register_blueprint(export.bp)
+
+
+def _register_filters(app):
+    """注册模板过滤器"""
+    from datetime import timedelta
+
+    @app.template_filter('localtime')
+    def localtime_filter(dt):
+        """
+        将 UTC 时间转换为本地时间（东八区）
+
+        Args:
+            dt: datetime 对象
+
+        Returns:
+            datetime: 转换后的本地时间
+        """
+        if dt is None:
+            return None
+        # 东八区（UTC+8）
+        return dt + timedelta(hours=8)
+
+    @app.template_filter('localtime_str')
+    def localtime_str_filter(dt, format='%Y-%m-%d %H:%M'):
+        """
+        将 UTC 时间转换为本地时间字符串
+
+        Args:
+            dt: datetime 对象
+            format: 时间格式字符串
+
+        Returns:
+            str: 格式化后的本地时间字符串
+        """
+        if dt is None:
+            return ''
+        local_dt = dt + timedelta(hours=8)
+        return local_dt.strftime(format)
 
 
 def _init_logging(app):

@@ -348,10 +348,9 @@
                                 <div class="timeline-header">
                                     <span class="timeline-date">
                                         <i class="bi bi-calendar3"></i>
-                                        {{ post.created_at.strftime('%Y年%m月%d日') }}
-                                        <span class="timeline-badge">NEW</span>
+                                        {{ post.created_at|localtime_str('%Y年%m月%d日') }}
                                     </span>
-                                    <span class="timeline-time">{{ post.created_at.strftime('%H:%M') }}</span>
+                                    <span class="timeline-time">{{ post.created_at|localtime_str('%H:%M') }}</span>
                                     <span class="timeline-author">
                                         <i class="bi bi-person-circle"></i>
                                         {{ post.author.username }}
