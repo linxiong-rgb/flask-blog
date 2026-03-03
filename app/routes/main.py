@@ -78,23 +78,10 @@ ALLOWED_ATTRIBUTES = {
 # 清理 HTML 防止 XSS 攻击
 def clean_html(html_content):
     """使用 bleach 清理 HTML，防止 XSS 攻击"""
-    # 允许的 CSS 属性
-    ALLOWED_STYLES = [
-        'display', 'width', 'height', 'margin', 'padding',
-        'color', 'background-color', 'border', 'border-radius',
-        'text-align', 'vertical-align', 'line-height',
-        'float', 'clear', 'overflow',
-    ]
-
     return bleach.clean(
         html_content,
         tags=ALLOWED_TAGS,
         attributes=ALLOWED_ATTRIBUTES,
-        protocols={
-            'a': ['http', 'https', 'mailto'],
-            'img': ['http', 'https'],  # 允许 http/https 协议的图片
-        },
-        styles=ALLOWED_STYLES,  # 允许的 CSS 属性
         strip=True
     )
 
