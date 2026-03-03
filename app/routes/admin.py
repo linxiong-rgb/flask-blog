@@ -1303,3 +1303,93 @@ def delete_bookmark(bookmark_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
+
+
+# ==================== API 路由 ====================
+
+@bp.route('/create-category', methods=['POST'])
+@login_required
+def create_category():
+    """
+    AJAX 创建新分类 API
+
+    接收 JSON 格式的分类名称，创建新分类并返回分类信息
+
+    Returns:
+        JSON: 包含 success、category、message 的 JSON 对象
+    """
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+
+        if not name:
+            return jsonify({'success': False, 'message': '分类名称不能为空'}), 400
+
+        # 检查分类名是否已存在
+        existing = Category.query.filter_by(name=name).first()
+        if existing:
+            return jsonify({'success': False, 'message': '分类已存在'}), 400
+
+        # 创建新分类
+        category = Category(name=name)
+        db.session.add(category)
+        db.session.commit()
+        db.session.refresh(category)
+
+        return jsonify({
+            'success': True,
+            'category': {
+                'id': category.id,
+                'name': category.name
+            },
+            'message': '分类创建成功'
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'创建分类失败: {str(e)}')
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@bp.route('/create-tag', methods=['POST'])
+@login_required
+def create_tag():
+    """
+    AJAX 创建新标签 API
+
+    接收 JSON 格式的标签名称，创建新标签并返回标签信息
+
+    Returns:
+        JSON: 包含 success、tag、message 的 JSON 对象
+    """
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+
+        if not name:
+            return jsonify({'success': False, 'message': '标签名称不能为空'}), 400
+
+        # 检查标签名是否已存在
+        existing = Tag.query.filter_by(name=name).first()
+        if existing:
+            return jsonify({'success': False, 'message': '标签已存在'}), 400
+
+        # 创建新标签
+        tag = Tag(name=name)
+        db.session.add(tag)
+        db.session.commit()
+        db.session.refresh(tag)
+
+        return jsonify({
+            'success': True,
+            'tag': {
+                'id': tag.id,
+                'name': tag.name
+            },
+            'message': '标签创建成功'
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'创建标签失败: {str(e)}')
+        return jsonify({'success': False, 'message': str(e)}), 500

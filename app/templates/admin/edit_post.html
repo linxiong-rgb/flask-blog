@@ -25,6 +25,9 @@
                             <div id="categorySection">
                                 <label for="category_id" class="form-label">
                                     <i class="bi bi-folder"></i> 文章分类
+                                    <button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="toggleNewCategoryInput()">
+                                        <i class="bi bi-plus-lg"></i> 新建
+                                    </button>
                                 </label>
                                 <select class="form-select" id="category_id" name="category_id">
                                     <option value="">选择分类（可选）</option>
@@ -35,9 +38,17 @@
                                         </option>
                                     {% endfor %}
                                 </select>
-                                {% if categories|length == 0 %}
-                                    <small class="text-muted">还没有分类，请先在管理后台创建</small>
-                                {% endif %}
+                                <div id="newCategoryInput" style="display: none; margin-top: 0.75rem;">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="new_category_name" placeholder="输入新分类名称">
+                                        <button type="button" class="btn btn-primary" onclick="createNewCategory()">
+                                            <i class="bi bi-check-lg"></i> 添加
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary" onclick="toggleNewCategoryInput()">
+                                            <i class="bi bi-x-lg"></i> 取消
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -133,8 +144,11 @@
                         <div id="tagsSection">
                             <label class="form-label">
                                 <i class="bi bi-tags"></i> 文章标签
+                                <button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="toggleNewTagInput()">
+                                    <i class="bi bi-plus-lg"></i> 新建
+                                </button>
                             </label>
-                            <div>
+                            <div id="tagsList">
                                 {% for tag in tags %}
                                     <div class="form-check form-check-inline">
                                         <input class="form-check-input" type="checkbox" name="tags" value="{{ tag.id }}" id="tag{{ tag.id }}"
@@ -145,9 +159,20 @@
                                     </div>
                                 {% endfor %}
                             </div>
+                            <div id="newTagInput" style="display: none; margin-top: 1rem;">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="new_tag_name" placeholder="输入新标签名称">
+                                    <button type="button" class="btn btn-primary" onclick="createNewTag()">
+                                        <i class="bi bi-check-lg"></i> 添加
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="toggleNewTagInput()">
+                                        <i class="bi bi-x-lg"></i> 取消
+                                    </button>
+                                </div>
+                            </div>
                             {% if tags|length == 0 %}
                                 <small class="text-muted">
-                                    <i class="bi bi-info-circle"></i> 还没有标签，请先在管理后台创建
+                                    <i class="bi bi-info-circle"></i> 还没有标签，点击上方按钮创建
                                 </small>
                             {% endif %}
                         </div>
@@ -292,6 +317,142 @@
 </div>
 
 <script>
+// 切换新建分类输入框显示
+function toggleNewCategoryInput() {
+    const input = document.getElementById('newCategoryInput');
+    if (input.style.display === 'none') {
+        input.style.display = 'block';
+        document.getElementById('new_category_name').focus();
+    } else {
+        input.style.display = 'none';
+    }
+}
+
+// 创建新分类
+function createNewCategory() {
+    const nameInput = document.getElementById('new_category_name');
+    const name = nameInput.value.trim();
+
+    if (!name) {
+        alert('请输入分类名称');
+        return;
+    }
+
+    fetch('{{ url_for("admin.create_category") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ name: name })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 添加到选择列表
+            const select = document.getElementById('category_id');
+            const option = document.createElement('option');
+            option.value = data.category.id;
+            option.textContent = data.category.name;
+            option.selected = true;
+            select.appendChild(option);
+
+            // 清空输入框并隐藏
+            nameInput.value = '';
+            toggleNewCategoryInput();
+
+            // 显示成功消息
+            alert('分类创建成功！');
+        } else {
+            alert('创建失败: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('创建失败，请重试');
+    });
+}
+
+// 切换新建标签输入框显示
+function toggleNewTagInput() {
+    const input = document.getElementById('newTagInput');
+    if (input.style.display === 'none') {
+        input.style.display = 'block';
+        document.getElementById('new_tag_name').focus();
+    } else {
+        input.style.display = 'none';
+    }
+}
+
+// 创建新标签
+function createNewTag() {
+    const nameInput = document.getElementById('new_tag_name');
+    const name = nameInput.value.trim();
+
+    if (!name) {
+        alert('请输入标签名称');
+        return;
+    }
+
+    fetch('{{ url_for("admin.create_tag") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ name: name })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 添加到标签列表
+            const tagsList = document.getElementById('tagsList');
+            const tagId = 'tag' + data.tag.id;
+
+            const div = document.createElement('div');
+            div.className = 'form-check form-check-inline';
+            div.innerHTML = `
+                <input class="form-check-input" type="checkbox" name="tags" value="${data.tag.id}" id="${tagId}" checked>
+                <label class="form-check-label badge-tag" for="${tagId}">
+                    <i class="bi bi-tag"></i> ${data.tag.name}
+                </label>
+            `;
+            tagsList.appendChild(div);
+
+            // 清空输入框并隐藏
+            nameInput.value = '';
+            toggleNewTagInput();
+
+            // 显示成功消息
+            alert('标签创建成功！');
+        } else {
+            alert('创建失败: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('创建失败，请重试');
+    });
+}
+
+// 支持按 Enter 键提交
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('new_category_name').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            createNewCategory();
+        }
+    });
+
+    document.getElementById('new_tag_name').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            createNewTag();
+        }
+    });
+});
+
+
 // 封面图片类型切换
 document.addEventListener('DOMContentLoaded', function() {
     const coverTypeUrl = document.getElementById('coverTypeUrl');
