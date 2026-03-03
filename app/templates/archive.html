@@ -396,11 +396,6 @@
             <i class="bi bi-inbox"></i>
             <h4>暂无文章</h4>
             <p>还没有发布任何文章，敬请期待...</p>
-            {% if current_user.is_authenticated %}
-                <a href="{{ url_for('admin.new_post') }}" class="btn btn-primary" style="margin-top: 1rem;">
-                    <i class="bi bi-plus-lg"></i> 创建第一篇文章
-                </a>
-            {% endif %}
         </div>
     {% endif %}
 </div>

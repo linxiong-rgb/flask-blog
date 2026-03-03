@@ -18,8 +18,8 @@
 }
 
 [data-theme="dark"] {
-    --text-color: #e2e8f0;
-    --text-light: #94a3b8;
+    --text-color: #ffffff;
+    --text-light: #cbd5e0;
     --bg-color: #1a202c;
     --card-bg: #2d3748;
     --border-color: #5a6578;
