@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+
+{% block title %}项目信息 - 我的博客{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 项目信息页面样式 */
+.project-info-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.project-hero {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    border-radius: 20px;
+    padding: 3rem 2rem;
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.project-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--primary-color), #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.project-subtitle {
+    font-size: 1.2rem;
+    color: var(--text-light);
+    margin-bottom: 2rem;
+}
+
+.project-badges {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+/* 状态卡片 */
+.status-section {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.status-section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.status-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.status-table th,
+.status-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.status-table th {
+    font-weight: 600;
+    color: var(--text-light);
+    width: 40%;
+}
+
+.status-table td {
+    color: var(--text-color);
+}
+
+.status-table tr:last-child th,
+.status-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* 特性列表 */
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.feature-card {
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.feature-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.feature-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+}
+
+.feature-desc {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    line-height: 1.6;
+}
+
+/* 快速链接 */
+.quick-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, var(--primary-color), #764ba2);
+    color: white;
+    border-radius: 25px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    color: white;
+}
+
+.action-btn-outline {
+    background: transparent;
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+}
+
+.action-btn-outline:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    .project-title {
+        font-size: 1.8rem;
+    }
+
+    .project-subtitle {
+        font-size: 1rem;
+    }
+
+    .status-table th,
+    .status-table td {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .features-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <div class="project-info-container">
+        <!-- Hero 区域 -->
+        <div class="project-hero">
+            <h1 class="project-title">🚀 Flask Blog System</h1>
+            <p class="project-subtitle">现代化、功能完整的 Flask 博客系统</p>
+            <div class="quick-actions">
+                <a href="https://github.com/linxiong-rgb/flask-blog" target="_blank" class="action-btn">
+                    <i class="bi bi-github"></i> 查看源码
+                </a>
+                <a href="https://github.com/linxiong-rgb/flask-blog/stargazers" target="_blank" class="action-btn action-btn-outline">
+                    <i class="bi bi-star"></i> 给个 Star
+                </a>
+            </div>
+        </div>
+
+        <!-- 项目状态 -->
+        <div class="status-section">
+            <h2 class="status-section-title">
+                <i class="bi bi-info-circle"></i> 项目状态
+            </h2>
+            <table class="status-table">
+                <tbody>
+                    <tr>
+                        <th>🐍 Python</th>
+                        <td>3.10+</td>
+                    </tr>
+                    <tr>
+                        <th>🌶 Flask</th>
+                        <td>3.0.0</td>
+                    </tr>
+                    <tr>
+                        <th>📄 License</th>
+                        <td><a href="https://github.com/linxiong-rgb/flask-blog/blob/main/LICENSE" target="_blank">MIT</a></td>
+                    </tr>
+                    <tr>
+                        <th>⭐ Stars</th>
+                        <td><a href="https://github.com/linxiong-rgb/flask-blog/stargazers" target="_blank">给个 Star</a></td>
+                    </tr>
+                    <tr>
+                        <th>🍴 Forks</th>
+                        <td><a href="https://github.com/linxiong-rgb/flask-blog/network/members" target="_blank">欢迎 Fork</a></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 核心特性 -->
+        <div class="status-section">
+            <h2 class="status-section-title">
+                <i class="bi bi-stars"></i> 核心特性
+            </h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-rocket-takeoff"></i>
+                    </div>
+                    <h3 class="feature-title">快速部署</h3>
+                    <p class="feature-desc">支持多种部署方案（Vercel、Render、Docker、VPS）</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-file-earmark-text"></i>
+                    </div>
+                    <h3 class="feature-title">Markdown 写作</h3>
+                    <p class="feature-desc">支持标准 Markdown 语法和代码高亮</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-moon"></i>
+                    </div>
+                    <h3 class="feature-title">夜间模式</h3>
+                    <p class="feature-desc">护眼的深色主题，偏好自动保存</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-search"></i>
+                    </div>
+                    <h3 class="feature-title">智能搜索</h3>
+                    <p class="feature-desc">实时搜索建议，支持文章/分类/标签</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-phone"></i>
+                    </div>
+                    <h3 class="feature-title">响应式设计</h3>
+                    <p class="feature-desc">完美适配手机、平板和电脑</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <h3 class="feature-title">安全防护</h3>
+                    <p class="feature-desc">CSRF 保护、XSS 防护、SQL 注入防护</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快速开始 -->
+        <div class="status-section">
+            <h2 class="status-section-title">
+                <i class="bi bi-lightning-charge"></i> 快速开始
+            </h2>
+            <pre style="background: var(--bg-color); padding: 1.5rem; border-radius: 12px; overflow-x: auto;"><code># 克隆项目
+git clone https://github.com/linxiong-rgb/flask-blog.git
+cd flask-blog
+
+# 安装依赖
+pip install -r requirements.txt
+
+# 初始化数据库
+python reset_database.py
+
+# 运行应用
+python run.py</code></pre>
+        </div>
+
+        <!-- 技术栈 -->
+        <div class="status-section">
+            <h2 class="status-section-title">
+                <i class="bi bi-stack"></i> 技术栈
+            </h2>
+            <div class="tech-badge-group" style="justify-content: flex-start; margin-top: 1rem;">
+                <div class="tech-badge tech-badge-python">
+                    <i class="bi bi-braces"></i>
+                    <span>Python 3.10+</span>
+                </div>
+                <div class="tech-badge tech-badge-flask">
+                    <i class="bi bi-server"></i>
+                    <span>Flask 3.0</span>
+                </div>
+                <div class="tech-badge tech-badge-sqlalchemy">
+                    <i class="bi bi-database"></i>
+                    <span>SQLAlchemy</span>
+                </div>
+                <div class="tech-badge tech-badge-bootstrap">
+                    <i class="bi bi-bootstrap"></i>
+                    <span>Bootstrap 5</span>
+                </div>
+                <div class="tech-badge tech-badge-markdown">
+                    <i class="bi bi-markdown"></i>
+                    <span>Markdown</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

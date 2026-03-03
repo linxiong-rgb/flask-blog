@@ -264,6 +264,20 @@ def post(post_id):
 
     return render_template('post.html', post=post, related_posts=related_posts)
 
+
+@bp.route('/project')
+def project():
+    """
+    项目信息页面路由
+
+    显示项目的详细信息，包括技术栈、特性、快速开始等
+
+    Returns:
+        str: 渲染后的项目信息页面HTML
+    """
+    return render_template('project_info.html')
+
+
 @bp.route('/category/<int:category_id>')
 def category(category_id):
     """
