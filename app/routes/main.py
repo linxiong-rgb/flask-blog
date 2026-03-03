@@ -65,23 +65,36 @@ ALLOWED_TAGS = [
 
 ALLOWED_ATTRIBUTES = {
     'a': ['href', 'title', 'target'],
-    'img': ['src', 'alt', 'title', 'width', 'height'],
-    'div': ['class'],
-    'span': ['class'],
+    'img': ['src', 'alt', 'title', 'width', 'height', 'class', 'loading'],  # 添加 class 和 loading 属性
+    'div': ['class', 'style'],  # 添加 style 属性
+    'span': ['class', 'style'],  # 添加 style 属性
     'pre': ['class'],
     'code': ['class'],
-    'table': ['class'],
-    'th': ['colspan', 'rowspan'],
-    'td': ['colspan', 'rowspan'],
+    'table': ['class', 'style'],  # 添加 style 属性
+    'th': ['colspan', 'rowspan', 'class'],  # 添加 class 属性
+    'td': ['colspan', 'rowspan', 'class'],  # 添加 class 属性
 }
 
 # 清理 HTML 防止 XSS 攻击
 def clean_html(html_content):
     """使用 bleach 清理 HTML，防止 XSS 攻击"""
+    # 允许的 CSS 属性
+    ALLOWED_STYLES = [
+        'display', 'width', 'height', 'margin', 'padding',
+        'color', 'background-color', 'border', 'border-radius',
+        'text-align', 'vertical-align', 'line-height',
+        'float', 'clear', 'overflow',
+    ]
+
     return bleach.clean(
         html_content,
         tags=ALLOWED_TAGS,
         attributes=ALLOWED_ATTRIBUTES,
+        protocols={
+            'a': ['http', 'https', 'mailto'],
+            'img': ['http', 'https'],  # 允许 http/https 协议的图片
+        },
+        styles=ALLOWED_STYLES,  # 允许的 CSS 属性
         strip=True
     )
 
