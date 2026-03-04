@@ -17,7 +17,7 @@ from flask_login import login_required, current_user
 from app import db, cache, csrf
 import markdown
 import bleach
-from sqlalchemy import func
+from sqlalchemy import func, text, inspect
 from sqlalchemy.orm import joinedload
 from datetime import datetime
 from feedgen.feed import FeedGenerator
