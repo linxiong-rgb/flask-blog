@@ -135,7 +135,7 @@
                         </div>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-3" id="summarySection">
                         <label for="summary" class="form-label">
                             摘要（可选）
                             <button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="generateSummary()">
@@ -1756,14 +1756,18 @@ function selectContentType(type) {
 function toggleContentFields() {
     const contentType = document.querySelector('input[name="content_type"]:checked')?.value || 'markdown';
     const contentSection = document.querySelector('label[for="content"]')?.closest('.mb-3');
+    const summarySection = document.getElementById('summarySection');
     const pdfUploadSection = document.getElementById('pdfUploadSection');
     const pdfDescriptionSection = document.getElementById('pdfDescriptionSection');
     const contentTextarea = document.getElementById('content');
 
     if (contentType === 'pdf') {
-        // PDF类型：隐藏Markdown编辑器，显示PDF上传区域
+        // PDF类型：隐藏Markdown编辑器和摘要，显示PDF上传区域
         if (contentSection) {
             contentSection.style.display = 'none';
+        }
+        if (summarySection) {
+            summarySection.style.display = 'none';
         }
         if (pdfUploadSection) {
             pdfUploadSection.style.display = 'block';
@@ -1776,9 +1780,12 @@ function toggleContentFields() {
             contentTextarea.removeAttribute('required');
         }
     } else {
-        // Markdown类型：显示Markdown编辑器，隐藏PDF上传区域
+        // Markdown类型：显示Markdown编辑器和摘要，隐藏PDF上传区域
         if (contentSection) {
             contentSection.style.display = 'block';
+        }
+        if (summarySection) {
+            summarySection.style.display = 'block';
         }
         if (pdfUploadSection) {
             pdfUploadSection.style.display = 'none';
