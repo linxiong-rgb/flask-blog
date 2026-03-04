@@ -11,11 +11,10 @@
 import os
 import secrets
 from datetime import datetime, timedelta
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app, send_file
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app, send_file, session
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from sqlalchemy import or_, and_
-from PIL import Image
 from io import BytesIO
 import mimetypes
 
@@ -23,6 +22,14 @@ from app.models.album import Album, Photo, PhotoTag, PhotoShare
 from app.models.user import User
 from app import db
 from app.utils.storage import get_storage
+
+# 尝试导入PIL，如果失败则设置标志
+try:
+    from PIL import Image
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
+    current_app.logger.warning('PIL/Pillow not installed, image processing features will be limited')
 
 bp = Blueprint('gallery', __name__, url_prefix='/gallery')
 
@@ -57,6 +64,9 @@ def generate_share_token():
 
 def create_thumbnail(image_path, size='medium'):
     """创建缩略图"""
+    if not PIL_AVAILABLE:
+        return None
+
     try:
         img = Image.open(image_path)
         img.thumbnail(THUMBNAIL_SIZES[size], Image.Resampling.LANCZOS)
@@ -268,7 +278,18 @@ def upload_photos(album_id):
             # 读取并验证图片
             file.seek(0)
             img_data = file.read()
-            img = Image.open(BytesIO(img_data))
+
+            # 获取图片尺寸（如果PIL可用）
+            width, height, img_format = None, None, None
+            if PIL_AVAILABLE:
+                try:
+                    img = Image.open(BytesIO(img_data))
+                    width, height = img.width, img.height
+                    img_format = img.format or 'JPEG'
+                except Exception as e:
+                    current_app.logger.error(f'读取图片信息失败: {str(e)}')
+            else:
+                img_format = 'JPEG'
 
             # 上传原图
             file.seek(0)
@@ -295,9 +316,9 @@ def upload_photos(album_id):
                 filename=file.filename,
                 file_path=image_url,
                 file_size=len(img_data),
-                width=img.width,
-                height=img.height,
-                mime_type=img.format or 'image/jpeg',
+                width=width,
+                height=height,
+                mime_type=f'image/{img_format.lower()}' if img_format else 'image/jpeg',
                 thumbnail_path=thumbnail_url,
                 album_id=album_id,
                 user_id=current_user.id
@@ -491,8 +512,10 @@ def shared_space():
     page = request.args.get('page', 1, type=int)
     per_page = 20
 
-    # 获取所有公开的图片
-    photos = Photo.query.filter_by(is_public=True).order_by(
+    # 获取所有公开的图片，预加载用户信息
+    photos = Photo.query.options(
+        joinedload(Photo.user)
+    ).filter_by(is_public=True).order_by(
         Photo.created_at.desc()
     ).paginate(page=page, per_page=per_page, error_out=False)
 

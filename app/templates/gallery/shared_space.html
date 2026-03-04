@@ -13,15 +13,15 @@
 
     <p class="text-muted">这里展示所有用户公开分享的照片</p>
 
-    <!-- 瀑布流展示 -->
+    <!-- 瀀布流展示 -->
     <div class="masonry-grid" id="masonryGrid">
         {% for photo in photos.items %}
         <div class="masonry-item">
             <div class="photo-card">
-                <img src="{{ photo.thumbnail_url }}" alt="{{ photo.title or photo.filename }}"
+                <img src="{{ photo.thumbnail_path or photo.file_path }}" alt="{{ photo.title or photo.filename }}"
                      loading="lazy" class="photo-img"
                      onclick="openPhotoModal({{ photo.id }})"
-                     style="aspect-ratio: {{ photo.width }}/{{ photo.height }};">
+                     {% if photo.width and photo.height %}style="aspect-ratio: {{ photo.width }}/{{ photo.height }};"{% endif %}>
                 <div class="photo-info">
                     <h6>{{ photo.title or photo.filename }}</h6>
                     <p class="mb-0 text-muted">
@@ -86,20 +86,19 @@
 <script>
 // 打开图片详情
 function openPhotoModal(photoId) {
-    // 获取图片详情（从当前页面或API）
-    const photos = {{ photos.items | tojson }};
-    const photo = photos.find(p => p.id === photoId);
+    // 从DOM中获取图片信息
+    const photoItem = document.querySelector(`[onclick="openPhotoModal(${photoId})"]`);
+    if (!photoItem) return;
 
-    if (photo) {
-        document.getElementById('modalImage').src = photo.url;
-        document.getElementById('modalTitle').textContent = photo.title || photo.filename;
-        document.getElementById('modalDescription').textContent = photo.description || '';
-        document.getElementById('modalUser').textContent = photo.user.username;
-        document.getElementById('modalDate').textContent = new Date(photo.created_at).toLocaleDateString();
+    const img = photoItem.querySelector('.photo-img');
+    const title = photoItem.querySelector('.photo-info h6')?.textContent || '';
+    const infoText = photoItem.querySelector('.photo-info p')?.textContent || '';
 
-        const modal = new bootstrap.Modal(document.getElementById('photoModal'));
-        modal.show();
-    }
+    document.getElementById('modalImage').src = img.src.replace('/thumbnails/', '/').replace('/thumb_', '/');
+    document.getElementById('modalTitle').textContent = title;
+
+    const modal = new bootstrap.Modal(document.getElementById('photoModal'));
+    modal.show();
 }
 </script>
 
