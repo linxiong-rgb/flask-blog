@@ -409,6 +409,54 @@ def move_photo(photo_id):
     return jsonify({'success': True, 'message': '图片已移动'})
 
 
+@bp.route('/photo/<int:photo_id>/toggle-public', methods=['POST'])
+@login_required
+def toggle_photo_public(photo_id):
+    """
+    切换图片公开/私密状态
+
+    公开的图片会在共享空间展示
+    """
+    photo = Photo.query.get_or_404(photo_id)
+
+    # 权限检查
+    if photo.user_id != current_user.id:
+        return jsonify({'success': False, 'message': '您没有权限修改此图片'}), 403
+
+    # 切换状态
+    photo.is_public = not photo.is_public
+    db.session.commit()
+
+    status = '公开' if photo.is_public else '私密'
+    return jsonify({
+        'success': True,
+        'is_public': photo.is_public,
+        'message': f'图片已设为{status}'
+    })
+
+
+@bp.route('/photo/<int:photo_id>/public', methods=['POST'])
+@login_required
+def set_photo_public(photo_id):
+    """
+    设置图片公开状态
+    """
+    photo = Photo.query.get_or_404(photo_id)
+
+    # 权限检查
+    if photo.user_id != current_user.id:
+        return jsonify({'success': False, 'message': '您没有权限修改此图片'}), 403
+
+    is_public = request.json.get('is_public', False)
+    photo.is_public = is_public
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'is_public': photo.is_public
+    })
+
+
 # ==================== 图片分享 ====================
 
 @bp.route('/photo/<int:photo_id>/share', methods=['POST'])

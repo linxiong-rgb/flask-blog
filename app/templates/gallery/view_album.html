@@ -31,10 +31,16 @@
                 <button type="button" class="btn btn-primary" onclick="document.getElementById('photoUploadInput').click()">
                     <i class="bi bi-upload"></i> 上传照片
                 </button>
+                <button type="button" class="btn btn-outline-secondary" id="batchActionsBtn" style="display: none;" onclick="showBatchActions()">
+                    <i class="bi bi-check2-square"></i> 已选 <span id="selectedCount">0</span> 张
+                </button>
                 <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
                     <i class="bi bi-three-dots"></i>
                 </button>
                 <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" onclick="toggleSelectMode()">
+                        <i class="bi bi-check-square"></i> 批量选择
+                    </a></li>
                     <li><a class="dropdown-item" href="{{ url_for('gallery.edit_album', album_id=album.id) }}">
                         <i class="bi bi-pencil"></i> 编辑相册
                     </a></li>
@@ -44,6 +50,35 @@
                     </a></li>
                 </ul>
             </div>
+        </div>
+    </div>
+
+    <!-- 批量操作栏 -->
+    <div class="batch-actions-bar collapse" id="batchActionsBar">
+        <div class="card bg-light">
+            <div class="card-body py-2">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="text-muted">
+                        已选择 <strong id="selectedCountBar">0</strong> 张照片
+                    </span>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-success" onclick="batchSetPublic(true)">
+                            <i class="bi bi-globe"></i> 设为公开
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="batchSetPublic(false)">
+                            <i class="bi bi-lock-fill"></i> 设为私密
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" onclick="batchDelete()">
+                            <i class="bi bi-trash"></i> 删除
+                        </button>
+                    </div>
+                    <button type="button" class="btn btn-link btn-sm text-muted ms-auto" onclick="exitSelectMode()">
+                        取消选择
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
         </div>
     </div>
 
@@ -74,6 +109,9 @@
         {% if photos %}
             {% for photo in photos %}
             <div class="photo-item" data-photo-id="{{ photo.id }}">
+                <div class="photo-select-checkbox" style="display: none;">
+                    <input type="checkbox" class="form-check-input photo-checkbox" value="{{ photo.id }}" onchange="updateSelection()">
+                </div>
                 <div class="photo-card" onclick="openLightbox({{ loop.index0 }})">
                     <img src="{{ photo.thumbnail_url }}" alt="{{ photo.title or photo.filename }}"
                          loading="lazy" class="photo-img">
@@ -85,17 +123,23 @@
                             <p class="mb-0">
                                 <i class="bi bi-eye"></i> {{ photo.views }}
                                 {% if photo.is_public %}
-                                <span class="badge bg-success ms-1">公开</span>
+                                <span class="badge bg-success ms-1"><i class="bi bi-globe"></i> 公开</span>
+                                {% else %}
+                                <span class="badge bg-secondary ms-1"><i class="bi bi-lock-fill"></i> 私密</span>
                                 {% endif %}
                             </p>
                         </div>
                     </div>
                 </div>
                 <div class="photo-actions">
-                    <button type="button" class="btn btn-sm btn-light" onclick="event.stopPropagation(); toggleShare({{ photo.id }})">
+                    <button type="button" class="btn btn-sm btn-light" onclick="event.stopPropagation(); togglePhotoPublic({{ photo.id }}, this)"
+                            title="{% if photo.is_public %}设为私密{% else %}设为公开{% endif %}">
+                        <i class="bi bi-{% if photo.is_public %}lock-fill{% else %}globe{% endif %}"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light" onclick="event.stopPropagation(); toggleShare({{ photo.id }})" title="分享">
                         <i class="bi bi-share"></i>
                     </button>
-                    <button type="button" class="btn btn-sm btn-light" onclick="event.stopPropagation(); deletePhoto({{ photo.id }})">
+                    <button type="button" class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deletePhoto({{ photo.id }})" title="删除">
                         <i class="bi bi-trash"></i>
                     </button>
                 </div>
@@ -302,6 +346,56 @@ function deletePhoto(photoId) {
     });
 }
 
+// 切换照片公开/私密状态
+function togglePhotoPublic(photoId, btn) {
+    const icon = btn.querySelector('i');
+    const isCurrentlyPublic = icon.classList.contains('bi-globe');
+
+    fetch(`/gallery/photo/${photoId}/toggle-public`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 更新按钮图标
+            if (data.is_public) {
+                icon.classList.remove('bi-globe');
+                icon.classList.add('bi-lock-fill');
+                btn.title = '设为私密';
+                showNotification('success', '✓ 已设为公开，将在共享空间展示');
+            } else {
+                icon.classList.remove('bi-lock-fill');
+                icon.classList.add('bi-globe');
+                btn.title = '设为公开';
+                showNotification('info', '已设为私密');
+            }
+
+            // 更新照片卡片上的状态标签
+            const photoItem = document.querySelector(`[data-photo-id="${photoId}"]`);
+            if (photoItem) {
+                const badge = photoItem.querySelector('.badge');
+                if (badge) {
+                    if (data.is_public) {
+                        badge.className = 'badge bg-success ms-1';
+                        badge.innerHTML = '<i class="bi bi-globe"></i> 公开';
+                    } else {
+                        badge.className = 'badge bg-secondary ms-1';
+                        badge.innerHTML = '<i class="bi bi-lock-fill"></i> 私密';
+                    }
+                }
+            }
+        } else {
+            showNotification('danger', data.message);
+        }
+    })
+    .catch(error => {
+        showNotification('danger', '操作失败: ' + error.message);
+    });
+}
+
 // 分享照片
 function toggleShare(photoId) {
     currentPhotoId = photoId;
@@ -426,6 +520,187 @@ function showNotification(type, message) {
         notification.remove();
     }, 3000);
 }
+
+// ==================== 批量操作功能 ====================
+
+let selectMode = false;
+
+// 切换选择模式
+function toggleSelectMode() {
+    selectMode = !selectMode;
+    const checkboxes = document.querySelectorAll('.photo-select-checkbox');
+    const photoCards = document.querySelectorAll('.photo-card');
+
+    if (selectMode) {
+        // 进入选择模式
+        checkboxes.forEach(cb => cb.style.display = 'block');
+        photoCards.forEach(card => card.style.cursor = 'default');
+        showNotification('info', '已进入批量选择模式，点击照片复选框进行选择');
+    } else {
+        exitSelectMode();
+    }
+}
+
+// 退出选择模式
+function exitSelectMode() {
+    selectMode = false;
+    const checkboxes = document.querySelectorAll('.photo-select-checkbox');
+    const photoCards = document.querySelectorAll('.photo-card');
+
+    // 取消所有选中
+    document.querySelectorAll('.photo-checkbox').forEach(cb => cb.checked = false);
+
+    // 隐藏复选框
+    checkboxes.forEach(cb => cb.style.display = 'none');
+    photoCards.forEach(card => card.style.cursor = 'pointer');
+
+    // 隐藏批量操作栏
+    document.getElementById('batchActionsBar').classList.remove('show');
+    document.getElementById('batchActionsBtn').style.display = 'none';
+
+    // 恢复照片卡片点击事件
+    updateSelection();
+}
+
+// 更新选择状态
+function updateSelection() {
+    const checkedCount = document.querySelectorAll('.photo-checkbox:checked').length;
+
+    // 更新计数显示
+    document.getElementById('selectedCount').textContent = checkedCount;
+    document.getElementById('selectedCountBar').textContent = checkedCount;
+
+    // 显示/隐藏批量操作按钮
+    const batchBtn = document.getElementById('batchActionsBtn');
+    const batchBar = document.getElementById('batchActionsBar');
+
+    if (checkedCount > 0) {
+        batchBtn.style.display = 'inline-flex';
+        batchBar.classList.add('show');
+    } else {
+        batchBtn.style.display = 'none';
+        batchBar.classList.remove('show');
+    }
+
+    // 禁用/启用照片卡片点击
+    const photoCards = document.querySelectorAll('.photo-card');
+    photoCards.forEach(card => {
+        const checkbox = card.closest('.photo-item').querySelector('.photo-checkbox');
+        if (checkbox && checkbox.checked) {
+            card.style.opacity = '0.7';
+            card.style.cursor = 'default';
+        } else {
+            card.style.opacity = '1';
+            card.style.cursor = selectMode ? 'default' : 'pointer';
+        }
+    });
+}
+
+// 获取选中的照片ID
+function getSelectedPhotoIds() {
+    return Array.from(document.querySelectorAll('.photo-checkbox:checked')).map(cb => parseInt(cb.value));
+}
+
+// 批量设置公开/私密
+function batchSetPublic(isPublic) {
+    const photoIds = getSelectedPhotoIds();
+    if (photoIds.length === 0) {
+        showNotification('warning', '请先选择照片');
+        return;
+    }
+
+    const action = isPublic ? '公开' : '私密';
+    if (!confirm(`确定要将选中的 ${photoIds.length} 张照片设为${action}吗？`)) return;
+
+    fetch('/gallery/batch/share', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            photo_ids: photoIds,
+            is_public: isPublic
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('success', `✓ ${data.message}`);
+            // 更新照片卡片状态
+            photoIds.forEach(id => {
+                const photoItem = document.querySelector(`[data-photo-id="${id}"]`);
+                if (photoItem) {
+                    const badge = photoItem.querySelector('.badge');
+                    if (badge) {
+                        if (isPublic) {
+                            badge.className = 'badge bg-success ms-1';
+                            badge.innerHTML = '<i class="bi bi-globe"></i> 公开';
+                        } else {
+                            badge.className = 'badge bg-secondary ms-1';
+                            badge.innerHTML = '<i class="bi bi-lock-fill"></i> 私密';
+                        }
+                    }
+                }
+            });
+            // 退出选择模式
+            exitSelectMode();
+        } else {
+            showNotification('danger', data.message);
+        }
+    })
+    .catch(error => {
+        showNotification('danger', '操作失败: ' + error.message);
+    });
+}
+
+// 批量删除
+function batchDelete() {
+    const photoIds = getSelectedPhotoIds();
+    if (photoIds.length === 0) {
+        showNotification('warning', '请先选择照片');
+        return;
+    }
+
+    if (!confirm(`确定要删除选中的 ${photoIds.length} 张照片吗？此操作不可恢复！`)) return;
+
+    fetch('/gallery/batch/delete', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            photo_ids: photoIds
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('success', `✓ ${data.message}`);
+            // 移除已删除的照片
+            photoIds.forEach(id => {
+                const photoItem = document.querySelector(`[data-photo-id="${id}"]`);
+                if (photoItem) {
+                    photoItem.remove();
+                }
+            });
+            // 退出选择模式
+            exitSelectMode();
+        } else {
+            showNotification('danger', data.message);
+        }
+    })
+    .catch(error => {
+        showNotification('danger', '操作失败: ' + error.message);
+    });
+}
+
+// 显示批量操作栏
+function showBatchActions() {
+    const batchBar = document.getElementById('batchActionsBar');
+    batchBar.classList.toggle('show');
+}
 </script>
 
 <style>
@@ -437,6 +712,19 @@ function showNotification(type, message) {
 
 .photo-item {
     position: relative;
+}
+
+.photo-select-checkbox {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 10;
+}
+
+.photo-select-checkbox .form-check-input {
+    width: 1.3rem;
+    height: 1.3rem;
+    cursor: pointer;
 }
 
 .photo-card {
@@ -581,6 +869,28 @@ function showNotification(type, message) {
 #shareResult .btn-primary:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+}
+
+/* 批量操作栏样式 */
+.batch-actions-bar {
+    position: sticky;
+    top: 70px;
+    z-index: 100;
+    margin-bottom: 20px;
+}
+
+.batch-actions-bar .card {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+#batchActionsBtn {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
 }
 </style>
 {% endblock %}
