@@ -61,8 +61,11 @@
 
     <!-- 相册树 -->
     <div class="card">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="bi bi-folder-fill"></i> 我的相册</h5>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-folder-fill"></i> {% if is_superuser %}所有相册{% else %}我的相册{% endif %}</h5>
+            {% if is_superuser %}
+            <span class="badge bg-danger">超级管理员模式</span>
+            {% endif %}
         </div>
         <div class="card-body">
             {% if root_albums %}
@@ -77,6 +80,9 @@
                                         <small class="text-muted"> - {{ album.description }}</small>
                                     {% endif %}
                                 </a>
+                                {% if is_superuser and album.user_id != current_user.id %}
+                                <span class="badge bg-info me-1">{{ album.user.username }}</span>
+                                {% endif %}
                                 <span class="badge bg-secondary">{{ album.photo_count }} 张</span>
                                 {% if album.is_private %}
                                     <span class="badge bg-warning"><i class="bi bi-lock-fill"></i></span>

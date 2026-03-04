@@ -82,6 +82,42 @@ def create_thumbnail(image_path, size='medium'):
         return None
 
 
+def superuser_required(f):
+    """超级管理员权限检查装饰器"""
+    from functools import wraps
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return jsonify({'success': False, 'message': '请先登录'}), 401
+        if not getattr(current_user, 'is_superuser', False):
+            return jsonify({'success': False, 'message': '需要超级管理员权限'}), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+def can_access_album(album):
+    """检查用户是否有权限访问相册"""
+    if album.user_id == current_user.id:
+        return True
+    if not album.is_private:
+        return True
+    if getattr(current_user, 'is_superuser', False):
+        return True
+    return False
+
+
+def can_access_photo(photo):
+    """检查用户是否有权限访问图片"""
+    if photo.user_id == current_user.id:
+        return True
+    if photo.is_public:
+        return True
+    if getattr(current_user, 'is_superuser', False):
+        return True
+    return False
+
+
 # ==================== 相册管理 ====================
 
 @bp.route('/')
@@ -91,21 +127,31 @@ def index():
     相册首页
 
     显示当前用户的所有相册（树形结构）
+    超级管理员可以查看所有用户的相册
     """
-    # 获取根相册（没有父相册的）
-    root_albums = Album.query.filter_by(
-        user_id=current_user.id,
-        parent_id=None
-    ).order_by(Album.sort_order, Album.name).all()
+    is_superuser = getattr(current_user, 'is_superuser', False)
 
-    # 统计信息
-    total_photos = Photo.query.filter_by(user_id=current_user.id).count()
-    total_albums = Album.query.filter_by(user_id=current_user.id).count()
+    if is_superuser:
+        # 超级管理员查看所有相册
+        root_albums = Album.query.filter_by(parent_id=None).order_by(
+            Album.sort_order, Album.name
+        ).all()
+        total_photos = Photo.query.count()
+        total_albums = Album.query.count()
+    else:
+        # 普通用户只查看自己的相册
+        root_albums = Album.query.filter_by(
+            user_id=current_user.id,
+            parent_id=None
+        ).order_by(Album.sort_order, Album.name).all()
+        total_photos = Photo.query.filter_by(user_id=current_user.id).count()
+        total_albums = Album.query.filter_by(user_id=current_user.id).count()
 
     return render_template('gallery/index.html',
                           root_albums=root_albums,
                           total_photos=total_photos,
-                          total_albums=total_albums)
+                          total_albums=total_albums,
+                          is_superuser=is_superuser)
 
 
 @bp.route('/album/new', methods=['GET', 'POST'])
@@ -153,13 +199,27 @@ def view_album(album_id):
     查看相册详情
 
     显示相册中的所有图片
+    超级管理员可以查看所有相册
     """
     album = Album.query.get_or_404(album_id)
 
-    # 权限检查
-    if album.user_id != current_user.id:
+    # 权限检查（超级管理员可以访问所有相册）
+    is_superuser = getattr(current_user, 'is_superuser', False)
+    if album.user_id != current_user.id and not is_superuser:
         flash('您没有权限访问此相册')
         return redirect(url_for('gallery.index'))
+
+    # 获取相册中的图片
+    photos = Photo.query.filter_by(album_id=album_id).order_by(Photo.created_at.desc()).all()
+
+    # 获取子相册
+    child_albums = Album.query.filter_by(parent_id=album_id).order_by(Album.sort_order, Album.name).all()
+
+    return render_template('gallery/view_album.html',
+                          album=album,
+                          photos=photos,
+                          child_albums=child_albums,
+                          is_superuser=is_superuser)
 
     # 获取相册中的图片
     photos = Photo.query.filter_by(album_id=album_id).order_by(Photo.created_at.desc()).all()
@@ -181,11 +241,13 @@ def edit_album(album_id):
 
     GET: 显示编辑表单
     POST: 处理更新请求
+    超级管理员可以编辑所有相册
     """
     album = Album.query.get_or_404(album_id)
 
-    # 权限检查
-    if album.user_id != current_user.id:
+    # 权限检查（超级管理员可以编辑所有相册）
+    is_superuser = getattr(current_user, 'is_superuser', False)
+    if album.user_id != current_user.id and not is_superuser:
         flash('您没有权限编辑此相册')
         return redirect(url_for('gallery.index'))
 
@@ -198,15 +260,14 @@ def edit_album(album_id):
         flash('相册更新成功')
         return redirect(url_for('gallery.view_album', album_id=album_id))
 
-    parent_albums = Album.query.filter_by(
-        user_id=current_user.id
-    ).filter(
+    parent_albums = Album.query.filter(
         Album.id != album_id  # 不能选择自己作为父相册
     ).all()
 
     return render_template('gallery/edit_album.html',
                           album=album,
-                          parent_albums=parent_albums)
+                          parent_albums=parent_albums,
+                          is_superuser=is_superuser)
 
 
 @bp.route('/album/<int:album_id>/delete', methods=['POST'])
@@ -216,11 +277,13 @@ def delete_album(album_id):
     删除相册
 
     注意：会删除相册中的所有图片
+    超级管理员可以删除任何相册
     """
     album = Album.query.get_or_404(album_id)
 
-    # 权限检查
-    if album.user_id != current_user.id:
+    # 权限检查（超级管理员可以删除任何相册）
+    is_superuser = getattr(current_user, 'is_superuser', False)
+    if album.user_id != current_user.id and not is_superuser:
         return jsonify({'success': False, 'message': '您没有权限删除此相册'}), 403
 
     try:
@@ -247,11 +310,13 @@ def upload_photos(album_id):
     上传图片到相册
 
     支持单张和多张上传
+    超级管理员可以上传到任何相册
     """
     album = Album.query.get_or_404(album_id)
 
-    # 权限检查
-    if album.user_id != current_user.id:
+    # 权限检查（超级管理员可以上传到任何相册）
+    is_superuser = getattr(current_user, 'is_superuser', False)
+    if album.user_id != current_user.id and not is_superuser:
         return jsonify({'success': False, 'message': '您没有权限上传到此相册'}), 403
 
     if 'photos' not in request.files:
@@ -365,11 +430,13 @@ def delete_photo_file(photo):
 def delete_photo(photo_id):
     """
     删除图片
+    超级管理员可以删除任何图片
     """
     photo = Photo.query.get_or_404(photo_id)
 
-    # 权限检查
-    if photo.user_id != current_user.id:
+    # 权限检查（超级管理员可以删除任何图片）
+    is_superuser = getattr(current_user, 'is_superuser', False)
+    if photo.user_id != current_user.id and not is_superuser:
         return jsonify({'success': False, 'message': '您没有权限删除此图片'}), 403
 
     try:
@@ -389,12 +456,14 @@ def delete_photo(photo_id):
 def move_photo(photo_id):
     """
     移动图片到其他相册
+    超级管理员可以移动任何图片
     """
     photo = Photo.query.get_or_404(photo_id)
     target_album_id = request.json.get('album_id')
 
-    # 权限检查
-    if photo.user_id != current_user.id:
+    # 权限检查（超级管理员可以移动任何图片）
+    is_superuser = getattr(current_user, 'is_superuser', False)
+    if photo.user_id != current_user.id and not is_superuser:
         return jsonify({'success': False, 'message': '您没有权限移动此图片'}), 403
 
     # 验证目标相册
@@ -416,11 +485,13 @@ def toggle_photo_public(photo_id):
     切换图片公开/私密状态
 
     公开的图片会在共享空间展示
+    超级管理员可以修改任何图片的状态
     """
     photo = Photo.query.get_or_404(photo_id)
 
-    # 权限检查
-    if photo.user_id != current_user.id:
+    # 权限检查（超级管理员可以修改任何图片）
+    is_superuser = getattr(current_user, 'is_superuser', False)
+    if photo.user_id != current_user.id and not is_superuser:
         return jsonify({'success': False, 'message': '您没有权限修改此图片'}), 403
 
     # 切换状态
@@ -440,11 +511,13 @@ def toggle_photo_public(photo_id):
 def set_photo_public(photo_id):
     """
     设置图片公开状态
+    超级管理员可以设置任何图片的状态
     """
     photo = Photo.query.get_or_404(photo_id)
 
-    # 权限检查
-    if photo.user_id != current_user.id:
+    # 权限检查（超级管理员可以设置任何图片的状态）
+    is_superuser = getattr(current_user, 'is_superuser', False)
+    if photo.user_id != current_user.id and not is_superuser:
         return jsonify({'success': False, 'message': '您没有权限修改此图片'}), 403
 
     is_public = request.json.get('is_public', False)

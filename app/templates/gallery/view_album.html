@@ -15,7 +15,19 @@
     <!-- 相册信息 -->
     <div class="row mb-4">
         <div class="col-md-8">
-            <h2>{{ album.name }}</h2>
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <h2 class="mb-0">{{ album.name }}</h2>
+                {% if is_superuser %}
+                <span class="badge bg-danger">超级管理员</span>
+                {% elif album.user_id != current_user.id %}
+                <span class="badge bg-info">浏览模式</span>
+                {% endif %}
+            </div>
+            {% if is_superuser and album.user_id != current_user.id %}
+            <p class="text-muted">
+                <i class="bi bi-person"></i> 所有者：{{ album.user.username }}
+            </p>
+            {% endif %}
             {% if album.description %}
                 <p class="text-muted">{{ album.description }}</p>
             {% endif %}
