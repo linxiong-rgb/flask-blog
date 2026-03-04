@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}云相册 - 我的博客{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-images"></i> 云相册</h2>
+        <div>
+            <a href="{{ url_for('gallery.shared_space') }}" class="btn btn-outline-primary">
+                <i class="bi bi-globe"></i> 共享空间
+            </a>
+            <a href="{{ url_for('gallery.new_album') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> 新建相册
+            </a>
+        </div>
+    </div>
+
+    <!-- 统计信息 -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="fs-1 me-3"><i class="bi bi-folder"></i></div>
+                        <div>
+                            <div class="fs-3 fw-bold">{{ total_albums }}</div>
+                            <div class="mb-0">个相册</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="fs-1 me-3"><i class="bi bi-image"></i></div>
+                        <div>
+                            <div class="fs-3 fw-bold">{{ total_photos }}</div>
+                            <div class="mb-0">张照片</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="fs-1 me-3"><i class="bi bi-cloud-arrow-up"></i></div>
+                        <div>
+                            <div class="fs-3 fw-bold">上传</div>
+                            <div class="mb-0">随时备份</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 相册树 -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-folder-fill"></i> 我的相册</h5>
+        </div>
+        <div class="card-body">
+            {% if root_albums %}
+                <div class="album-tree">
+                    {% macro render_album(album, level=0) %}
+                        <div class="album-item mb-2" style="padding-left: {{ level * 20 }}px;">
+                            <div class="d-flex align-items-center p-2 rounded hover-bg">
+                                <i class="bi bi-folder-fill text-warning me-2"></i>
+                                <a href="{{ url_for('gallery.view_album', album_id=album.id) }}" class="flex-grow-1 text-decoration-none">
+                                    <strong>{{ album.name }}</strong>
+                                    {% if album.description %}
+                                        <small class="text-muted"> - {{ album.description }}</small>
+                                    {% endif %}
+                                </a>
+                                <span class="badge bg-secondary">{{ album.photo_count }} 张</span>
+                                {% if album.is_private %}
+                                    <span class="badge bg-warning"><i class="bi bi-lock-fill"></i></span>
+                                {% endif %}
+                                <a href="{{ url_for('gallery.edit_album', album_id=album.id) }}" class="btn btn-sm btn-link text-muted">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </div>
+                            {% if album.children %}
+                                {% for child in album.children %}
+                                    {{ render_album(child, level + 1) }}
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    {% endmacro %}
+
+                    {% for album in root_albums %}
+                        {{ render_album(album) }}
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-folder-plus fs-1 text-muted"></i>
+                    <p class="text-muted mt-3">还没有相册，创建一个开始使用云相册吧！</p>
+                    <a href="{{ url_for('gallery.new_album') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-lg"></i> 创建相册
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.album-item {
+    border-left: 2px solid #dee2e6;
+}
+
+.hover-bg:hover {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}

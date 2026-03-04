@@ -1009,6 +1009,117 @@ def migrate_database():
             else:
                 results.append('pdf_page_count 列已存在')
 
+            # 检查并创建相册相关表
+            inspector = inspect(db.engine)
+            existing_tables = inspector.get_table_names()
+
+            # 创建 photo_tag 表
+            if 'photo_tag' not in existing_tables:
+                current_app.logger.info('正在创建 photo_tag 表...')
+                conn.execute(text("""
+                    CREATE TABLE photo_tag (
+                        id SERIAL PRIMARY KEY,
+                        name VARCHAR(50) UNIQUE NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """))
+                conn.commit()
+                results.append('photo_tag 表创建成功')
+            else:
+                results.append('photo_tag 表已存在')
+
+            # 创建 album 表
+            if 'album' not in existing_tables:
+                current_app.logger.info('正在创建 album 表...')
+                conn.execute(text("""
+                    CREATE TABLE album (
+                        id SERIAL PRIMARY KEY,
+                        name VARCHAR(100) NOT NULL,
+                        description VARCHAR(500),
+                        user_id INTEGER NOT NULL REFERENCES "user"(id),
+                        parent_id INTEGER REFERENCES album(id),
+                        cover_photo_id INTEGER,
+                        is_private BOOLEAN DEFAULT TRUE,
+                        sort_order INTEGER DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """))
+                conn.commit()
+                results.append('album 表创建成功')
+            else:
+                results.append('album 表已存在')
+
+            # 创建 photo 表
+            if 'photo' not in existing_tables:
+                current_app.logger.info('正在创建 photo 表...')
+                conn.execute(text("""
+                    CREATE TABLE photo (
+                        id SERIAL PRIMARY KEY,
+                        filename VARCHAR(255) NOT NULL,
+                        file_path VARCHAR(500) NOT NULL,
+                        file_size INTEGER,
+                        width INTEGER,
+                        height INTEGER,
+                        mime_type VARCHAR(50),
+                        thumbnail_path VARCHAR(500),
+                        album_id INTEGER NOT NULL REFERENCES album(id),
+                        user_id INTEGER NOT NULL REFERENCES "user"(id),
+                        title VARCHAR(200),
+                        description TEXT,
+                        exif_data JSONB,
+                        is_public BOOLEAN DEFAULT FALSE,
+                        views INTEGER DEFAULT 0,
+                        likes INTEGER DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        taken_at TIMESTAMP
+                    )
+                """))
+                conn.commit()
+                results.append('photo 表创建成功')
+            else:
+                results.append('photo 表已存在')
+
+            # 创建 photo_tags 关联表
+            if 'photo_tags' not in existing_tables:
+                current_app.logger.info('正在创建 photo_tags 关联表...')
+                conn.execute(text("""
+                    CREATE TABLE photo_tags (
+                        photo_id INTEGER NOT NULL REFERENCES photo(id) ON DELETE CASCADE,
+                        tag_id INTEGER NOT NULL REFERENCES photo_tag(id) ON DELETE CASCADE,
+                        PRIMARY KEY (photo_id, tag_id)
+                    )
+                """))
+                conn.commit()
+                results.append('photo_tags 关联表创建成功')
+            else:
+                results.append('photo_tags 关联表已存在')
+
+            # 创建 photo_share 表
+            if 'photo_share' not in existing_tables:
+                current_app.logger.info('正在创建 photo_share 表...')
+                conn.execute(text("""
+                    CREATE TABLE photo_share (
+                        id SERIAL PRIMARY KEY,
+                        share_token VARCHAR(64) UNIQUE NOT NULL,
+                        photo_id INTEGER NOT NULL REFERENCES photo(id),
+                        user_id INTEGER NOT NULL REFERENCES "user"(id),
+                        expires_at TIMESTAMP,
+                        access_password VARCHAR(100),
+                        access_count INTEGER DEFAULT 0,
+                        max_access INTEGER,
+                        is_active BOOLEAN DEFAULT TRUE,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """))
+                conn.execute(text("""
+                    CREATE INDEX idx_photo_share_token ON photo_share(share_token)
+                """))
+                conn.commit()
+                results.append('photo_share 表创建成功')
+            else:
+                results.append('photo_share 表已存在')
+
         return jsonify({
             'success': True,
             'message': '数据库迁移完成！',

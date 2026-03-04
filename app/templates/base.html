@@ -67,6 +67,23 @@
                             <i class="bi bi-archive"></i> 归档
                         </a>
                     </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="othersDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-three-dots"></i> 其他
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('gallery.index') }}">
+                                    <i class="bi bi-images"></i> 云相册
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('gallery.shared_space') }}">
+                                    <i class="bi bi-globe"></i> 共享空间
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                 </ul>
 
                 <!-- 搜索框 -->

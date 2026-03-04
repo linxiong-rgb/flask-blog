@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}共享空间 - 云相册{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-globe"></i> 共享空间</h2>
+        <a href="{{ url_for('gallery.index') }}" class="btn btn-outline-primary">
+            <i class="bi bi-folder"></i> 我的相册
+        </a>
+    </div>
+
+    <p class="text-muted">这里展示所有用户公开分享的照片</p>
+
+    <!-- 瀑布流展示 -->
+    <div class="masonry-grid" id="masonryGrid">
+        {% for photo in photos.items %}
+        <div class="masonry-item">
+            <div class="photo-card">
+                <img src="{{ photo.thumbnail_url }}" alt="{{ photo.title or photo.filename }}"
+                     loading="lazy" class="photo-img"
+                     onclick="openPhotoModal({{ photo.id }})"
+                     style="aspect-ratio: {{ photo.width }}/{{ photo.height }};">
+                <div class="photo-info">
+                    <h6>{{ photo.title or photo.filename }}</h6>
+                    <p class="mb-0 text-muted">
+                        <i class="bi bi-person"></i> {{ photo.user.username }}
+                        <i class="bi bi-eye ms-2"></i> {{ photo.views }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- 分页 -->
+    {% if photos.pages > 1 %}
+    <nav aria-label="分页" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if photos.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('gallery.shared_space', page=photos.prev_num) }}">上一页</a>
+                </li>
+            {% endif %}
+
+            {% for page_num in photos.iter_pages() %}
+                {% if page_num %}
+                    <li class="page-item {% if page_num == photos.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('gallery.shared_space', page=page_num) }}">{{ page_num }}</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if photos.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('gallery.shared_space', page=photos.next_num) }}">下一页</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<!-- 图片详情模态框 -->
+<div class="modal fade" id="photoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body p-0">
+                <img id="modalImage" src="" alt="" style="width: 100%; border-radius: 4px;">
+                <div class="p-3">
+                    <h5 id="modalTitle"></h5>
+                    <p id="modalDescription" class="text-muted mb-2"></p>
+                    <p class="mb-0">
+                        <i class="bi bi-person"></i> <span id="modalUser"></span>
+                        <i class="bi bi-calendar ms-3"></i> <span id="modalDate"></span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 打开图片详情
+function openPhotoModal(photoId) {
+    // 获取图片详情（从当前页面或API）
+    const photos = {{ photos.items | tojson }};
+    const photo = photos.find(p => p.id === photoId);
+
+    if (photo) {
+        document.getElementById('modalImage').src = photo.url;
+        document.getElementById('modalTitle').textContent = photo.title || photo.filename;
+        document.getElementById('modalDescription').textContent = photo.description || '';
+        document.getElementById('modalUser').textContent = photo.user.username;
+        document.getElementById('modalDate').textContent = new Date(photo.created_at).toLocaleDateString();
+
+        const modal = new bootstrap.Modal(document.getElementById('photoModal'));
+        modal.show();
+    }
+}
+</script>
+
+<style>
+.masonry-grid {
+    column-count: 4;
+    column-gap: 15px;
+}
+
+@media (max-width: 1200px) {
+    .masonry-grid {
+        column-count: 3;
+    }
+}
+
+@media (max-width: 768px) {
+    .masonry-grid {
+        column-count: 2;
+    }
+}
+
+@media (max-width: 480px) {
+    .masonry-grid {
+        column-count: 1;
+    }
+}
+
+.masonry-item {
+    break-inside: avoid;
+    margin-bottom: 15px;
+}
+
+.photo-card {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+    cursor: pointer;
+}
+
+.photo-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.photo-img {
+    width: 100%;
+    display: block;
+}
+
+.photo-info {
+    padding: 10px;
+}
+
+.photo-info h6 {
+    margin-bottom: 5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}创建相册 - 云相册{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="bi bi-folder-plus"></i> 创建相册</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">相册名称 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">描述</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="parent_id" class="form-label">父相册（可选）</label>
+                            <select class="form-select" id="parent_id" name="parent_id">
+                                <option value="">根目录（不选择父相册）</option>
+                                {% for album in parent_albums %}
+                                    <option value="{{ album.id }}">{{ album.path }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">选择父相册可创建多级目录结构</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="is_private" name="is_private" checked>
+                                <label class="form-check-label" for="is_private">
+                                    <i class="bi bi-lock-fill"></i> 设为私密相册
+                                </label>
+                                <div class="form-text">私密相册只有您可以查看</div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg"></i> 创建
+                            </button>
+                            <a href="{{ url_for('gallery.index') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-lg"></i> 取消
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
