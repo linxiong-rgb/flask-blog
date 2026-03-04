@@ -107,6 +107,12 @@ class Post(db.Model):
     visibility = db.Column(db.String(20), default='public')
     # 密码保护的访问密码（可选）
     access_password = db.Column(db.String(100))
+    # 文章内容类型: 'markdown' 或 'pdf'
+    content_type = db.Column(db.String(20), default='markdown')
+    # PDF附件文件路径
+    pdf_attachment = db.Column(db.String(500))
+    # PDF页数
+    pdf_page_count = db.Column(db.Integer, default=0)
 
     def __repr__(self):
         return f'<Post {self.title}>'

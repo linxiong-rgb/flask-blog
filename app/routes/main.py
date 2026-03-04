@@ -259,14 +259,19 @@ def post(post_id):
     post.views += 1
     db.session.commit()
 
-    # 将 Markdown 转换为 HTML
-    html_content = markdown.markdown(
-        post.content,
-        extensions=MD_EXTENSIONS,
-        extension_configs=MD_EXTENSION_CONFIGS
-    )
-    # 清理 HTML 防止 XSS 攻击
-    post.content_html = clean_html(html_content)
+    # 根据内容类型处理内容
+    if post.content_type == 'pdf':
+        # PDF类型文章，content字段存储描述信息
+        post.content_html = post.content
+    else:
+        # Markdown类型文章，将 Markdown 转换为 HTML
+        html_content = markdown.markdown(
+            post.content,
+            extensions=MD_EXTENSIONS,
+            extension_configs=MD_EXTENSION_CONFIGS
+        )
+        # 清理 HTML 防止 XSS 攻击
+        post.content_html = clean_html(html_content)
 
     # 获取相关文章（基于相同标签）
     related_posts = get_related_posts(post)
@@ -949,6 +954,60 @@ def migrate_database():
                 current_app.logger.info('is_superuser 列添加成功')
             else:
                 results.append('is_superuser 列已存在')
+
+            # 检查并添加 content_type 列（PDF功能）
+            result = conn.execute(text("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name = 'post'
+                AND column_name = 'content_type'
+            """))
+            if not result.fetchone():
+                current_app.logger.info('正在添加 content_type 列...')
+                conn.execute(text("""
+                    ALTER TABLE post ADD COLUMN content_type VARCHAR(20) DEFAULT 'markdown'
+                """))
+                conn.commit()
+                results.append('content_type 列添加成功')
+                current_app.logger.info('content_type 列添加成功')
+            else:
+                results.append('content_type 列已存在')
+
+            # 检查并添加 pdf_attachment 列
+            result = conn.execute(text("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name = 'post'
+                AND column_name = 'pdf_attachment'
+            """))
+            if not result.fetchone():
+                current_app.logger.info('正在添加 pdf_attachment 列...')
+                conn.execute(text("""
+                    ALTER TABLE post ADD COLUMN pdf_attachment VARCHAR(500)
+                """))
+                conn.commit()
+                results.append('pdf_attachment 列添加成功')
+                current_app.logger.info('pdf_attachment 列添加成功')
+            else:
+                results.append('pdf_attachment 列已存在')
+
+            # 检查并添加 pdf_page_count 列
+            result = conn.execute(text("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name = 'post'
+                AND column_name = 'pdf_page_count'
+            """))
+            if not result.fetchone():
+                current_app.logger.info('正在添加 pdf_page_count 列...')
+                conn.execute(text("""
+                    ALTER TABLE post ADD COLUMN pdf_page_count INTEGER DEFAULT 0
+                """))
+                conn.commit()
+                results.append('pdf_page_count 列添加成功')
+                current_app.logger.info('pdf_page_count 列添加成功')
+            else:
+                results.append('pdf_page_count 列已存在')
 
         return jsonify({
             'success': True,

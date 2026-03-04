@@ -23,7 +23,7 @@ from app.models.user import User
 from app.models.friend_link import FriendLink
 from app.models.post_bookmark import PostBookmark
 from app import db, cache
-from app.utils.storage import get_storage, reset_storage
+from app.utils.storage import get_storage, reset_storage, get_pdf_storage
 from app.routes.main import get_hot_posts, get_hot_tags, get_total_views
 from PIL import Image
 from io import BytesIO
@@ -407,6 +407,94 @@ def upload_cover_image():
         return jsonify({'success': False, 'message': f'上传失败: {str(e)}'}), 500
 
 
+@bp.route('/upload/pdf', methods=['POST'])
+@login_required
+def upload_pdf():
+    """
+    处理PDF文件上传
+
+    上传PDF文件到存储后端，验证文件类型和大小
+    支持本地存储和 GitHub 仓库存储
+
+    Returns:
+        JSON响应：包含成功状态、PDF URL和页数
+    """
+    # 检查是否有文件
+    if 'pdf_file' not in request.files:
+        return jsonify({'success': False, 'message': '没有选择文件'}), 400
+
+    file = request.files['pdf_file']
+
+    # 检查文件名
+    if file.filename == '':
+        return jsonify({'success': False, 'message': '没有选择文件'}), 400
+
+    # 检查文件类型
+    if not file.filename.lower().endswith('.pdf'):
+        return jsonify({'success': False, 'message': '只支持 PDF 格式文件'}), 400
+
+    # 检查文件大小（50MB）
+    file.seek(0, os.SEEK_END)
+    file_size = file.tell()
+    file.seek(0)
+
+    max_pdf_size = current_app.config.get('MAX_PDF_SIZE', 50 * 1024 * 1024)
+    if file_size > max_pdf_size:
+        return jsonify({
+            'success': False,
+            'message': f'文件大小超过限制（最大 {max_pdf_size // (1024 * 1024)}MB）'
+        }), 400
+
+    try:
+        # 生成唯一文件名
+        filename = generate_unique_filename(file.filename)
+
+        # 获取PDF专用存储后端
+        storage = get_pdf_storage()
+
+        # 检测存储类型
+        is_github = hasattr(storage, 'token')
+
+        if is_github:
+            # 使用 GitHub 存储
+            object_name = f'pdfs/{filename}'
+            if storage.upload_fileobj(file, object_name):
+                pdf_url = storage.get_url(object_name)
+            else:
+                return jsonify({'success': False, 'message': '上传到 GitHub 失败'}), 500
+        else:
+            # 使用本地存储
+            upload_folder = current_app.config['PDF_UPLOAD_FOLDER']
+            os.makedirs(upload_folder, exist_ok=True)
+
+            file_path = os.path.join(upload_folder, filename)
+            file.save(file_path)
+
+            # 返回本地存储的PDF URL
+            pdf_url = f'/static/uploads/pdfs/{filename}'
+
+        # 尝试获取PDF页数（可选，使用PyPDF2）
+        pdf_page_count = 0
+        try:
+            import PyPDF2
+            file.seek(0)
+            pdf_reader = PyPDF2.PdfReader(file)
+            pdf_page_count = len(pdf_reader.pages)
+        except:
+            pass  # 如果无法获取页数，保持为0
+
+        return jsonify({
+            'success': True,
+            'message': 'PDF上传成功',
+            'pdf_url': pdf_url,
+            'pdf_page_count': pdf_page_count
+        })
+
+    except Exception as e:
+        logger.error(f'PDF上传失败: {str(e)}')
+        return jsonify({'success': False, 'message': f'上传失败: {str(e)}'}), 500
+
+
 @bp.route('/api/detect-local-images', methods=['POST'])
 @login_required
 def detect_local_images():
@@ -640,6 +728,18 @@ def new_post():
 
         tags = request.form.getlist('tags')
 
+        # 处理文章内容类型
+        content_type = request.form.get('content_type', 'markdown')
+        pdf_attachment = request.form.get('pdf_attachment', '')
+        pdf_page_count = request.form.get('pdf_page_count', 0, type=int)
+
+        # 验证PDF类型必须有PDF附件
+        if content_type == 'pdf' and not pdf_attachment:
+            flash('PDF类型文章必须上传PDF文件', 'danger')
+            categories = Category.query.all()
+            tags_list = Tag.query.all()
+            return render_template('admin/edit_post.html', categories=categories, tags=tags_list)
+
         # 如果没有提供摘要，自动生成
         if not summary:
             from app.utils.text import generate_summary
@@ -674,7 +774,10 @@ def new_post():
             published=published,
             scheduled_at=scheduled_at,
             visibility=visibility,
-            access_password=access_password
+            access_password=access_password,
+            content_type=content_type,
+            pdf_attachment=pdf_attachment if content_type == 'pdf' else None,
+            pdf_page_count=pdf_page_count if content_type == 'pdf' else 0
         )
 
         # 添加标签关联
@@ -725,6 +828,27 @@ def edit_post(post_id):
         post.title = request.form.get('title')
         post.content = request.form.get('content')
         summary = request.form.get('summary', '').strip()
+
+        # 处理文章内容类型
+        post.content_type = request.form.get('content_type', 'markdown')
+        pdf_attachment = request.form.get('pdf_attachment', '')
+        pdf_page_count = request.form.get('pdf_page_count', 0, type=int)
+
+        # 验证PDF类型必须有PDF附件
+        if post.content_type == 'pdf' and not pdf_attachment:
+            flash('PDF类型文章必须上传PDF文件', 'danger')
+            categories = Category.query.all()
+            all_tags = Tag.query.all()
+            return render_template('admin/edit_post.html', post=post,
+                                  categories=categories, tags=all_tags)
+
+        # 更新PDF字段
+        if post.content_type == 'pdf':
+            post.pdf_attachment = pdf_attachment
+            post.pdf_page_count = pdf_page_count
+        else:
+            post.pdf_attachment = None
+            post.pdf_page_count = 0
 
         # 如果没有提供摘要，自动生成
         if not summary:
@@ -832,6 +956,24 @@ def delete_post(post_id):
     if post.author != current_user:
         flash('你没有权限删除这篇文章')
         return redirect(url_for('main.index'))
+
+    # 删除关联的PDF文件
+    if post.pdf_attachment:
+        try:
+            storage = get_pdf_storage()
+            # 从URL中提取文件名
+            if '/static/uploads/pdfs/' in post.pdf_attachment:
+                filename = post.pdf_attachment.split('/static/uploads/pdfs/')[-1]
+                storage.delete_file(f'pdfs/{filename}')
+            elif 'githubusercontent.com' in post.pdf_attachment or 'jsdelivr.net' in post.pdf_attachment:
+                # GitHub存储的文件，从URL中提取文件名
+                import re
+                match = re.search(r'/pdfs/([^/]+\.pdf)', post.pdf_attachment)
+                if match:
+                    filename = match.group(1)
+                    storage.delete_file(f'pdfs/{filename}')
+        except Exception as e:
+            logger.warning(f'删除PDF文件失败: {str(e)}')
 
     db.session.delete(post)
     db.session.commit()

@@ -233,3 +233,18 @@ def reset_storage():
     """重置存储实例（用于测试或配置更改）"""
     global _storage
     _storage = None
+
+
+def get_pdf_storage():
+    """获取PDF文件专用存储后端"""
+    github_token = os.environ.get('GITHUB_TOKEN')
+    github_repo = os.environ.get('GITHUB_REPO')
+    github_branch = os.environ.get('GITHUB_BRANCH', 'main')
+    github_pdf_path = os.environ.get('GITHUB_PDF_PATH', 'pdfs')
+
+    if github_token and github_repo:
+        return GitHubStorage(token=github_token, repo=github_repo,
+                           branch=github_branch, path=github_pdf_path)
+    else:
+        from flask import current_app
+        return LocalStorage(current_app.config['PDF_UPLOAD_FOLDER'])

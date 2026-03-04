@@ -33,6 +33,10 @@ class Config:
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
+    # PDF上传配置
+    PDF_UPLOAD_FOLDER = os.path.join(basedir, 'app', 'static', 'uploads', 'pdfs')
+    MAX_PDF_SIZE = 50 * 1024 * 1024  # 50MB
+
     # 缓存配置
     CACHE_TYPE = 'SimpleCache'
     CACHE_DEFAULT_TIMEOUT = 300

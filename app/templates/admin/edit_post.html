@@ -102,6 +102,39 @@
                         </div>
                     </div>
 
+                    <!-- 文章类型选择 -->
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="bi bi-file-earmark"></i> 文章类型
+                        </label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="radio-card p-3 rounded border text-center {% if not post or post.content_type == 'markdown' or post.content_type is none %}border-primary bg-light{% endif %}" onclick="selectContentType('markdown')">
+                                    <input type="radio" name="content_type" id="content_markdown" value="markdown"
+                                           {% if not post or post.content_type == 'markdown' or post.content_type is none %}checked{% endif %}
+                                           onchange="toggleContentFields()">
+                                    <label class="mb-0 d-block" for="content_markdown">
+                                        <i class="bi bi-markdown" style="font-size: 1.5rem;"></i>
+                                        <div class="mt-1">Markdown</div>
+                                        <small class="text-muted">使用Markdown编写文章</small>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="radio-card p-3 rounded border text-center {% if post and post.content_type == 'pdf' %}border-primary bg-light{% endif %}" onclick="selectContentType('pdf')">
+                                    <input type="radio" name="content_type" id="content_pdf" value="pdf"
+                                           {% if post and post.content_type == 'pdf' %}checked{% endif %}
+                                           onchange="toggleContentFields()">
+                                    <label class="mb-0 d-block" for="content_pdf">
+                                        <i class="bi bi-file-pdf" style="font-size: 1.5rem;"></i>
+                                        <div class="mt-1">PDF文档</div>
+                                        <small class="text-muted">上传PDF文件作为文章</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="mb-3">
                         <label for="summary" class="form-label">
                             摘要（可选）
@@ -138,6 +171,70 @@
                         <div id="imageUploadPrompt" class="image-upload-prompt" style="display: none;">
                             <i class="bi bi-upload"></i> 上传这张图片
                         </div>
+                    </div>
+
+                    <!-- PDF上传区域 -->
+                    <div class="mb-3" id="pdfUploadSection" style="display: none;">
+                        <label class="form-label">
+                            <i class="bi bi-file-pdf"></i> PDF文件
+                            <span class="text-danger">*</span>
+                        </label>
+
+                        <!-- 已上传PDF信息显示 -->
+                        {% if post and post.pdf_attachment %}
+                        <div class="mb-2 p-3 border rounded bg-light">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-file-pdf-fill text-danger fs-4 me-2"></i>
+                                    <div>
+                                        <div class="fw-bold">PDF已上传</div>
+                                        <small class="text-muted">
+                                            {% if post.pdf_page_count > 0 %}{{ post.pdf_page_count }} 页{% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearPdfAttachment()">
+                                    <i class="bi bi-trash"></i> 删除
+                                </button>
+                            </div>
+                            <input type="hidden" id="pdf_attachment" name="pdf_attachment" value="{{ post.pdf_attachment }}">
+                            <input type="hidden" id="pdf_page_count" name="pdf_page_count" value="{{ post.pdf_page_count or 0 }}">
+                        </div>
+                        {% else %}
+                        <div class="mb-2 p-3 border rounded bg-light" id="pdfInfoDisplay" style="display: none;">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-file-pdf-fill text-danger fs-4 me-2"></i>
+                                    <div>
+                                        <div class="fw-bold">PDF已上传</div>
+                                        <small class="text-muted" id="pdfPageCountDisplay"></small>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearPdfAttachment()">
+                                    <i class="bi bi-trash"></i> 删除
+                                </button>
+                            </div>
+                            <input type="hidden" id="pdf_attachment" name="pdf_attachment" value="">
+                            <input type="hidden" id="pdf_page_count" name="pdf_page_count" value="0">
+                        </div>
+                        {% endif %}
+
+                        <!-- PDF文件上传 -->
+                        <div id="pdfFileUploadSection" {% if post and post.pdf_attachment %}style="display: none;"{% endif %}>
+                            <input type="file" class="form-control" id="pdf_file" name="pdf_file"
+                                   accept="application/pdf">
+                            <div class="form-text">支持 PDF 格式，最大 50MB</div>
+                        </div>
+                    </div>
+
+                    <!-- PDF描述文本框（仅PDF类型显示） -->
+                    <div class="mb-3" id="pdfDescriptionSection" style="display: none;">
+                        <label for="pdf_description" class="form-label">
+                            <i class="bi bi-card-text"></i> PDF描述
+                        </label>
+                        <textarea class="form-control" id="pdf_description" name="content" rows="5"
+                                  placeholder="输入PDF文件的描述信息，将显示在文章详情页">{% if post and post.content_type == 'pdf' %}{{ post.content }}{% endif %}</textarea>
+                        <div class="form-text">描述信息将显示在PDF查看器上方</div>
                     </div>
 
                     <div class="mb-3">
@@ -1621,6 +1718,200 @@ function uploadAndReplaceLocalPath(file, localPath, textarea) {
         input.value = '';
         hideImageUploadPrompt();
     });
+}
+
+// ========================================
+// PDF文章功能
+// ========================================
+
+// 选择文章内容类型
+function selectContentType(type) {
+    // 先取消所有 radio 的选中状态
+    const allRadios = document.querySelectorAll('input[name="content_type"]');
+    allRadios.forEach(radio => {
+        radio.checked = false;
+    });
+
+    // 移除所有卡片的选中样式
+    const allCards = document.querySelectorAll('.radio-card');
+    allCards.forEach(card => {
+        card.classList.remove('border-primary', 'bg-light');
+    });
+
+    // 选中对应的单选按钮
+    const radioButton = document.getElementById('content_' + type);
+    if (radioButton) {
+        radioButton.checked = true;
+        // 添加选中样式到父卡片
+        const parentCard = radioButton.closest('.radio-card');
+        if (parentCard) {
+            parentCard.classList.add('border-primary', 'bg-light');
+        }
+        // 触发 change 事件
+        radioButton.dispatchEvent(new Event('change'));
+    }
+}
+
+// 切换内容字段显示
+function toggleContentFields() {
+    const contentType = document.querySelector('input[name="content_type"]:checked')?.value || 'markdown';
+    const contentSection = document.querySelector('label[for="content"]')?.closest('.mb-3');
+    const pdfUploadSection = document.getElementById('pdfUploadSection');
+    const pdfDescriptionSection = document.getElementById('pdfDescriptionSection');
+    const contentTextarea = document.getElementById('content');
+
+    if (contentType === 'pdf') {
+        // PDF类型：隐藏Markdown编辑器，显示PDF上传区域
+        if (contentSection) {
+            contentSection.style.display = 'none';
+        }
+        if (pdfUploadSection) {
+            pdfUploadSection.style.display = 'block';
+        }
+        if (pdfDescriptionSection) {
+            pdfDescriptionSection.style.display = 'block';
+        }
+        // 移除content的required属性
+        if (contentTextarea) {
+            contentTextarea.removeAttribute('required');
+        }
+    } else {
+        // Markdown类型：显示Markdown编辑器，隐藏PDF上传区域
+        if (contentSection) {
+            contentSection.style.display = 'block';
+        }
+        if (pdfUploadSection) {
+            pdfUploadSection.style.display = 'none';
+        }
+        if (pdfDescriptionSection) {
+            pdfDescriptionSection.style.display = 'none';
+        }
+        // 添加content的required属性
+        if (contentTextarea) {
+            contentTextarea.setAttribute('required', 'required');
+        }
+    }
+}
+
+// PDF文件上传处理
+document.addEventListener('DOMContentLoaded', function() {
+    const pdfFileInput = document.getElementById('pdf_file');
+    if (pdfFileInput) {
+        pdfFileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (!file) return;
+
+            // 验证文件类型
+            if (file.type !== 'application/pdf') {
+                alert('请选择PDF文件');
+                this.value = '';
+                return;
+            }
+
+            // 验证文件大小
+            if (file.size > 50 * 1024 * 1024) {
+                alert('文件大小不能超过 50MB');
+                this.value = '';
+                return;
+            }
+
+            // 创建FormData上传文件
+            const formData = new FormData();
+            formData.append('pdf_file', file);
+
+            // 显示上传中状态
+            this.disabled = true;
+            const originalText = this.parentNode.querySelector('.form-text')?.textContent || '';
+            if (this.parentNode.querySelector('.form-text')) {
+                this.parentNode.querySelector('.form-text').textContent = '上传中...';
+            }
+
+            fetch('{{ url_for("admin.upload_pdf") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                this.disabled = false;
+                if (this.parentNode.querySelector('.form-text')) {
+                    this.parentNode.querySelector('.form-text').textContent = originalText;
+                }
+
+                if (data.success) {
+                    // 更新隐藏字段
+                    const pdfAttachmentInput = document.getElementById('pdf_attachment');
+                    const pdfPageCountInput = document.getElementById('pdf_page_count');
+
+                    if (pdfAttachmentInput) pdfAttachmentInput.value = data.pdf_url;
+                    if (pdfPageCountInput) pdfPageCountInput.value = data.pdf_page_count || 0;
+
+                    // 显示PDF信息
+                    const pdfInfoDisplay = document.getElementById('pdfInfoDisplay');
+                    const pdfFileUploadSection = document.getElementById('pdfFileUploadSection');
+
+                    if (pdfInfoDisplay) {
+                        pdfInfoDisplay.style.display = 'block';
+                        const pageCountDisplay = document.getElementById('pdfPageCountDisplay');
+                        if (pageCountDisplay) {
+                            pageCountDisplay.textContent = data.pdf_page_count > 0 ? `${data.pdf_page_count} 页` : '';
+                        }
+                    }
+
+                    if (pdfFileUploadSection) {
+                        pdfFileUploadSection.style.display = 'none';
+                    }
+
+                    // 显示成功消息
+                    showSaveIndicator('PDF上传成功！');
+                } else {
+                    alert('上传失败: ' + data.message);
+                    this.value = '';
+                }
+            })
+            .catch(error => {
+                this.disabled = false;
+                if (this.parentNode.querySelector('.form-text')) {
+                    this.parentNode.querySelector('.form-text').textContent = originalText;
+                }
+                alert('上传失败: ' + error.message);
+                this.value = '';
+            });
+        });
+    }
+
+    // 初始化内容类型字段
+    toggleContentFields();
+});
+
+// 清除PDF附件
+function clearPdfAttachment() {
+    // 清空隐藏字段
+    const pdfAttachmentInput = document.getElementById('pdf_attachment');
+    const pdfPageCountInput = document.getElementById('pdf_page_count');
+
+    if (pdfAttachmentInput) pdfAttachmentInput.value = '';
+    if (pdfPageCountInput) pdfPageCountInput.value = '0';
+
+    // 隐藏PDF信息显示
+    const pdfInfoDisplay = document.getElementById('pdfInfoDisplay');
+    if (pdfInfoDisplay) {
+        pdfInfoDisplay.style.display = 'none';
+    }
+
+    // 显示文件上传区域
+    const pdfFileUploadSection = document.getElementById('pdfFileUploadSection');
+    if (pdfFileUploadSection) {
+        pdfFileUploadSection.style.display = 'block';
+    }
+
+    // 清空文件选择
+    const pdfFileInput = document.getElementById('pdf_file');
+    if (pdfFileInput) {
+        pdfFileInput.value = '';
+    }
 }
 </script>
 

@@ -99,6 +99,27 @@
                 </div>
             {% endif %}
 
+            <!-- PDF查看器 -->
+            {% if post.content_type == 'pdf' and post.pdf_attachment %}
+            <div class="pdf-viewer-container">
+                <div class="pdf-header">
+                    <h4><i class="bi bi-file-pdf"></i> PDF文档</h4>
+                    <div class="pdf-actions">
+                        <span class="pdf-info">
+                            {% if post.pdf_page_count > 0 %}{{ post.pdf_page_count }} 页 | {% endif %}在线查看
+                        </span>
+                        <a href="{{ post.pdf_attachment }}" download class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-download"></i> 下载PDF
+                        </a>
+                    </div>
+                </div>
+                <div class="pdf-wrapper">
+                    <iframe src="{{ post.pdf_attachment }}" class="pdf-iframe"
+                            title="PDF文档查看器"></iframe>
+                </div>
+            </div>
+            {% endif %}
+
             <!-- Typora 风格的文章内容 -->
             <div class="typora-content" id="articleContent">
                 {{ post.content_html | safe }}
@@ -990,4 +1011,71 @@ if (document.readyState === 'loading') {
 }
 
 </script>
+
+<style>
+/* PDF查看器样式 */
+.pdf-viewer-container {
+    margin: 2rem 0;
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-color, #fff);
+}
+
+.pdf-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: var(--bg-secondary, #f8f9fa);
+    border-bottom: 1px solid var(--border-color, #e0e0e0);
+}
+
+.pdf-header h4 {
+    margin: 0;
+    color: var(--text-color, #333);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pdf-header h4 i {
+    color: #dc3545;
+}
+
+.pdf-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.pdf-info {
+    color: var(--text-muted, #6c757d);
+    font-size: 0.875rem;
+}
+
+.pdf-wrapper {
+    position: relative;
+    height: 800px;
+    background: #f8f9fa;
+}
+
+.pdf-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+}
+
+/* 深色模式适配 */
+@media (prefers-color-scheme: dark) {
+    .pdf-viewer-container {
+        --bg-color: #2d2d2d;
+        --border-color: #404040;
+        --bg-secondary: #1f1f1f;
+        --text-color: #e0e0e0;
+        --text-muted: #a0a0a0;
+    }
+}
+</style>
 {% endblock %}
