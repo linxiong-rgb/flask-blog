@@ -143,40 +143,38 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">分享链接</label>
-                    <div class="input-group">
-                        <input type="text" class="form-control" id="shareUrl" readonly>
-                        <button class="btn btn-outline-secondary" onclick="copyShareUrl()">
-                            <i class="bi bi-clipboard"></i> 复制
-                        </button>
+                <!-- 加载状态 -->
+                <div id="shareLoading" class="text-center py-4" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">加载中...</span>
                     </div>
+                    <p class="mt-2 text-muted">正在生成分享链接...</p>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">过期时间</label>
-                    <select class="form-select" id="shareExpires">
-                        <option value="">永久有效</option>
-                        <option value="1">1天</option>
-                        <option value="7">7天</option>
-                        <option value="30">30天</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">访问密码（可选）</label>
-                    <input type="text" class="form-control" id="sharePassword" placeholder="留空则无需密码">
-                </div>
-                <div class="form-check mb-3">
-                    <input type="checkbox" class="form-check-input" id="sharePublic">
-                    <label class="form-check-label" for="sharePublic">
-                        同时在共享空间展示
-                    </label>
+
+                <!-- 分享链接显示 -->
+                <div id="shareResult" style="display: none;">
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="bi bi-link-45deg"></i> 分享链接
+                        </label>
+                        <div class="input-group input-group-lg">
+                            <input type="text" class="form-control font-monospace" id="shareUrl" readonly
+                                   onclick="this.select()">
+                            <button class="btn btn-primary" onclick="copyShareUrl()">
+                                <i class="bi bi-clipboard"></i> 复制链接
+                            </button>
+                        </div>
+                        <div class="form-text">点击链接或复制按钮即可分享</div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        任何人拥有此链接都可以查看此图片
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                <button type="button" class="btn btn-primary" onclick="createShare()">
-                    <i class="bi bi-check-lg"></i> 创建分享
-                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
             </div>
         </div>
     </div>
@@ -307,16 +305,22 @@ function deletePhoto(photoId) {
 // 分享照片
 function toggleShare(photoId) {
     currentPhotoId = photoId;
+
+    // 显示模态框
     const modal = new bootstrap.Modal(document.getElementById('shareModal'));
     modal.show();
+
+    // 重置状态
+    document.getElementById('shareLoading').style.display = 'block';
+    document.getElementById('shareResult').style.display = 'none';
+
+    // 自动创建分享链接
+    createShare();
 }
 
 // 创建分享
 function createShare() {
     const photoId = currentPhotoId;
-    const expiresDays = document.getElementById('shareExpires').value;
-    const password = document.getElementById('sharePassword').value;
-    const isPublic = document.getElementById('sharePublic').checked;
 
     fetch(`/gallery/photo/${photoId}/share`, {
         method: 'POST',
@@ -325,32 +329,63 @@ function createShare() {
             'X-CSRFToken': '{{ csrf_token() }}'
         },
         body: JSON.stringify({
-            expires_days: expiresDays ? parseInt(expiresDays) : null,
-            access_password: password || null
+            expires_days: null,  // 永久有效
+            access_password: null  // 无密码
         })
     })
     .then(response => response.json())
     .then(data => {
+        document.getElementById('shareLoading').style.display = 'none';
+
         if (data.success) {
             document.getElementById('shareUrl').value = data.share_url;
-            showNotification('success', '分享链接创建成功！');
+            document.getElementById('shareResult').style.display = 'block';
 
-            // 如果选择了公开，更新照片状态
-            if (isPublic) {
-                // TODO: 调用API设置照片为公开
-            }
+            // 自动选中链接文本
+            document.getElementById('shareUrl').select();
         } else {
-            showNotification('danger', data.message);
+            showNotification('danger', data.message || '创建分享链接失败');
         }
+    })
+    .catch(error => {
+        document.getElementById('shareLoading').style.display = 'none';
+        showNotification('danger', '网络错误: ' + error.message);
     });
 }
 
 // 复制分享链接
 function copyShareUrl() {
-    const shareUrl = document.getElementById('shareUrl');
-    shareUrl.select();
-    document.execCommand('copy');
-    showNotification('success', '链接已复制到剪贴板');
+    const shareUrlInput = document.getElementById('shareUrl');
+
+    // 使用现代API
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(shareUrlInput.value).then(() => {
+            showNotification('success', '✓ 链接已复制到剪贴板！');
+
+            // 更新按钮状态
+            const copyBtn = document.querySelector('#shareResult .btn-primary');
+            const originalText = copyBtn.innerHTML;
+            copyBtn.innerHTML = '<i class="bi bi-check"></i> 已复制';
+            copyBtn.classList.remove('btn-primary');
+            copyBtn.classList.add('btn-success');
+
+            setTimeout(() => {
+                copyBtn.innerHTML = originalText;
+                copyBtn.classList.remove('btn-success');
+                copyBtn.classList.add('btn-primary');
+            }, 2000);
+        }).catch(() => {
+            // 降级方案
+            shareUrlInput.select();
+            document.execCommand('copy');
+            showNotification('success', '✓ 链接已复制到剪贴板！');
+        });
+    } else {
+        // 降级方案
+        shareUrlInput.select();
+        document.execCommand('copy');
+        showNotification('success', '✓ 链接已复制到剪贴板！');
+    }
 }
 
 // 删除相册
@@ -525,6 +560,27 @@ function showNotification(type, message) {
     right: 0;
     text-align: center;
     color: white;
+}
+
+/* 分享链接样式 */
+#shareUrl {
+    background-color: #f8f9fa;
+    color: #495057;
+    font-size: 0.9rem;
+}
+
+#shareUrl:focus {
+    background-color: #e9ecef;
+    box-shadow: none;
+}
+
+#shareResult .btn-primary {
+    transition: all 0.2s;
+}
+
+#shareResult .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
 }
 </style>
 {% endblock %}
