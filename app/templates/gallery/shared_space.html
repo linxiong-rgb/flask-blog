@@ -18,7 +18,7 @@
         {% for photo in photos.items %}
         <div class="masonry-item">
             <div class="photo-card">
-                <img src="{{ photo.thumbnail_path or photo.file_path }}" alt="{{ photo.title or photo.filename }}"
+                <img src="{{ photo.file_path }}" alt="{{ photo.title or photo.filename }}"
                      loading="lazy" class="photo-img"
                      onclick="openPhotoModal({{ photo.id }})"
                      {% if photo.width and photo.height %}style="aspect-ratio: {{ photo.width }}/{{ photo.height }};"{% endif %}>
@@ -33,6 +33,13 @@
         </div>
         {% endfor %}
     </div>
+
+    {% if not photos.items %}
+    <div class="text-center py-5">
+        <i class="bi bi-images fs-1 text-muted"></i>
+        <p class="text-muted mt-3">还没有公开分享的照片</p>
+    </div>
+    {% endif %}
 
     <!-- 分页 -->
     {% if photos.pages > 1 %}

@@ -15,6 +15,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from sqlalchemy import or_, and_
+from sqlalchemy.orm import joinedload
 from io import BytesIO
 import mimetypes
 
