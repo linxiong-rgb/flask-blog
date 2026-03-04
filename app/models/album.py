@@ -63,10 +63,10 @@ class Album(db.Model):
     # 关系
     user = db.relationship('User', backref=db.backref('albums', lazy='dynamic'))
     photos = db.relationship('Photo', backref=db.backref('album', lazy='joined'), lazy='dynamic',
-                           cascade='all, delete-orphan')
-    cover_photo = db.relationship('Photo', foreign_keys=[cover_photo_id],
-                                 backref=db.backref('cover_for', lazy='dynamic'))
-    parent = db.relationship('Album', remote_side=[id], backref=db.backref('children', lazy='dynamic'))
+                           cascade='all, delete-orphan',
+                           foreign_keys='[Photo.album_id]')
+    parent = db.relationship('Album', remote_side=[id], backref=db.backref('children', lazy='dynamic'),
+                           foreign_keys=[parent_id])
 
     @property
     def photo_count(self):
