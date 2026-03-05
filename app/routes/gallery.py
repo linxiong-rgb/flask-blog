@@ -781,27 +781,27 @@ def shared():
         Photo.created_at.desc()
     ).paginate(page=page, per_page=per_page, error_out=False)
 
-    # 安全地获取公开相册（如果字段存在的话）
+    # 安全地获取公开相册
     albums = None
     try:
-        # 检查 is_public 字段是否存在
-        from sqlalchemy import inspect, text
+        from sqlalchemy import inspect
         inspector = inspect(db.engine)
         columns = [col['name'] for col in inspector.get_columns('album')]
 
         if 'is_public' in columns:
-            albums = Album.query.options(
-                joinedload(Album.user),
-                joinedload(Album.cover_photo)
-            ).filter_by(is_public=True).order_by(
-                Album.created_at.desc()
-            ).paginate(page=page, per_page=per_page, error_out=False)
+            # 使用更简单的查询，不加载 cover_photo 关系
+            albums_list = Album.query.filter_by(is_public=True).order_by(Album.created_at.desc()).all()
+            # 手动加载用户信息
+            for album in albums_list:
+                db.session.refresh(album, ['user'])
+            # 创建分页对象
+            from flask_sqlalchemy.pagination import Pagination
+            albums = Pagination(albums_list, page, per_page, per_page, len(albums_list), False)
         else:
-            # 字段不存在，创建一个空的分页对象
             from flask_sqlalchemy.pagination import Pagination
             albums = Pagination([], 0, per_page, per_page, page)
     except Exception as e:
-        current_app.logger.warning(f'获取公开相册失败: {e}')
+        current_app.logger.error(f'获取公开相册失败: {e}')
         from flask_sqlalchemy.pagination import Pagination
         albums = Pagination([], 0, per_page, per_page, page)
 
