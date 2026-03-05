@@ -17,17 +17,25 @@
     <div class="masonry-grid" id="masonryGrid">
         {% for photo in photos.items %}
         <div class="masonry-item">
-            <a href="{{ url_for('gallery.shared_photo_detail', photo_id=photo.id) }}" class="photo-card">
+            <a href="{{ url_for('gallery.shared_photo_detail', photo_id=photo.id) }}" class="photo-card {% if photo.access_password %}has-password{% endif %}">
                 <img src="{{ photo.file_path }}" alt="{{ photo.title or photo.filename }}"
                      loading="lazy" class="photo-img"
                      {% if photo.width and photo.height %}style="aspect-ratio: {{ photo.width }}/{{ photo.height }};"{% endif %}>
+                {% if photo.access_password %}
+                <div class="password-overlay">
+                    <div class="password-content">
+                        <i class="bi bi-lock-fill fs-1"></i>
+                        <p>需要密码访问</p>
+                    </div>
+                </div>
+                {% endif %}
                 <div class="photo-info">
                     <h6>{{ photo.title or photo.filename }}</h6>
                     <p class="mb-0 text-muted">
                         <i class="bi bi-person"></i> {{ photo.user.username }}
                         <i class="bi bi-eye ms-2"></i> {{ photo.views }}
                         {% if photo.access_password %}
-                        <i class="bi bi-lock-fill ms-2" title="需要密码"></i>
+                        <span class="badge bg-warning"><i class="bi bi-lock-fill"></i> 需要密码</span>
                         {% endif %}
                     </p>
                 </div>
@@ -109,6 +117,7 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     transition: transform 0.3s, box-shadow 0.3s;
     cursor: pointer;
+    position: relative;
 }
 
 .photo-card:hover {
@@ -121,8 +130,48 @@
     display: block;
 }
 
+.photo-card.has-password .photo-img {
+    filter: blur(15px);
+    transition: filter 0.3s ease;
+}
+
+.photo-card.has-password:hover .photo-img {
+    filter: blur(10px);
+}
+
+.password-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.4);
+    color: white;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.password-content {
+    text-align: center;
+}
+
+.password-content i {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.password-content p {
+    margin: 0;
+    font-weight: 500;
+}
+
 .photo-info {
     padding: 10px;
+    position: relative;
+    z-index: 2;
 }
 
 .photo-info h6 {

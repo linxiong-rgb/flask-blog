@@ -684,7 +684,7 @@ def shared_space():
     return render_template('gallery/shared_space.html', photos=photos)
 
 
-@bp.route('/shared/photo/<int:photo_id>')
+@bp.route('/shared/photo/<int:photo_id>', methods=['GET', 'POST'])
 @login_required
 def shared_photo_detail(photo_id):
     """
@@ -707,11 +707,11 @@ def shared_photo_detail(photo_id):
                 password = request.form.get('password')
                 if password == photo.access_password:
                     session[session_key] = password
+                    # 密码正确后重定向到GET请求
+                    return redirect(url_for('gallery.shared_photo_detail', photo_id=photo_id))
                 else:
                     flash('密码错误，请重试', 'danger')
-                    return render_template('gallery/photo_password.html', photo=photo)
-            else:
-                return render_template('gallery/photo_password.html', photo=photo)
+            return render_template('gallery/photo_password.html', photo=photo)
 
     # 增加浏览次数
     photo.views += 1
