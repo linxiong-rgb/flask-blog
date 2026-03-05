@@ -789,6 +789,17 @@ def shared_photo_detail(photo_id):
     return render_template('gallery/shared_photo_detail.html', photo=photo)
 
 
+# ==================== 测试路由 ====================
+
+@bp.route('/test-layout')
+def test_layout():
+    """
+    测试布局页面
+    用于验证三列网格布局是否正常工作
+    """
+    return render_template('gallery/test_layout.html')
+
+
 # ==================== 批量操作 ====================
 
 @bp.route('/batch/move', methods=['POST'])
