@@ -10,6 +10,7 @@
 
 import os
 import secrets
+import re
 from datetime import datetime, timedelta
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app, send_file, session
 from flask_login import login_required, current_user
@@ -830,3 +831,59 @@ def batch_share():
     db.session.commit()
 
     return jsonify({'success': True, 'message': f'已更新 {len(photo_ids)} 张图片'})
+
+
+@bp.route('/migrate-urls', methods=['POST'])
+@login_required
+def migrate_urls():
+    """
+    迁移图片URL从 jsDelivr CDN 到 GitHub raw
+    """
+    # 只允许超级管理员执行
+    is_superuser = getattr(current_user, 'is_superuser', False)
+    if not is_superuser:
+        return jsonify({'success': False, 'message': '需要超级管理员权限'}), 403
+
+    try:
+        # 获取所有使用 jsDelivr CDN 的图片
+        photos = Photo.query.filter(Photo.file_path.like('https://cdn.jsdelivr.net/%')).all()
+
+        migrated = 0
+        for photo in photos:
+            # 转换 URL
+            # jsDelivr: https://cdn.jsdelivr.net/gh/user/repo@branch/path/file
+            # Raw: https://raw.githubusercontent.com/user/repo/branch/path/file
+            old_url = photo.file_path
+
+            # 使用正则表达式转换 URL
+            match = re.match(r'https://cdn\.jsdelivr\.net/gh/([^@]+)@([^/]+)/(.+)', old_url)
+            if match:
+                repo = match.group(1)
+                branch = match.group(2)
+                path = match.group(3)
+                new_url = f'https://raw.githubusercontent.com/{repo}/{branch}/{path}'
+
+                photo.file_path = new_url
+                migrated += 1
+
+                # 同样更新缩略图 URL
+                if photo.thumbnail_path and photo.thumbnail_path.startswith('https://cdn.jsdelivr.net/'):
+                    match_thumb = re.match(r'https://cdn\.jsdelivr\.net/gh/([^@]+)@([^/]+)/(.+)', photo.thumbnail_path)
+                    if match_thumb:
+                        repo = match_thumb.group(1)
+                        branch = match_thumb.group(2)
+                        path = match_thumb.group(3)
+                        photo.thumbnail_path = f'https://raw.githubusercontent.com/{repo}/{branch}/{path}'
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'migrated': migrated,
+            'message': f'已迁移 {migrated} 张图片的URL'
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'URL迁移失败: {str(e)}')
+        return jsonify({'success': False, 'message': f'迁移失败: {str(e)}'}), 500
