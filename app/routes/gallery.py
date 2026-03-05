@@ -826,6 +826,93 @@ def shared_album_detail(album_id):
     return render_template('gallery/shared_album_detail.html', album=album, photos=photos)
 
 
+@bp.route('/album/<int:album_id>/check-private-photos')
+@login_required
+def check_private_photos(album_id):
+    """检查相册中的私密照片数量"""
+    album = Album.query.get_or_404(album_id)
+
+    # 权限检查
+    is_superuser = getattr(current_user, 'is_superuser', False)
+    if album.user_id != current_user.id and not is_superuser:
+        return jsonify({'success': False, 'message': '没有权限'}), 403
+
+    private_count = Photo.query.filter_by(
+        album_id=album_id,
+        is_public=False
+    ).count()
+
+    return jsonify({
+        'success': True,
+        'private_count': private_count
+    })
+
+
+@bp.route('/album/<int:album_id>/verify-password', methods=['POST'])
+@login_required
+def verify_album_password(album_id):
+    """验证相册密码"""
+    album = Album.query.get_or_404(album_id)
+
+    # 权限检查
+    is_superuser = getattr(current_user, 'is_superuser', False)
+    if album.user_id != current_user.id and not is_superuser:
+        return jsonify({'success': False, 'message': '没有权限'}), 403
+
+    data = request.get_json()
+    password = data.get('password', '')
+
+    if album.access_password and password == album.access_password:
+        # 密码正确，设置session
+        session[f'album_password_verified_{album_id}'] = True
+        return jsonify({'success': True})
+
+    return jsonify({'success': False, 'message': '密码错误'})
+
+
+@bp.route('/album/<int:album_id>/toggle-visibility', methods=['POST'])
+@login_required
+def toggle_album_visibility(album_id):
+    """快速切换相册可见性"""
+    album = Album.query.get_or_404(album_id)
+
+    # 权限检查
+    is_superuser = getattr(current_user, 'is_superuser', False)
+    if album.user_id != current_user.id and not is_superuser:
+        return jsonify({'success': False, 'message': '没有权限'}), 403
+
+    data = request.get_json()
+    make_public = data.get('is_public', False)
+
+    if make_public:
+        # 设为公开，检查是否有私密照片
+        private_count = Photo.query.filter_by(
+            album_id=album_id,
+            is_public=False
+        ).count()
+
+        if private_count > 0:
+            return jsonify({
+                'success': False,
+                'message': f'无法设为公开：相册中有 {private_count} 张私密照片'
+            })
+
+        album.is_private = False
+        album.is_public = True
+    else:
+        # 设为私密
+        album.is_private = True
+        album.is_public = False
+
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'message': '切换成功',
+        'is_public': album.is_public
+    })
+
+
 @bp.route('/shared')
 @login_required
 def shared():

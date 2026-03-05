@@ -262,6 +262,12 @@ document.getElementById('visibilityToggle').addEventListener('change', function(
     updateVisibilityUI();
 });
 
+// 表单提交前确保隐藏字段是最新的
+document.getElementById('albumForm').addEventListener('submit', function(e) {
+    // 在提交前再次更新隐藏字段，确保状态同步
+    updateVisibilityUI();
+});
+
 // 更新可见性UI
 function updateVisibilityUI() {
     const isPublic = document.getElementById('visibilityToggle').checked;
