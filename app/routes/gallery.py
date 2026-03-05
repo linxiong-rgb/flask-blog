@@ -201,17 +201,25 @@ def view_album(album_id):
 
     显示相册中的所有图片
     超级管理员可以查看所有相册
+    非私密相册：其他用户只能看到公开的图片
     """
     album = Album.query.get_or_404(album_id)
 
     # 权限检查（超级管理员可以访问所有相册）
     is_superuser = getattr(current_user, 'is_superuser', False)
-    if album.user_id != current_user.id and not is_superuser:
-        flash('您没有权限访问此相册')
-        return redirect(url_for('gallery.index'))
+    is_owner = (album.user_id == current_user.id)
 
-    # 获取相册中的图片
-    photos = Photo.query.filter_by(album_id=album_id).order_by(Photo.created_at.desc()).all()
+    if not is_owner and not is_superuser:
+        # 非所有者访问
+        if album.is_private:
+            # 私密相册，拒绝访问
+            flash('您没有权限访问此相册', 'warning')
+            return redirect(url_for('gallery.index'))
+        # 公开相册，只显示公开的图片
+        photos = Photo.query.filter_by(album_id=album_id, is_public=True).order_by(Photo.created_at.desc()).all()
+    else:
+        # 所有者或超级管理员，显示所有图片
+        photos = Photo.query.filter_by(album_id=album_id).order_by(Photo.created_at.desc()).all()
 
     # 获取子相册
     child_albums = Album.query.filter_by(parent_id=album_id).order_by(Album.sort_order, Album.name).all()
@@ -220,7 +228,8 @@ def view_album(album_id):
                           album=album,
                           photos=photos,
                           child_albums=child_albums,
-                          is_superuser=is_superuser)
+                          is_superuser=is_superuser,
+                          is_owner=is_owner)
 
     # 获取相册中的图片
     photos = Photo.query.filter_by(album_id=album_id).order_by(Photo.created_at.desc()).all()
