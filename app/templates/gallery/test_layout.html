@@ -3,34 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>布局测试</title>
-    <link href="/static/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
-    <style>
-        /* 测试网格布局 */
-        .test-grid {
-            display: grid !important;
-            grid-template-columns: repeat(3, 1fr) !important;
-            gap: 24px !important;
-            padding: 20px;
-            border: 3px solid red;
-            background: #fff0f0;
-        }
-        .test-item {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 40px;
-            text-align: center;
-            border-radius: 8px;
-            font-size: 24px;
-            font-weight: bold;
-        }
-    </style>
+    <title>CSS测试</title>
+    <link href="/static/css/test-layout.css" rel="stylesheet">
 </head>
 <body>
-    <h1 style="text-align: center; padding: 20px;">布局测试页面</h1>
-    <p style="text-align: center; color: red; font-weight: bold;">
-        如果看到三个并排的彩色方块，说明三列布局正常工作！
-    </p>
+    <h1>CSS 测试页面</h1>
+    <p>如果页面背景是黄色，说明CSS已加载</p>
 
     <div class="test-grid">
         <div class="test-item">1</div>
@@ -41,11 +19,16 @@
         <div class="test-item">6</div>
     </div>
 
-    <div style="text-align: center; padding: 20px;">
-        <h3>诊断信息：</h3>
-        <p>提交版本: <strong>95a55cb</strong></p>
-        <p>预期布局: <strong>三列</strong></p>
-        <p>红色边框: <strong>应该可见</strong></p>
+    <div style="background: white; padding: 20px; margin: 20px;">
+        <h3>检查清单：</h3>
+        <ul>
+            <li>☐ 页面背景是黄色？</li>
+            <li>☐ 网格有红色边框？</li>
+            <li>☐ 方块是蓝色？</li>
+            <li>☐ 方块有绿色边框？</li>
+            <li>☐ 三列布局？</li>
+        </ul>
+        <p><strong>如果以上都是 YES，CSS 工作正常！</strong></p>
     </div>
 </body>
 </html>

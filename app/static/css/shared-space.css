@@ -1,0 +1,150 @@
+/* 共享空间样式 - 外部CSS文件 */
+/* 网格布局 - 三列 */
+.shared-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 24px !important;
+    padding: 0 1rem;
+}
+
+/* 平板显示两列 */
+@media (max-width: 992px) {
+    .shared-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 20px !important;
+    }
+}
+
+/* 手机显示单列 */
+@media (max-width: 576px) {
+    .shared-grid {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+    }
+}
+
+/* 图片卡片 */
+.photo-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+}
+
+.photo-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+/* 图片容器 */
+.photo-image-wrapper {
+    position: relative;
+    width: 100%;
+    height: 280px;
+    overflow: hidden;
+    background: #f8f9fa;
+}
+
+.photo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: filter 0.3s ease;
+}
+
+/* 加密图片 */
+.photo-card.has-password .photo-img {
+    filter: blur(40px) brightness(0.6);
+}
+
+.password-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    z-index: 5;
+}
+
+.password-overlay i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.password-overlay p {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* 图片信息 */
+.photo-info {
+    padding: 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.photo-description {
+    font-size: 0.95rem;
+    color: #333;
+    font-weight: 500;
+    margin-bottom: 8px;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 2.8em;
+}
+
+.photo-title {
+    font-size: 0.8rem;
+    color: #888;
+    margin-bottom: 12px;
+}
+
+/* 元数据 */
+.photo-meta {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 0.8rem;
+    color: #666;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f0;
+    margin-top: auto;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.meta-item i {
+    font-size: 0.9rem;
+    color: #999;
+}
+
+.password-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 8px;
+    background: #fff3cd;
+    color: #856404;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
