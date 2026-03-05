@@ -2,6 +2,46 @@
 
 {% block title %}共享空间 - 云相册{% endblock %}
 
+{% block head %}
+<style>
+.image-placeholder {
+    width: 100%;
+    padding-top: 75%;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    position: relative;
+}
+
+.image-placeholder i {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+}
+</style>
+<script>
+// 多CDN图片加载错误处理（必须在图片加载前定义）
+function handleImageErrorMultiCdn(img) {
+    const urls = img.dataset.cdnUrls ? img.dataset.cdnUrls.split(',') : [];
+    let currentIndex = parseInt(img.dataset.currentIndex) || 0;
+
+    // 尝试下一个 CDN URL
+    if (currentIndex < urls.length - 1) {
+        currentIndex++;
+        img.dataset.currentIndex = currentIndex;
+        img.src = urls[currentIndex];
+    } else {
+        // 所有 CDN 都失败了，显示占位图
+        img.outerHTML = '<div class="image-placeholder"><i class="bi bi-image"></i></div>';
+    }
+}
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -102,45 +142,6 @@
     </nav>
     {% endif %}
 </div>
-
-<script>
-// 多CDN图片加载错误处理
-function handleImageErrorMultiCdn(img) {
-    const urls = img.dataset.cdnUrls ? img.dataset.cdnUrls.split(',') : [];
-    let currentIndex = parseInt(img.dataset.currentIndex) || 0;
-
-    // 尝试下一个 CDN URL
-    if (currentIndex < urls.length - 1) {
-        currentIndex++;
-        img.dataset.currentIndex = currentIndex;
-        img.src = urls[currentIndex];
-    } else {
-        // 所有 CDN 都失败了，显示占位图
-        img.outerHTML = '<div class="image-placeholder"><i class="bi bi-image"></i></div>';
-    }
-}
-</script>
-
-<style>
-.image-placeholder {
-    width: 100%;
-    padding-top: 75%;
-    background: #f8f9fa;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #6c757d;
-    position: relative;
-}
-
-.image-placeholder i {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 2rem;
-}
-</style>
 
 <style>
 .masonry-grid {

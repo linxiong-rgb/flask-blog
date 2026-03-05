@@ -198,10 +198,10 @@ class Photo(db.Model):
 
     @property
     def cdn_urls(self):
-        """获取所有可用的 CDN URL 列表"""
+        """获取所有可用的 CDN URL 列表（优先使用国内可访问的镜像）"""
         import re
 
-        urls = [self.file_path]
+        urls = []
 
         if not self.file_path:
             return urls
@@ -227,16 +227,20 @@ class Photo(db.Model):
                 branch = match.group(3)
                 path = match.group(4)
 
-        # 如果成功解析，添加所有可用的镜像
+        # 如果成功解析，按优先级添加镜像（国内优先）
         if repo and path:
+            # 国内可访问的镜像优先
             mirrors = [
-                f'https://raw.githubusercontent.com/{repo}/{branch}/{path}',  # GitHub raw
-                f'https://gh-proxy.com/{repo}/{branch}/{path}',  # gh-proxy 镜像
-                f'https://cdn.jsdelivr.net/gh/{repo}@{branch}/{path}',  # jsDelivr
+                f'https://gh-proxy.com/{repo}/{branch}/{path}',  # gh-proxy 国内镜像
+                f'https://ghproxy.net/{repo}/{branch}/{path}',  # ghproxy.net 镜像
+                f'https://mirror.ghproxy.com/{repo}/{branch}/{path}',  # mirror.ghproxy 镜像
+                f'https://cdn.jsdelivr.net/gh/{repo}@{branch}/{path}',  # jsDelivr CDN
+                f'https://raw.githubusercontent.com/{repo}/{branch}/{path}',  # GitHub raw（最后）
             ]
-            for mirror in mirrors:
-                if mirror not in urls:
-                    urls.append(mirror)
+            urls.extend(mirrors)
+        else:
+            # 无法解析时使用原URL
+            urls.append(self.file_path)
 
         return urls
 
