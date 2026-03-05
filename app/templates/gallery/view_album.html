@@ -147,7 +147,12 @@
                     </div>
                 </div>
                 <div class="photo-actions">
-                    <button type="button" class="btn btn-sm btn-light" onclick="event.stopPropagation(); editPhotoInfo({{ photo.id }}, '{{ photo.title or '' }}', '{{ photo.description or '' }}')" title="编辑信息">
+                    <button type="button" class="btn btn-sm btn-light"
+                            data-photo-id="{{ photo.id }}"
+                            data-photo-title="{{ photo.title or '' }}"
+                            data-photo-description="{{ photo.description or '' }}"
+                            onclick="event.stopPropagation(); editPhotoInfo(this)"
+                            title="编辑信息">
                         <i class="bi bi-pencil"></i>
                     </button>
                     <button type="button" class="btn btn-sm btn-light" onclick="event.stopPropagation(); togglePhotoPublic({{ photo.id }}, this)"
@@ -217,7 +222,7 @@
                 <div id="shareResult" style="display: none;">
                     <div class="mb-3">
                         <label class="form-label">
-                            <i class="bi bi-link-45deg"></i> 分享链接
+                            <i class="bi bi-link-45deg"></i> 图片链接
                         </label>
                         <div class="input-group input-group-lg">
                             <input type="text" class="form-control font-monospace" id="shareUrl" readonly
@@ -226,12 +231,12 @@
                                 <i class="bi bi-clipboard"></i> 复制链接
                             </button>
                         </div>
-                        <div class="form-text">点击链接或复制按钮即可分享</div>
+                        <div class="form-text">直接复制图片链接即可在微信、QQ等平台分享</div>
                     </div>
 
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i>
-                        任何人拥有此链接都可以查看此图片
+                        这是图片的直接链接，可以直接在支持图片的平台预览
                     </div>
                 </div>
             </div>
@@ -553,12 +558,15 @@ function toggleShare(photoId) {
     const modal = new bootstrap.Modal(document.getElementById('shareModal'));
     modal.show();
 
-    // 重置状态
-    document.getElementById('shareLoading').style.display = 'block';
-    document.getElementById('shareResult').style.display = 'none';
+    // 直接使用图片URL作为分享链接
+    const photo = photos.find(p => p.id === photoId);
+    if (photo) {
+        document.getElementById('shareUrl').value = photo.url;
+        document.getElementById('shareResult').style.display = 'block';
 
-    // 自动创建分享链接
-    createShare();
+        // 自动选中链接文本
+        document.getElementById('shareUrl').select();
+    }
 }
 
 // 创建分享
@@ -632,7 +640,11 @@ function copyShareUrl() {
 }
 
 // 编辑图片信息
-function editPhotoInfo(photoId, title, description) {
+function editPhotoInfo(button) {
+    const photoId = button.getAttribute('data-photo-id');
+    const title = button.getAttribute('data-photo-title');
+    const description = button.getAttribute('data-photo-description');
+
     currentPhotoId = photoId;
     document.getElementById('editPhotoId').value = photoId;
     document.getElementById('photoTitle').value = title || '';
