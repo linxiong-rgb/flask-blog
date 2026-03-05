@@ -30,7 +30,7 @@
                 </div>
                 {% endif %}
                 <div class="photo-info">
-                    <h6>{{ photo.title or photo.filename }}</h6>
+                    <h6>{{ photo.description or photo.title or photo.filename }}</h6>
                     <p class="mb-0 text-muted">
                         <i class="bi bi-person"></i> {{ photo.user.username }}
                         <i class="bi bi-eye ms-2"></i> {{ photo.views }}
@@ -118,11 +118,14 @@
     transition: transform 0.3s, box-shadow 0.3s;
     cursor: pointer;
     position: relative;
+    text-decoration: none;
+    display: block;
 }
 
 .photo-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    text-decoration: none;
 }
 
 .photo-img {
@@ -179,6 +182,15 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* 移除链接下划线 */
+a {
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: none;
 }
 </style>
 {% endblock %}
