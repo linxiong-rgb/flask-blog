@@ -423,39 +423,42 @@ def upload_photos(album_id):
 
 def delete_photo_file(photo):
     """删除图片文件（非阻塞，失败不影响数据库操作）"""
-    import re
     try:
         storage = get_storage()
 
         # 删除原图
         if photo.file_path:
-            # 从URL中提取文件名
-            # 处理各种URL格式：
-            # - GitHub: https://raw.githubusercontent.com/.../gallery/userid/filename.jpg
-            # - jsDelivr: https://cdn.jsdelivr.net/gh/.../gallery/userid/filename.jpg
-            # - Local: /static/uploads/gallery/userid/filename.jpg
+            object_name = None
+            # 从URL中提取对象名
+            # GitHub raw: https://raw.githubusercontent.com/user/repo/branch/images/gallery/1/filename.jpg
+            # jsDelivr: https://cdn.jsdelivr.net/gh/user/repo@branch/images/gallery/1/filename.jpg
+            # 本地: /static/uploads/gallery/1/filename.jpg
+
+            # 提取 gallery/ 后面的完整路径
             if 'gallery/' in photo.file_path:
-                # 提取 gallery/ 后面的部分
-                match = re.search(r'gallery/[^/]+/(.+)$', photo.file_path)
-                if match:
-                    object_name = f'gallery/{match.group(0)}'
-                    try:
-                        storage.delete_file(object_name)
-                        current_app.logger.info(f'已删除文件: {object_name}')
-                    except Exception as e:
-                        current_app.logger.warning(f'删除文件失败 {object_name}: {str(e)}')
+                gallery_index = photo.file_path.find('gallery/')
+                object_name = photo.file_path[gallery_index:]
+
+            if object_name:
+                try:
+                    storage.delete_file(object_name)
+                    current_app.logger.info(f'已删除文件: {object_name}')
+                except Exception as e:
+                    current_app.logger.warning(f'删除文件失败 {object_name}: {str(e)}')
 
         # 删除缩略图
         if photo.thumbnail_path and photo.thumbnail_path != photo.file_path:
-            if 'thumbnails/' in photo.thumbnail_path:
-                match = re.search(r'gallery/[^/]+/thumbnails/(.+)$', photo.thumbnail_path)
-                if match:
-                    object_name = f'gallery/{match.group(0)}'
-                    try:
-                        storage.delete_file(object_name)
-                        current_app.logger.info(f'已删除缩略图: {object_name}')
-                    except Exception as e:
-                        current_app.logger.warning(f'删除缩略图失败 {object_name}: {str(e)}')
+            thumb_object_name = None
+            if 'gallery/' in photo.thumbnail_path:
+                gallery_index = photo.thumbnail_path.find('gallery/')
+                thumb_object_name = photo.thumbnail_path[gallery_index:]
+
+            if thumb_object_name and thumb_object_name != object_name:
+                try:
+                    storage.delete_file(thumb_object_name)
+                    current_app.logger.info(f'已删除缩略图: {thumb_object_name}')
+                except Exception as e:
+                    current_app.logger.warning(f'删除缩略图失败 {thumb_object_name}: {str(e)}')
 
     except Exception as e:
         # 删除文件失败不应该影响数据库删除操作

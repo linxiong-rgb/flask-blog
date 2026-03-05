@@ -462,23 +462,51 @@ document.addEventListener('keydown', (e) => {
 
 // 删除照片
 function deletePhoto(photoId) {
-    if (!confirm('确定要删除这张照片吗？')) return;
+    if (!confirm('确定要删除这张照片吗？此操作不可恢复！')) return;
+
+    const photoItem = document.querySelector(`[data-photo-id="${photoId}"]`);
+    if (photoItem) {
+        // 添加删除中状态
+        photoItem.style.opacity = '0.5';
+        photoItem.style.pointerEvents = 'none';
+    }
 
     fetch(`/gallery/photo/${photoId}/delete`, {
         method: 'POST',
         headers: {
+            'Content-Type': 'application/json',
             'X-CSRFToken': '{{ csrf_token() }}'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(err.message || '删除失败');
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
-            showNotification('success', data.message);
-            document.querySelector(`[data-photo-id="${photoId}"]`).remove();
+            showNotification('success', data.message || '图片已删除');
+            if (photoItem) {
+                photoItem.remove();
+            }
             // 更新照片数据
             photos = photos.filter(p => p.id !== photoId);
         } else {
-            showNotification('danger', data.message);
+            showNotification('danger', data.message || '删除失败');
+            if (photoItem) {
+                photoItem.style.opacity = '1';
+                photoItem.style.pointerEvents = 'auto';
+            }
+        }
+    })
+    .catch(error => {
+        showNotification('danger', '删除失败: ' + error.message);
+        if (photoItem) {
+            photoItem.style.opacity = '1';
+            photoItem.style.pointerEvents = 'auto';
         }
     });
 }
@@ -741,22 +769,42 @@ function savePhotoInfo() {
 
 // 删除相册
 function deleteAlbum(albumId) {
-    if (!confirm('确定要删除这个相册吗？相册中的所有照片也会被删除！')) return;
+    if (!confirm('确定要删除这个相册吗？相册中的所有照片也会被删除！此操作不可恢复！')) return;
+
+    const deleteBtn = event.target;
+    const originalText = deleteBtn.innerHTML;
+    deleteBtn.disabled = true;
+    deleteBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> 删除中...';
 
     fetch(`/gallery/album/${albumId}/delete`, {
         method: 'POST',
         headers: {
+            'Content-Type': 'application/json',
             'X-CSRFToken': '{{ csrf_token() }}'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(err.message || '删除失败');
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
-            showNotification('success', data.message);
+            showNotification('success', data.message || '相册已删除');
             setTimeout(() => location.href = '/gallery', 1000);
         } else {
-            showNotification('danger', data.message);
+            showNotification('danger', data.message || '删除失败');
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = originalText;
         }
+    })
+    .catch(error => {
+        showNotification('danger', '删除失败: ' + error.message);
+        deleteBtn.disabled = false;
+        deleteBtn.innerHTML = originalText;
     });
 }
 
