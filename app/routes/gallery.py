@@ -771,32 +771,48 @@ def shared():
     """
     共享空间 - 显示所有用户公开分享的图片
     """
-    page = request.args.get('page', 1, type=int)
-    per_page = current_app.config.get('PHOTOS_PER_PAGE', 20)
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = current_app.config.get('PHOTOS_PER_PAGE', 20)
 
-    # 获取所有公开图片，按创建时间倒序
-    photos = Photo.query.options(
-        joinedload(Photo.user)
-    ).filter_by(is_public=True).order_by(
-        Photo.created_at.desc()
-    ).paginate(page=page, per_page=per_page, error_out=False)
+        # 获取所有公开图片，按创建时间倒序
+        # 不使用 joinedload，让 SQLAlchemy 自动处理
+        photos = Photo.query.filter_by(is_public=True).order_by(
+            Photo.created_at.desc()
+        ).paginate(page=page, per_page=per_page, error_out=False)
 
-    # 创建空的相册分页对象（模拟 Pagination 接口）
-    class EmptyPagination:
-        def __init__(self):
-            self.items = []
-            self.total = 0
-            self.pages = 0
-            self.page = 1
-            self.has_prev = False
-            self.has_next = False
-            self.prev_num = None
-            self.next_num = None
-            self.iter_pages = lambda: []
+        # 创建空的相册分页对象（模拟 Pagination 接口）
+        class EmptyPagination:
+            def __init__(self):
+                self.items = []
+                self.total = 0
+                self.pages = 0
+                self.page = 1
+                self.has_prev = False
+                self.has_next = False
+                self.prev_num = None
+                self.next_num = None
+                self.iter_pages = lambda: []
 
-    albums = EmptyPagination()
+        albums = EmptyPagination()
 
-    return render_template('gallery/shared_space.html', photos=photos, albums=albums)
+        return render_template('gallery/shared_space.html', photos=photos, albums=albums)
+
+    except Exception as e:
+        # 记录错误并显示友好的错误消息
+        current_app.logger.error(f'Error in shared route: {str(e)}')
+        flash(f'加载共享空间时出错: {str(e)}', 'danger')
+
+        # 返回一个简化的错误页面
+        return render_template('gallery/shared_space.html',
+                             photos=type('obj', (object,), {'items': [], 'total': 0, 'pages': 0, 'page': 1,
+                                                           'has_prev': False, 'has_next': False,
+                                                           'prev_num': None, 'next_num': None,
+                                                           'iter_pages': lambda: []})(),
+                             albums=type('obj', (object,), {'items': [], 'total': 0, 'pages': 0, 'page': 1,
+                                                           'has_prev': False, 'has_next': False,
+                                                           'prev_num': None, 'next_num': None,
+                                                           'iter_pages': lambda: []})())
 
 
 @bp.route('/shared/<token>')

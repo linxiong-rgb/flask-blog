@@ -864,6 +864,36 @@ def init_database():
                     """))
                     conn.commit()
                     current_app.logger.info('album.access_password 列添加成功')
+
+                # 检查照片表的 is_public 列是否存在
+                result = conn.execute(text("""
+                    SELECT column_name
+                    FROM information_schema.columns
+                    WHERE table_name = 'photo'
+                    AND column_name = 'is_public'
+                """))
+                if not result.fetchone():
+                    current_app.logger.info('检测到缺少 photo.is_public 列，正在添加...')
+                    conn.execute(text("""
+                        ALTER TABLE photo ADD COLUMN is_public BOOLEAN DEFAULT FALSE
+                    """))
+                    conn.commit()
+                    current_app.logger.info('photo.is_public 列添加成功')
+
+                # 检查照片表的 access_password 列是否存在
+                result = conn.execute(text("""
+                    SELECT column_name
+                    FROM information_schema.columns
+                    WHERE table_name = 'photo'
+                    AND column_name = 'access_password'
+                """))
+                if not result.fetchone():
+                    current_app.logger.info('检测到缺少 photo.access_password 列，正在添加...')
+                    conn.execute(text("""
+                        ALTER TABLE photo ADD COLUMN access_password VARCHAR(100)
+                    """))
+                    conn.commit()
+                    current_app.logger.info('photo.access_password 列添加成功')
         except Exception as migrate_error:
             current_app.logger.warning(f'迁移检查/执行失败: {str(migrate_error)}')
 

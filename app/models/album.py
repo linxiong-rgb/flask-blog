@@ -69,6 +69,7 @@ class Album(db.Model):
                            foreign_keys='[Photo.album_id]')
     parent = db.relationship('Album', remote_side=[id], backref=db.backref('children', lazy='dynamic'),
                            foreign_keys=[parent_id])
+    cover_photo = db.relationship('Photo', remote_side=[id], foreign_keys=[cover_photo_id])
 
     @property
     def photo_count(self):
