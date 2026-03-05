@@ -34,21 +34,25 @@
 
 /* 图片展示区域 */
 .image-display {
-    background: #000;
+    background: transparent;
     border-radius: 12px;
     overflow: hidden;
     margin-bottom: 1.5rem;
     position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .detail-image {
     width: 100%;
+    height: auto;
     max-height: 75vh;
-    object-fit: contain;
+    object-fit: cover;
     display: block;
-    margin: 0 auto;
     cursor: pointer;
     transition: transform 0.3s;
+    border-radius: 8px;
 }
 
 .detail-image:hover {
