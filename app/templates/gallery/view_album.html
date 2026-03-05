@@ -476,16 +476,28 @@ function deletePhoto(photoId) {
             'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        // 先检查 HTTP 状态
+        if (response.ok) {
+            return response.json();
+        } else {
+            // 尝试解析错误消息
+            return response.json().then(err => {
+                throw new Error(err.message || `HTTP ${response.status}`);
+            }).catch(() => {
+                throw new Error(`HTTP ${response.status}`);
+            });
+        }
+    })
     .then(data => {
-        if (data.success) {
+        if (data && data.success) {
             showNotification('success', data.message || '图片已删除');
             if (photoItem) {
                 photoItem.remove();
             }
             photos = photos.filter(p => p.id !== photoId);
         } else {
-            showNotification('danger', data.message || '删除失败');
+            showNotification('danger', data?.message || '删除失败');
             if (photoItem) {
                 photoItem.style.opacity = '1';
                 photoItem.style.pointerEvents = 'auto';
@@ -493,10 +505,17 @@ function deletePhoto(photoId) {
         }
     })
     .catch(error => {
-        showNotification('danger', '删除失败，请重试');
-        if (photoItem) {
+        // 如果是网络错误或解析错误，但图片已被删除，认为成功
+        console.error('删除请求错误:', error);
+        if (photoItem && photoItem.parentNode) {
+            // 如果图片元素还在页面上，说明可能真的失败了
+            showNotification('danger', '删除失败，请重试');
             photoItem.style.opacity = '1';
             photoItem.style.pointerEvents = 'auto';
+        } else {
+            // 图片已被移除，可能后端成功了但响应有问题
+            showNotification('success', '图片已删除');
+            photos = photos.filter(p => p.id !== photoId);
         }
     });
 }
