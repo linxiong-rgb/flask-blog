@@ -98,60 +98,70 @@ function handleImageErrorMultiCdn(img) {
 <script>
 // 快速切换相册可见性
 async function quickToggleVisibility() {
-    const toggleEl = document.getElementById('quickVisibilityToggle');
-    const isCurrentlyPublic = toggleEl.classList.contains('public');
-    const albumId = {{ album.id }};
-    const hasPassword = {{ 'true' if album.access_password else 'false' }};
-
-    // 如果要设为私密，直接切换
-    if (isCurrentlyPublic) {
-        await toggleAlbumVisibility(albumId, false);
-        return;
-    }
-
-    // 如果要设为公开，检查是否有私密照片
     try {
-        const response = await fetch(`/gallery/album/${albumId}/check-private-photos`);
-        const data = await response.json();
-
-        if (data.private_count > 0) {
-            if (!confirm(`相册中有 ${data.private_count} 张私密照片。\n\n设为公开后，这些照片仍将保持私密状态，不会在共享空间显示。\n\n是否继续设为公开？`)) {
-                return;
-            }
+        const toggleEl = document.getElementById('quickVisibilityToggle');
+        if (!toggleEl) {
+            console.error('快速切换按钮未找到');
+            return;
         }
 
-        // 如果相册有密码，需要输入密码来验证操作
-        if (hasPassword) {
-            const password = prompt('请输入相册密码以验证操作：');
-            if (!password) {
-                return;
-            }
+        const isCurrentlyPublic = toggleEl.classList.contains('public');
+        const albumId = {{ album.id }};
+        const hasPassword = {{ 'true' if album.access_password else 'false' }};
 
-            // 验证密码
-            const verifyResponse = await fetch(`/gallery/album/${albumId}/verify-password`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ password: password })
-            });
-
-            if (!verifyResponse.ok) {
-                alert('密码验证失败，请重试');
-                return;
-            }
-
-            const verifyData = await verifyResponse.json();
-            if (!verifyData.success) {
-                alert('密码错误，无法切换到公开状态');
-                return;
-            }
+        // 如果要设为私密，直接切换
+        if (isCurrentlyPublic) {
+            await toggleAlbumVisibility(albumId, false);
+            return;
         }
 
-        await toggleAlbumVisibility(albumId, true);
+        // 如果要设为公开，检查是否有私密照片
+        try {
+            const response = await fetch(`/gallery/album/${albumId}/check-private-photos`);
+            const data = await response.json();
+
+            if (data.private_count > 0) {
+                if (!confirm(`相册中有 ${data.private_count} 张私密照片。\n\n设为公开后，这些照片仍将保持私密状态，不会在共享空间显示。\n\n是否继续设为公开？`)) {
+                    return;
+                }
+            }
+
+            // 如果相册有密码，需要输入密码来验证操作
+            if (hasPassword) {
+                const password = prompt('请输入相册密码以验证操作：');
+                if (!password) {
+                    return;
+                }
+
+                // 验证密码
+                const verifyResponse = await fetch(`/gallery/album/${albumId}/verify-password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ password: password })
+                });
+
+                if (!verifyResponse.ok) {
+                    alert('密码验证失败，请重试');
+                    return;
+                }
+
+                const verifyData = await verifyResponse.json();
+                if (!verifyData.success) {
+                    alert('密码错误，无法切换到公开状态');
+                    return;
+                }
+            }
+
+            await toggleAlbumVisibility(albumId, true);
+        } catch (error) {
+            console.error('操作失败:', error);
+            alert('切换失败，请重试');
+        }
     } catch (error) {
-        console.error('切换失败:', error);
-        alert('切换失败，请重试');
+        console.error('快速切换失败:', error);
+        alert('操作失败，请刷新页面重试');
     }
 }
 

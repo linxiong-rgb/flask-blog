@@ -86,6 +86,22 @@
                                 <span class="badge bg-secondary">{{ album.photo_count }} 张</span>
                                 {% if album.is_private %}
                                     <span class="badge bg-warning"><i class="bi bi-lock-fill"></i></span>
+                                {% elif album.is_public %}
+                                    <span class="badge bg-success"><i class="bi bi-globe"></i></span>
+                                {% endif %}
+                                <!-- 快速切换按钮 -->
+                                {% if album.user_id == current_user.id or is_superuser %}
+                                <button class="btn btn-sm quick-visibility-btn me-1"
+                                        onclick="quickToggleAlbumVisibility({{ album.id }}, {{ 'true' if album.is_public else 'false' }})"
+                                        title="{% if album.is_public %}点击设为私密{% else %}点击设为公开{% endif %}"
+                                        data-album-id="{{ album.id }}"
+                                        data-is-public="{{ 'true' if album.is_public else 'false' }}">
+                                    {% if album.is_public %}
+                                    <i class="bi bi-globe text-success"></i>
+                                    {% else %}
+                                    <i class="bi bi-lock-fill text-warning"></i>
+                                    {% endif %}
+                                </button>
                                 {% endif %}
                                 <a href="{{ url_for('gallery.edit_album', album_id=album.id) }}" class="btn btn-sm btn-link text-muted">
                                     <i class="bi bi-pencil"></i>
@@ -115,5 +131,70 @@
 .hover-bg:hover {
     background-color: #f8f9fa;
 }
+
+/* 快速切换按钮 */
+.quick-visibility-btn {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #dee2e6;
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.quick-visibility-btn:hover {
+    background: #e9ecef;
+    transform: scale(1.1);
+}
+
+.quick-visibility-btn:active {
+    transform: scale(0.95);
+}
 </style>
+
+<script>
+// 相册列表页快速切换可见性
+async function quickToggleAlbumVisibility(albumId, isCurrentlyPublic) {
+    try {
+        const makePublic = !isCurrentlyPublic;
+
+        // 如果要设为公开，先检查私密照片
+        if (makePublic) {
+            const checkResponse = await fetch(`/gallery/album/${albumId}/check-private-photos`);
+            const checkData = await checkResponse.json();
+
+            if (checkData.private_count > 0) {
+                if (!confirm(`相册中有 ${checkData.private_count} 张私密照片。\n\n设为公开后，这些照片仍将保持私密状态，不会在共享空间显示。\n\n是否继续设为公开？`)) {
+                    return;
+                }
+            }
+        }
+
+        // 执行切换
+        const response = await fetch(`/gallery/album/${albumId}/toggle-visibility`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ is_public: makePublic })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                // 刷新页面以更新UI
+                location.reload();
+            } else {
+                alert(data.message || '切换失败');
+            }
+        } else {
+            alert('切换失败，请重试');
+        }
+    } catch (error) {
+        console.error('切换失败:', error);
+        alert('切换失败，请重试');
+    }
+}
+</script>
+{% endblock %}
 {% endblock %}
