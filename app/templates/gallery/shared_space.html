@@ -4,15 +4,17 @@
 
 {% block head %}
 <style>
+/* 图片加载错误处理 */
 .image-placeholder {
     width: 100%;
     padding-top: 75%;
-    background: #f8f9fa;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     color: #6c757d;
     position: relative;
+    border-radius: 8px;
 }
 
 .image-placeholder i {
@@ -20,120 +22,89 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 2rem;
+    font-size: 2.5rem;
+    opacity: 0.5;
 }
-</style>
-<script>
-// 图片加载错误处理（备用URL切换）
-function handleImageError(img) {
-    const rawUrl = img.dataset.rawUrl;
-    if (rawUrl && img.src !== rawUrl && !img.dataset.usedRaw) {
-        // 尝试使用备用 URL
-        img.dataset.usedRaw = 'true';
-        img.src = rawUrl;
-    } else {
-        // 都失败了，显示占位图
-        img.outerHTML = '<div class="image-placeholder"><i class="bi bi-image"></i></div>';
-    }
+
+/* 页面头部样式 */
+.shared-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
 }
-</script>
-{% endblock %}
 
-{% block content %}
-<div class="container-fluid mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-globe"></i> 共享空间</h2>
-        <a href="{{ url_for('gallery.index') }}" class="btn btn-outline-primary">
-            <i class="bi bi-folder"></i> 我的相册
-        </a>
-    </div>
+.shared-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+}
 
-    <p class="text-muted">这里展示所有用户公开分享的照片</p>
+.shared-header-content {
+    position: relative;
+    z-index: 1;
+}
 
-    <!-- 瀀布流展示 -->
-    <div class="masonry-grid" id="masonryGrid">
-        {% for photo in photos.items %}
-        <div class="masonry-item">
-            <a href="{{ url_for('gallery.shared_photo_detail', photo_id=photo.id) }}" class="photo-card {% if photo.access_password %}has-password{% endif %}">
-                <img src="{{ photo.file_path }}"
-                     data-original-url="{{ photo.file_path }}"
-                     data-raw-url="{{ photo.backup_url }}"
-                     alt="{{ photo.title or photo.filename }}"
-                     loading="lazy" class="photo-img"
-                     onerror="handleImageError(this)"
-                     {% if photo.width and photo.height %}style="aspect-ratio: {{ photo.width }}/{{ photo.height }};{% endif %}
-                     {% if photo.access_password %}filter: blur(25px);{% endif %}>
-                {% if photo.access_password %}
-                <div class="password-overlay">
-                    <div class="password-content">
-                        <i class="bi bi-lock-fill fs-1"></i>
-                        <p>需要密码访问</p>
-                    </div>
-                </div>
-                {% endif %}
-                <div class="photo-info">
-                    {% if photo.description %}
-                    <h6 class="photo-description">{{ photo.description }}</h6>
-                    {% if photo.title %}
-                    <small class="text-muted photo-title">{{ photo.title }}</small>
-                    {% endif %}
-                    {% else %}
-                    <h6>{{ photo.title or photo.filename }}</h6>
-                    {% endif %}
-                    <p class="mb-0 text-muted">
-                        <i class="bi bi-person"></i> {{ photo.user.username }}
-                        <i class="bi bi-eye ms-2"></i> {{ photo.views }}
-                        {% if photo.access_password %}
-                        <span class="badge bg-warning"><i class="bi bi-lock-fill"></i> 需要密码</span>
-                        {% endif %}
-                    </p>
-                </div>
-            </a>
-        </div>
-        {% endfor %}
-    </div>
+.shared-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
 
-    {% if not photos.items %}
-    <div class="text-center py-5">
-        <i class="bi bi-images fs-1 text-muted"></i>
-        <p class="text-muted mt-3">还没有公开分享的照片</p>
-    </div>
-    {% endif %}
+.shared-subtitle {
+    font-size: 1rem;
+    opacity: 0.9;
+    margin: 0.5rem 0 0;
+}
 
-    <!-- 分页 -->
-    {% if photos.pages > 1 %}
-    <nav aria-label="分页" class="mt-4">
-        <ul class="pagination justify-content-center">
-            {% if photos.has_prev %}
-                <li class="page-item">
-                    <a class="page-link" href="{{ url_for('gallery.shared_space', page=photos.prev_num) }}">上一页</a>
-                </li>
-            {% endif %}
+.shared-stats {
+    display: flex;
+    gap: 2rem;
+    margin-top: 1rem;
+}
 
-            {% for page_num in photos.iter_pages() %}
-                {% if page_num %}
-                    <li class="page-item {% if page_num == photos.page %}active{% endif %}">
-                        <a class="page-link" href="{{ url_for('gallery.shared_space', page=page_num) }}">{{ page_num }}</a>
-                    </li>
-                {% else %}
-                    <li class="page-item disabled"><span class="page-link">...</span></li>
-                {% endif %}
-            {% endfor %}
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
 
-            {% if photos.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="{{ url_for('gallery.shared_space', page=photos.next_num) }}">下一页</a>
-                </li>
-            {% endif %}
-        </ul>
-    </nav>
-    {% endif %}
-</div>
+.shared-btn-primary {
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    padding: 0.5rem 1.25rem;
+    border-radius: 50px;
+    text-decoration: none;
+    transition: all 0.3s;
+}
 
-<style>
+.shared-btn-primary:hover {
+    background: rgba(255,255,255,0.3);
+    border-color: rgba(255,255,255,0.5);
+    color: white;
+}
+
+/* 网格布局 */
 .masonry-grid {
-    column-count: 4;
-    column-gap: 15px;
+    column-count: 5;
+    column-gap: 20px;
+}
+
+@media (max-width: 1400px) {
+    .masonry-grid {
+        column-count: 4;
+    }
 }
 
 @media (max-width: 1200px) {
@@ -156,15 +127,16 @@ function handleImageError(img) {
 
 .masonry-item {
     break-inside: avoid;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 
+/* 图片卡片 */
 .photo-card {
     background: white;
-    border-radius: 8px;
+    border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    transition: transform 0.3s, box-shadow 0.3s;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     position: relative;
     text-decoration: none;
@@ -172,23 +144,29 @@ function handleImageError(img) {
 }
 
 .photo-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    text-decoration: none;
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.15);
 }
 
 .photo-img {
     width: 100%;
     display: block;
-}
-
-.photo-card.has-password .photo-img {
-    filter: blur(25px);
+    min-height: 200px;
+    object-fit: cover;
     transition: filter 0.3s ease;
 }
 
+/* 加密图片样式 */
+.photo-card.has-password {
+    position: relative;
+}
+
+.photo-card.has-password .photo-img {
+    filter: blur(30px);
+}
+
 .photo-card.has-password:hover .photo-img {
-    filter: blur(20px);
+    filter: blur(25px);
 }
 
 .password-overlay {
@@ -198,57 +176,128 @@ function handleImageError(img) {
     right: 0;
     bottom: 0;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.4);
+    background: linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.4) 100%);
     color: white;
     pointer-events: none;
     z-index: 1;
+    backdrop-filter: blur(5px);
 }
 
 .password-content {
     text-align: center;
+    padding: 1rem;
 }
 
 .password-content i {
     display: block;
-    margin-bottom: 10px;
+    margin-bottom: 0.5rem;
+    font-size: 2rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
 
 .password-content p {
     margin: 0;
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
 
+/* 图片信息 */
 .photo-info {
-    padding: 10px;
-    position: relative;
-    z-index: 2;
+    padding: 16px;
+    background: white;
 }
 
 .photo-info h6 {
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #212529;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .photo-info .photo-description {
-    color: #212529;
-    font-weight: 500;
+    color: #495057;
+    font-weight: 400;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    line-height: 1.4;
-    max-height: 2.8em;
+    line-height: 1.5;
+    max-height: 3em;
+    margin-bottom: 8px;
 }
 
 .photo-info .photo-title {
     display: block;
-    margin-top: 2px;
-    font-size: 0.85em;
-    opacity: 0.8;
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.photo-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.85rem;
+    color: #6c757d;
+    flex-wrap: wrap;
+}
+
+.photo-meta i {
+    font-size: 1rem;
+}
+
+.badge {
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* 空状态 */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    color: #dee2e6;
+    margin-bottom: 1rem;
+}
+
+.empty-state h5 {
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    color: #6c757d;
+}
+
+/* 分页样式 */
+.pagination .page-link {
+    border-radius: 8px;
+    margin: 0 2px;
+    padding: 0.5rem 1rem;
+    border: 1px solid #dee2e6;
+    color: #495057;
+    transition: all 0.3s;
+}
+
+.pagination .page-link:hover {
+    background-color: #667eea;
+    border-color: #667eea;
+    color: white;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #667eea;
+    border-color: #667eea;
+    color: white;
 }
 
 /* 移除链接下划线 */
@@ -256,8 +305,174 @@ a {
     text-decoration: none;
 }
 
-a:hover {
-    text-decoration: none;
+/* 动画 */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.masonry-item {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.masonry-item:nth-child(1) { animation-delay: 0s; }
+.masonry-item:nth-child(2) { animation-delay: 0.05s; }
+.masonry-item:nth-child(3) { animation-delay: 0.1s; }
+.masonry-item:nth-child(4) { animation-delay: 0.15s; }
+.masonry-item:nth-child(5) { animation-delay: 0.2s; }
+.masonry-item:nth-child(6) { animation-delay: 0.25s; }
+.masonry-item:nth-child(7) { animation-delay: 0.3s; }
+.masonry-item:nth-child(8) { animation-delay: 0.35s; }
+.masonry-item:nth-child(9) { animation-delay: 0.4s; }
+.masonry-item:nth-child(10) { animation-delay: 0.45s; }
+
+@media (prefers-reduced-motion: reduce) {
+    .masonry-item {
+        animation: none;
+    }
 }
 </style>
+<script>
+// 图片加载错误处理（备用URL切换）
+function handleImageError(img) {
+    const rawUrl = img.dataset.rawUrl;
+    if (rawUrl && img.src !== rawUrl && !img.dataset.usedRaw) {
+        img.dataset.usedRaw = 'true';
+        img.src = rawUrl;
+    } else {
+        img.outerHTML = '<div class="image-placeholder"><i class="bi bi-image"></i></div>';
+    }
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- 页面头部 -->
+<div class="shared-header">
+    <div class="container">
+        <div class="shared-header-content">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="shared-title">
+                        <i class="bi bi-globe-americas"></i> 共享空间
+                    </h1>
+                    <p class="shared-subtitle">发现社区精彩瞬间，探索无限可能</p>
+                </div>
+                <a href="{{ url_for('gallery.index') }}" class="shared-btn-primary">
+                    <i class="bi bi-folder"></i> 我的相册
+                </a>
+            </div>
+            {% if photos.total %}
+            <div class="shared-stats">
+                <div class="stat-item">
+                    <i class="bi bi-images"></i>
+                    <span>{{ photos.total }} 张照片</span>
+                </div>
+                <div class="stat-item">
+                    <i class="bi bi-people"></i>
+                    <span>来自社区</span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- 内容区域 -->
+<div class="container pb-5">
+    <!-- 瀀布流展示 -->
+    <div class="masonry-grid" id="masonryGrid">
+        {% for photo in photos.items %}
+        <div class="masonry-item">
+            <a href="{{ url_for('gallery.shared_photo_detail', photo_id=photo.id) }}" class="photo-card {% if photo.access_password %}has-password{% endif %}">
+                <img src="{{ photo.file_path }}"
+                     data-original-url="{{ photo.file_path }}"
+                     data-raw-url="{{ photo.backup_url }}"
+                     alt="{{ photo.title or photo.filename }}"
+                     loading="lazy" class="photo-img"
+                     onerror="handleImageError(this)"
+                     {% if photo.width and photo.height %}style="aspect-ratio: {{ photo.width }}/{{ photo.height }};min-height: {{ (300 * photo.height // photo.width) if photo.width and photo.height else '' }}px;{% endif %}>
+
+                {% if photo.access_password %}
+                <div class="password-overlay">
+                    <div class="password-content">
+                        <i class="bi bi-lock-fill"></i>
+                        <p>需要密码访问</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="photo-info">
+                    {% if photo.description %}
+                    <h6 class="photo-description">{{ photo.description }}</h6>
+                    {% if photo.title %}
+                    <small class="photo-title">{{ photo.title }}</small>
+                    {% endif %}
+                    {% else %}
+                    <h6>{{ photo.title or photo.filename }}</h6>
+                    {% endif %}
+                    <div class="photo-meta">
+                        <span><i class="bi bi-person-circle"></i> {{ photo.user.username }}</span>
+                        <span><i class="bi bi-eye"></i> {{ photo.views }}</span>
+                        {% if photo.access_password %}
+                        <span class="badge bg-warning"><i class="bi bi-lock-fill"></i> 加密</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- 空状态 -->
+    {% if not photos.items %}
+    <div class="empty-state">
+        <i class="bi bi-images"></i>
+        <h5>暂无公开照片</h5>
+        <p>社区还没有用户分享照片，快来成为第一个吧！</p>
+        <a href="{{ url_for('gallery.index') }}" class="btn btn-primary mt-3">
+            <i class="bi bi-upload"></i> 分享我的照片
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- 分页 -->
+    {% if photos.pages > 1 %}
+    <nav aria-label="分页" class="mt-5">
+        <ul class="pagination justify-content-center">
+            {% if photos.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('gallery.shared_space', page=photos.prev_num) }}">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+            {% endif %}
+
+            {% for page_num in photos.iter_pages() %}
+                {% if page_num %}
+                    <li class="page-item {% if page_num == photos.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('gallery.shared_space', page=page_num) }}">{{ page_num }}</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if photos.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('gallery.shared_space', page=photos.next_num) }}">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
 {% endblock %}
