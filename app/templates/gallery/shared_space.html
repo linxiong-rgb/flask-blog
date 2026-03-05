@@ -24,18 +24,15 @@
 }
 </style>
 <script>
-// 多CDN图片加载错误处理（必须在图片加载前定义）
-function handleImageErrorMultiCdn(img) {
-    const urls = img.dataset.cdnUrls ? img.dataset.cdnUrls.split(',') : [];
-    let currentIndex = parseInt(img.dataset.currentIndex) || 0;
-
-    // 尝试下一个 CDN URL
-    if (currentIndex < urls.length - 1) {
-        currentIndex++;
-        img.dataset.currentIndex = currentIndex;
-        img.src = urls[currentIndex];
+// 图片加载错误处理（备用URL切换）
+function handleImageError(img) {
+    const rawUrl = img.dataset.rawUrl;
+    if (rawUrl && img.src !== rawUrl && !img.dataset.usedRaw) {
+        // 尝试使用备用 URL
+        img.dataset.usedRaw = 'true';
+        img.src = rawUrl;
     } else {
-        // 所有 CDN 都失败了，显示占位图
+        // 都失败了，显示占位图
         img.outerHTML = '<div class="image-placeholder"><i class="bi bi-image"></i></div>';
     }
 }
@@ -58,24 +55,14 @@ function handleImageErrorMultiCdn(img) {
         {% for photo in photos.items %}
         <div class="masonry-item">
             <a href="{{ url_for('gallery.shared_photo_detail', photo_id=photo.id) }}" class="photo-card {% if photo.access_password %}has-password{% endif %}">
-                {% if photo.access_password %}
-                <!-- 加密图片使用缩略图，防止查看源代码获取原图 -->
                 <img src="{{ photo.file_path }}"
-                     data-cdn-urls="{{ photo.cdn_urls|join(',') }}"
-                     data-current-index="0"
+                     data-original-url="{{ photo.file_path }}"
+                     data-raw-url="{{ photo.backup_url }}"
                      alt="{{ photo.title or photo.filename }}"
-                     loading="lazy" class="photo-img lazy-image"
-                     onerror="handleImageErrorMultiCdn(this)"
-                     style="{% if photo.width and photo.height %}aspect-ratio: {{ photo.width }}/{{ photo.height }};{% endif %} filter: blur(20px) !important;">
-                {% else %}
-                <img src="{{ photo.file_path }}"
-                     data-cdn-urls="{{ photo.cdn_urls|join(',') }}"
-                     data-current-index="0"
-                     alt="{{ photo.title or photo.filename }}"
-                     loading="lazy" class="photo-img lazy-image"
-                     onerror="handleImageErrorMultiCdn(this)"
-                     {% if photo.width and photo.height %}style="aspect-ratio: {{ photo.width }}/{{ photo.height }};"{% endif %}>
-                {% endif %}
+                     loading="lazy" class="photo-img"
+                     onerror="handleImageError(this)"
+                     {% if photo.width and photo.height %}style="aspect-ratio: {{ photo.width }}/{{ photo.height }};{% endif %}
+                     {% if photo.access_password %}filter: blur(25px);{% endif %}>
                 {% if photo.access_password %}
                 <div class="password-overlay">
                     <div class="password-content">

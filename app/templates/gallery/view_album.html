@@ -24,18 +24,15 @@
 }
 </style>
 <script>
-// 多CDN图片加载错误处理（必须在图片加载前定义）
+// 图片加载错误处理（备用URL切换）
 function handleImageErrorMultiCdn(img) {
-    const urls = img.dataset.cdnUrls ? img.dataset.cdnUrls.split(',') : [];
-    let currentIndex = parseInt(img.dataset.currentIndex) || 0;
-
-    // 尝试下一个 CDN URL
-    if (currentIndex < urls.length - 1) {
-        currentIndex++;
-        img.dataset.currentIndex = currentIndex;
-        img.src = urls[currentIndex];
+    const rawUrl = img.dataset.rawUrl;
+    if (rawUrl && img.src !== rawUrl && !img.dataset.usedRaw) {
+        // 尝试使用备用 URL
+        img.dataset.usedRaw = 'true';
+        img.src = rawUrl;
     } else {
-        // 所有 CDN 都失败了，显示占位图
+        // 都失败了，显示占位图
         img.outerHTML = '<div class="image-placeholder"><i class="bi bi-image"></i></div>';
     }
 }
@@ -166,8 +163,7 @@ function handleImageErrorMultiCdn(img) {
                 </div>
                 <div class="photo-card" onclick="openLightbox({{ loop.index0 }})">
                     <img src="{{ photo.file_path }}"
-                         data-cdn-urls="{{ photo.cdn_urls|join(',') }}"
-                         data-current-index="0"
+                         data-raw-url="{{ photo.backup_url }}"
                          alt="{{ photo.title or photo.filename }}"
                          loading="lazy" class="photo-img"
                          onerror="handleImageErrorMultiCdn(this)">
