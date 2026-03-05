@@ -49,6 +49,49 @@
                             </div>
                         </div>
 
+                        <hr>
+
+                        <h5 class="mb-3"><i class="bi bi-globe-americas"></i> 相册分享设置</h5>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="is_public" name="is_public"
+                                       {% if album.is_public %}checked{% endif %}>
+                                <label class="form-check-label" for="is_public">
+                                    <i class="bi bi-globe"></i> 在共享空间显示
+                                </label>
+                                <div class="form-text">开启后，相册会出现在"共享空间"，其他用户可以查看</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="access_password" class="form-label">
+                                <i class="bi bi-key"></i> 访问密码（可选）
+                            </label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="access_password" name="access_password"
+                                       placeholder="留空则无需密码" value="{{ album.access_password or '' }}">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility()">
+                                    <i class="bi bi-eye" id="passwordToggleIcon"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">
+                                设置访问密码后，其他用户在共享空间查看此相册需要输入密码
+                                {% if album.access_password %}
+                                <span class="badge bg-warning ms-1"><i class="bi bi-lock-fill"></i> 当前已设置密码</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="remove_password" name="remove_password">
+                                <label class="form-check-label" for="remove_password">
+                                    <i class="bi bi-unlock"></i> 移除访问密码
+                                </label>
+                            </div>
+                        </div>
+
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-check-lg"></i> 保存
@@ -63,4 +106,32 @@
         </div>
     </div>
 </div>
+
+<script>
+function togglePasswordVisibility() {
+    const input = document.getElementById('access_password');
+    const icon = document.getElementById('passwordToggleIcon');
+
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+}
+
+// 当选择移除密码时，清空密码输入框
+document.getElementById('remove_password').addEventListener('change', function() {
+    const passwordInput = document.getElementById('access_password');
+    if (this.checked) {
+        passwordInput.value = '';
+        passwordInput.disabled = true;
+    } else {
+        passwordInput.disabled = false;
+    }
+});
+</script>
 {% endblock %}

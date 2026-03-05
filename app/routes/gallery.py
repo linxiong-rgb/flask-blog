@@ -256,6 +256,19 @@ def edit_album(album_id):
         album.description = request.form.get('description')
         album.is_private = request.form.get('is_private') == 'on'
 
+        # 更新分享设置
+        album.is_public = request.form.get('is_public') == 'on'
+
+        # 处理访问密码
+        remove_password = request.form.get('remove_password') == 'on'
+        access_password = request.form.get('access_password', '').strip()
+
+        if remove_password:
+            album.access_password = None
+        elif access_password:
+            album.access_password = access_password
+        # 如果两者都没设置，保持原密码不变
+
         db.session.commit()
         flash('相册更新成功')
         return redirect(url_for('gallery.view_album', album_id=album_id))

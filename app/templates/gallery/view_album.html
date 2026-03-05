@@ -73,6 +73,12 @@ function handleImageErrorMultiCdn(img) {
                 {% if album.is_private %}
                     <span class="badge bg-warning"><i class="bi bi-lock-fill"></i> 私密</span>
                 {% endif %}
+                {% if album.is_public %}
+                    <span class="badge bg-success"><i class="bi bi-globe"></i> 已分享</span>
+                    {% if album.access_password %}
+                    <span class="badge bg-info"><i class="bi bi-key"></i> 密码保护</span>
+                    {% endif %}
+                {% endif %}
             </p>
         </div>
         <div class="col-md-4 text-end">
@@ -93,6 +99,12 @@ function handleImageErrorMultiCdn(img) {
                     <li><a class="dropdown-item" href="{{ url_for('gallery.edit_album', album_id=album.id) }}">
                         <i class="bi bi-pencil"></i> 编辑相册
                     </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    {% if album.is_public %}
+                    <li><a class="dropdown-item" href="{{ url_for('gallery.shared_album_detail', album_id=album.id) }}" target="_blank">
+                        <i class="bi bi-box-arrow-up-right"></i> 预览分享页面
+                    </a></li>
+                    {% endif %}
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item text-danger" href="#" onclick="deleteAlbum({{ album.id }})">
                         <i class="bi bi-trash"></i> 删除相册
