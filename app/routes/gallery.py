@@ -22,7 +22,7 @@ import mimetypes
 
 from app.models.album import Album, Photo, PhotoTag, PhotoShare
 from app.models.user import User
-from app import db
+from app import db, csrf
 from app.utils.storage import get_storage
 
 # 尝试导入PIL，如果失败则设置标志
@@ -332,6 +332,7 @@ def edit_album(album_id):
 
 @bp.route('/album/<int:album_id>/delete', methods=['POST'])
 @login_required
+@csrf.exempt
 def delete_album(album_id):
     """
     删除相册
@@ -531,6 +532,7 @@ def delete_photo_file(photo):
 
 @bp.route('/photo/<int:photo_id>/delete', methods=['POST'])
 @login_required
+@csrf.exempt
 def delete_photo(photo_id):
     """
     删除图片
@@ -597,6 +599,7 @@ def move_photo(photo_id):
 
 @bp.route('/photo/<int:photo_id>/toggle-public', methods=['POST'])
 @login_required
+@csrf.exempt
 def toggle_photo_public(photo_id):
     """
     切换图片公开/私密状态
@@ -625,6 +628,7 @@ def toggle_photo_public(photo_id):
 
 @bp.route('/photo/<int:photo_id>/public', methods=['POST'])
 @login_required
+@csrf.exempt
 def set_photo_public(photo_id):
     """
     设置图片公开状态
@@ -662,6 +666,7 @@ def set_photo_public(photo_id):
 
 @bp.route('/photo/<int:photo_id>/edit-info', methods=['POST'])
 @login_required
+@csrf.exempt
 def edit_photo_info(photo_id):
     """
     编辑图片标题、描述和访问密码
@@ -703,6 +708,7 @@ def edit_photo_info(photo_id):
 
 @bp.route('/photo/<int:photo_id>/share', methods=['POST'])
 @login_required
+@csrf.exempt
 def create_share(photo_id):
     """
     创建图片分享链接
@@ -855,6 +861,7 @@ def check_private_photos(album_id):
 
 @bp.route('/album/<int:album_id>/verify-password', methods=['POST'])
 @login_required
+@csrf.exempt
 def verify_album_password(album_id):
     """验证相册密码"""
     album = Album.query.get_or_404(album_id)
@@ -877,6 +884,7 @@ def verify_album_password(album_id):
 
 @bp.route('/album/<int:album_id>/toggle-visibility', methods=['POST'])
 @login_required
+@csrf.exempt
 def toggle_album_visibility(album_id):
     """快速切换相册可见性"""
     album = Album.query.get_or_404(album_id)
@@ -886,8 +894,20 @@ def toggle_album_visibility(album_id):
     if album.user_id != current_user.id and not is_superuser:
         return jsonify({'success': False, 'message': '没有权限'}), 403
 
-    data = request.get_json()
+    # 获取JSON数据，添加错误处理
+    try:
+        data = request.get_json(force=True)
+        if data is None:
+            return jsonify({'success': False, 'message': '无效的请求数据'}), 400
+    except Exception as e:
+        current_app.logger.error(f'JSON解析错误: {str(e)}')
+        return jsonify({'success': False, 'message': '请求数据格式错误'}), 400
+
     make_public = data.get('is_public', False)
+
+    # 确保类型正确
+    if isinstance(make_public, str):
+        make_public = make_public.lower() in ('true', '1', 'yes')
 
     if make_public:
         # 设为公开，检查是否有私密照片
@@ -1068,6 +1088,7 @@ def shared_photo(token):
 
 @bp.route('/batch/move', methods=['POST'])
 @login_required
+@csrf.exempt
 def batch_move():
     """
     批量移动图片
@@ -1097,6 +1118,7 @@ def batch_move():
 
 @bp.route('/batch/delete', methods=['POST'])
 @login_required
+@csrf.exempt
 def batch_delete():
     """
     批量删除图片
@@ -1145,6 +1167,7 @@ def batch_delete():
 
 @bp.route('/batch/share', methods=['POST'])
 @login_required
+@csrf.exempt
 def batch_share():
     """
     批量设置图片为公开/私密
