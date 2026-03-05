@@ -58,11 +58,11 @@
     color: white;
 }
 
-/* 网格布局 - 三列 */
+/* 网格布局 - 三列 (使用 !important 确保优先级) */
 .shared-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 24px !important;
     padding: 0 1rem;
 }
 
@@ -92,6 +92,7 @@
     text-decoration: none;
     display: flex;
     flex-direction: column;
+    animation: fadeInUp 0.4s ease-out;
 }
 
 .photo-card:hover {
@@ -264,7 +265,7 @@
 
 /* 移除所有链接下划线 */
 a {
-    text-decoration: none !important;
+    text-decoration: none;
 }
 
 /* 动画 */
@@ -279,10 +280,7 @@ a {
     }
 }
 
-.photo-card {
-    animation: fadeInUp 0.4s ease-out;
-}
-
+/* 动画延迟 - 依次显示 */
 .photo-card:nth-child(1) { animation-delay: 0s; }
 .photo-card:nth-child(2) { animation-delay: 0.05s; }
 .photo-card:nth-child(3) { animation-delay: 0.1s; }
