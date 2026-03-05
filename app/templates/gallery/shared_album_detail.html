@@ -142,13 +142,15 @@
     transform: scale(1.05);
 }
 
-/* 加密图片模糊 */
+/* 加密图片模糊 - 使用高斯模糊 + 轻微透明度 */
 .photo-card.has-password .photo-img {
-    filter: blur(25px) brightness(0.6);
+    filter: blur(20px);
+    opacity: 0.7;
 }
 
 .photo-card.has-password:hover .photo-img {
-    filter: blur(20px) brightness(0.65);
+    filter: blur(15px);
+    opacity: 0.75;
 }
 
 /* 密码覆盖层 */
@@ -178,15 +180,14 @@
     font-weight: 500;
 }
 
-/* 悬停信息 */
+/* 悬停信息 - 左下角显示用户信息 */
 .photo-overlay {
     position: absolute;
     bottom: 0;
     left: 0;
-    right: 0;
-    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 50%, transparent 100%);
     color: white;
-    padding: 10px;
+    padding: 12px 15px;
     opacity: 0;
     transition: opacity 0.3s;
 }
@@ -195,18 +196,43 @@
     opacity: 1;
 }
 
-.photo-info h6 {
-    margin: 0 0 4px 0;
-    font-size: 0.85rem;
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
     font-weight: 500;
+}
+
+.user-info i {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* 图片名称标签 - 左上角 */
+.photo-title-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(0, 0, 0, 0.75);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    backdrop-filter: blur(4px);
+    max-width: calc(100% - 40px);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    pointer-events: none;
 }
 
-.photo-info p {
-    margin: 0;
-    font-size: 0.7rem;
+.photo-title-badge i {
+    font-size: 0.65rem;
     opacity: 0.9;
 }
 
@@ -504,6 +530,12 @@ function handleImageError(img) {
                      onerror="handleImageError(this)">
                 {% endif %}
 
+                <!-- 左上角图片名称 -->
+                <div class="photo-title-badge">
+                    <i class="bi bi-card-text"></i>
+                    <span>{{ photo.title or photo.filename }}</span>
+                </div>
+
                 {% if photo.access_password %}
                 <div class="password-overlay">
                     <i class="bi bi-lock-fill"></i>
@@ -517,10 +549,10 @@ function handleImageError(img) {
 
                 <div class="photo-overlay">
                     <div class="photo-info">
-                        {% if photo.title %}
-                        <h6>{{ photo.title }}</h6>
-                        {% endif %}
-                        <p><i class="bi bi-eye"></i> {{ photo.views }}</p>
+                        <div class="user-info">
+                            <i class="bi bi-person-circle"></i>
+                            <span>{{ photo.user.username }}</span>
+                        </div>
                     </div>
                 </div>
             </div>
