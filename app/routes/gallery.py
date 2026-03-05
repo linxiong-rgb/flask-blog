@@ -690,65 +690,8 @@ def create_share(photo_id):
     })
 
 
-@bp.route('/shared/<token>')
-def shared_photo(token):
-    """
-    访问分享的图片
-    """
-    share = PhotoShare.query.filter_by(share_token=token).first_or_404()
-
-    # 检查分享是否有效
-    if not share.is_valid:
-        flash('此分享链接已失效或已过期', 'warning')
-        return redirect(url_for('main.index'))
-
-    # 检查访问密码
-    if share.access_password:
-        session_key = f'share_password_{share.id}'
-        if session.get(session_key) != share.access_password:
-            if request.method == 'POST':
-                password = request.form.get('password')
-                if password == share.access_password:
-                    session[session_key] = password
-                else:
-                    flash('密码错误', 'danger')
-                    return render_template('gallery/share_password.html', share=share)
-
-            return render_template('gallery/share_password.html', share=share)
-
-    # 增加访问计数
-    share.access_count += 1
-    db.session.commit()
-
-    # 增加图片浏览次数
-    share.photo.views += 1
-    db.session.commit()
-
-    return render_template('gallery/shared_photo.html',
-                          share=share,
-                          photo=share.photo)
-
-
 # ==================== 共享空间 ====================
-
-@bp.route('/shared')
-@login_required
-def shared():
-    """
-    共享空间 - 显示所有用户公开分享的图片
-    """
-    page = request.args.get('page', 1, type=int)
-    per_page = current_app.config.get('PHOTOS_PER_PAGE', 20)
-
-    # 获取所有公开图片，按创建时间倒序
-    photos = Photo.query.options(
-        joinedload(Photo.user)
-    ).filter_by(is_public=True).order_by(
-        Photo.created_at.desc()
-    ).paginate(page=page, per_page=per_page, error_out=False)
-
-    return render_template('gallery/shared_space.html', photos=photos)
-
+# 注意：更具体的路由必须在通用路由之前
 
 @bp.route('/shared/<int:photo_id>', methods=['GET', 'POST'])
 @login_required
@@ -782,6 +725,64 @@ def shared_detail(photo_id):
     db.session.commit()
 
     return render_template('gallery/shared_detail.html', photo=photo)
+
+
+@bp.route('/shared')
+@login_required
+def shared():
+    """
+    共享空间 - 显示所有用户公开分享的图片
+    """
+    page = request.args.get('page', 1, type=int)
+    per_page = current_app.config.get('PHOTOS_PER_PAGE', 20)
+
+    # 获取所有公开图片，按创建时间倒序
+    photos = Photo.query.options(
+        joinedload(Photo.user)
+    ).filter_by(is_public=True).order_by(
+        Photo.created_at.desc()
+    ).paginate(page=page, per_page=per_page, error_out=False)
+
+    return render_template('gallery/shared_space.html', photos=photos)
+
+
+@bp.route('/shared/<token>')
+def shared_photo(token):
+    """
+    访问分享的图片（通过token）
+    """
+    share = PhotoShare.query.filter_by(share_token=token).first_or_404()
+
+    # 检查分享是否有效
+    if not share.is_valid:
+        flash('此分享链接已失效或已过期', 'warning')
+        return redirect(url_for('main.index'))
+
+    # 检查访问密码
+    if share.access_password:
+        session_key = f'share_password_{share.id}'
+        if session.get(session_key) != share.access_password:
+            if request.method == 'POST':
+                password = request.form.get('password')
+                if password == share.access_password:
+                    session[session_key] = password
+                else:
+                    flash('密码错误', 'danger')
+                    return render_template('gallery/share_password.html', share=share)
+
+            return render_template('gallery/share_password.html', share=share)
+
+    # 增加访问计数
+    share.access_count += 1
+    db.session.commit()
+
+    # 增加图片浏览次数
+    share.photo.views += 1
+    db.session.commit()
+
+    return render_template('gallery/shared_photo.html',
+                          share=share,
+                          photo=share.photo)
 
 
 # ==================== 批量操作 ====================
