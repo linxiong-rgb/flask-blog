@@ -51,11 +51,12 @@ def allowed_file(filename):
 
 
 def generate_unique_filename(filename):
-    """生成唯一的文件名"""
+    """生成唯一的文件名，使用UUID确保唯一性"""
+    import uuid
     name, ext = os.path.splitext(filename)
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    random_str = secrets.token_hex(4)
-    return f"{timestamp}_{random_str}{ext}"
+    # 使用UUID的前8位作为唯一标识，加上用户ID和时间戳
+    unique_id = uuid.uuid4().hex[:12]
+    return f"{unique_id}{ext}"
 
 
 def generate_share_token():
@@ -411,18 +412,44 @@ def upload_photos(album_id):
 
 
 def delete_photo_file(photo):
-    """删除图片文件"""
+    """删除图片文件（非阻塞，失败不影响数据库操作）"""
+    import re
     try:
         storage = get_storage()
-        # 从URL中提取文件名并删除
+
+        # 删除原图
         if photo.file_path:
-            filename = photo.file_path.split('/')[-1]
-            storage.delete_file(f'gallery/{photo.user_id}/{filename}')
+            # 从URL中提取文件名
+            # 处理各种URL格式：
+            # - GitHub: https://raw.githubusercontent.com/.../gallery/userid/filename.jpg
+            # - jsDelivr: https://cdn.jsdelivr.net/gh/.../gallery/userid/filename.jpg
+            # - Local: /static/uploads/gallery/userid/filename.jpg
+            if 'gallery/' in photo.file_path:
+                # 提取 gallery/ 后面的部分
+                match = re.search(r'gallery/[^/]+/(.+)$', photo.file_path)
+                if match:
+                    object_name = f'gallery/{match.group(0)}'
+                    try:
+                        storage.delete_file(object_name)
+                        current_app.logger.info(f'已删除文件: {object_name}')
+                    except Exception as e:
+                        current_app.logger.warning(f'删除文件失败 {object_name}: {str(e)}')
+
+        # 删除缩略图
         if photo.thumbnail_path and photo.thumbnail_path != photo.file_path:
-            thumb_filename = photo.thumbnail_path.split('/')[-1]
-            storage.delete_file(f'gallery/{photo.user_id}/thumbnails/{thumb_filename}')
+            if 'thumbnails/' in photo.thumbnail_path:
+                match = re.search(r'gallery/[^/]+/thumbnails/(.+)$', photo.thumbnail_path)
+                if match:
+                    object_name = f'gallery/{match.group(0)}'
+                    try:
+                        storage.delete_file(object_name)
+                        current_app.logger.info(f'已删除缩略图: {object_name}')
+                    except Exception as e:
+                        current_app.logger.warning(f'删除缩略图失败 {object_name}: {str(e)}')
+
     except Exception as e:
-        current_app.logger.error(f'删除图片文件失败: {str(e)}')
+        # 删除文件失败不应该影响数据库删除操作
+        current_app.logger.warning(f'删除图片文件时出错（已忽略）: {str(e)}')
 
 
 @bp.route('/photo/<int:photo_id>/delete', methods=['POST'])
@@ -512,6 +539,7 @@ def set_photo_public(photo_id):
     """
     设置图片公开状态
     超级管理员可以设置任何图片的状态
+    支持设置访问密码
     """
     photo = Photo.query.get_or_404(photo_id)
 
@@ -520,13 +548,25 @@ def set_photo_public(photo_id):
     if photo.user_id != current_user.id and not is_superuser:
         return jsonify({'success': False, 'message': '您没有权限修改此图片'}), 403
 
-    is_public = request.json.get('is_public', False)
+    data = request.json
+    is_public = data.get('is_public', False)
+    access_password = data.get('access_password')
+
     photo.is_public = is_public
+
+    # 设置或清除密码
+    if access_password:
+        photo.access_password = access_password
+    elif access_password == '' or access_password is None:
+        photo.access_password = None
+
     db.session.commit()
 
     return jsonify({
         'success': True,
-        'is_public': photo.is_public
+        'is_public': photo.is_public,
+        'has_password': bool(photo.access_password),
+        'message': f'图片已设为{"公开" if is_public else "私密"}'
     })
 
 
@@ -642,6 +682,41 @@ def shared_space():
     ).paginate(page=page, per_page=per_page, error_out=False)
 
     return render_template('gallery/shared_space.html', photos=photos)
+
+
+@bp.route('/shared/photo/<int:photo_id>')
+@login_required
+def shared_photo_detail(photo_id):
+    """
+    共享空间图片详情
+
+    检查访问密码并显示图片详情
+    """
+    photo = Photo.query.get_or_404(photo_id)
+
+    # 检查是否公开
+    if not photo.is_public:
+        flash('该图片未公开分享', 'warning')
+        return redirect(url_for('gallery.shared_space'))
+
+    # 检查访问密码
+    if photo.access_password:
+        session_key = f'photo_password_{photo_id}'
+        if session.get(session_key) != photo.access_password:
+            if request.method == 'POST':
+                password = request.form.get('password')
+                if password == photo.access_password:
+                    session[session_key] = password
+                else:
+                    flash('密码错误', 'danger')
+            else:
+                return render_template('gallery/photo_password.html', photo=photo)
+
+    # 增加浏览次数
+    photo.views += 1
+    db.session.commit()
+
+    return render_template('gallery/shared_photo_detail.html', photo=photo)
 
 
 # ==================== 批量操作 ====================

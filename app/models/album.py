@@ -136,6 +136,7 @@ class Photo(db.Model):
 
     # 状态
     is_public = db.Column(db.Boolean, default=False)  # 是否在共享空间显示
+    access_password = db.Column(db.String(100))  # 访问密码（可选）
     views = db.Column(db.Integer, default=0)
     likes = db.Column(db.Integer, default=0)
 

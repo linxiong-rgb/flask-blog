@@ -236,6 +236,37 @@
     </div>
 </div>
 
+<!-- 密码设置模态框 -->
+<div class="modal fade" id="passwordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-lock-fill"></i> 设置访问密码</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="accessPassword" class="form-label">访问密码</label>
+                    <input type="password" class="form-control" id="accessPassword" placeholder="留空则无需密码">
+                    <div class="form-text">设置后，在共享空间查看此图片需要输入密码</div>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="removePassword">
+                    <label class="form-check-label" for="removePassword">
+                        移除密码保护
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="savePassword()">
+                    <i class="bi bi-check-lg"></i> 保存
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // 照片数据
 const photos = [
@@ -361,44 +392,102 @@ function deletePhoto(photoId) {
 // 切换照片公开/私密状态
 function togglePhotoPublic(photoId, btn) {
     const icon = btn.querySelector('i');
-    const isCurrentlyPublic = icon.classList.contains('bi-globe');
+    const isCurrentlyPublic = icon.classList.contains('bi-lock-fill');
 
-    fetch(`/gallery/photo/${photoId}/toggle-public`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': '{{ csrf_token() }}'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // 更新按钮图标
-            if (data.is_public) {
-                icon.classList.remove('bi-globe');
-                icon.classList.add('bi-lock-fill');
-                btn.title = '设为私密';
-                showNotification('success', '✓ 已设为公开，将在共享空间展示');
-            } else {
+    // 如果设为公开，显示密码设置选项
+    if (!isCurrentlyPublic) {
+        currentPhotoId = photoId;
+        // 清空密码输入框
+        document.getElementById('accessPassword').value = '';
+        document.getElementById('removePassword').checked = false;
+        // 显示密码模态框
+        const modal = new bootstrap.Modal(document.getElementById('passwordModal'));
+        modal.show();
+    } else {
+        // 直接设为私密
+        fetch(`/gallery/photo/${photoId}/toggle-public`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
                 icon.classList.remove('bi-lock-fill');
                 icon.classList.add('bi-globe');
                 btn.title = '设为公开';
                 showNotification('info', '已设为私密');
-            }
 
-            // 更新照片卡片上的状态标签
-            const photoItem = document.querySelector(`[data-photo-id="${photoId}"]`);
-            if (photoItem) {
-                const badge = photoItem.querySelector('.badge');
-                if (badge) {
-                    if (data.is_public) {
-                        badge.className = 'badge bg-success ms-1';
-                        badge.innerHTML = '<i class="bi bi-globe"></i> 公开';
-                    } else {
+                // 更新照片卡片上的状态标签
+                const photoItem = document.querySelector(`[data-photo-id="${photoId}"]`);
+                if (photoItem) {
+                    const badge = photoItem.querySelector('.badge');
+                    if (badge) {
                         badge.className = 'badge bg-secondary ms-1';
                         badge.innerHTML = '<i class="bi bi-lock-fill"></i> 私密';
                     }
                 }
+            } else {
+                showNotification('danger', data.message);
             }
+        })
+        .catch(error => {
+            showNotification('danger', '操作失败: ' + error.message);
+        });
+    }
+}
+
+// 保存密码设置
+function savePassword() {
+    const photoId = currentPhotoId;
+    const password = document.getElementById('accessPassword').value;
+    const removePassword = document.getElementById('removePassword').checked;
+
+    // 设置为公开
+    fetch(`/gallery/photo/${photoId}/public`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            is_public: true,
+            access_password: removePassword ? '' : (password || null)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 关闭模态框
+            const modal = bootstrap.Modal.getInstance(document.getElementById('passwordModal'));
+            modal.hide();
+
+            // 更新按钮图标
+            const photoItem = document.querySelector(`[data-photo-id="${photoId}"]`);
+            if (photoItem) {
+                const btn = photoItem.querySelector('button[onclick*="togglePhotoPublic"]');
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.classList.remove('bi-globe');
+                    icon.classList.add('bi-lock-fill');
+                    btn.title = '设为私密';
+                }
+
+                // 更新状态标签
+                const badge = photoItem.querySelector('.badge');
+                if (badge) {
+                    badge.className = 'badge bg-success ms-1';
+                    let badgeText = '<i class="bi bi-globe"></i> 公开';
+                    if (data.has_password) {
+                        badgeText += ' <i class="bi bi-lock-fill"></i>';
+                    }
+                    badge.innerHTML = badgeText;
+                }
+            }
+
+            const msg = password ? '✓ 已设为公开（密码保护）' : '✓ 已设为公开';
+            showNotification('success', msg);
         } else {
             showNotification('danger', data.message);
         }

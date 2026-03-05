@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}{{ photo.title or photo.filename }} - 共享图片{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <!-- 面包屑 -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">首页</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('gallery.shared_space') }}">共享空间</a></li>
+                    <li class="breadcrumb-item active">图片详情</li>
+                </ol>
+            </nav>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-center">
+                        <img src="{{ photo.file_path }}" alt="{{ photo.title or photo.filename }}"
+                             class="img-fluid rounded" style="max-height: 70vh;">
+
+                        {% if photo.title %}
+                        <h3 class="mt-4">{{ photo.title }}</h3>
+                        {% endif %}
+
+                        {% if photo.description %}
+                        <p class="text-muted mt-2">{{ photo.description }}</p>
+                        {% endif %}
+
+                        <div class="mt-3 text-muted">
+                            <i class="bi bi-person"></i> {{ photo.user.username if photo.user else '未知用户' }}
+                            <i class="bi bi-calendar ms-3"></i> {{ photo.created_at.strftime('%Y年%m月%d日') }}
+                            <i class="bi bi-eye ms-3"></i> {{ photo.views }} 次浏览
+                            {% if photo.access_password %}
+                            <i class="bi bi-lock-fill ms-3" title="需要密码访问"></i>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="{{ url_for('gallery.shared_space') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-images"></i> 浏览更多
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.img-fluid {
+    max-width: 100%;
+    height: auto;
+}
+</style>
+{% endblock %}
