@@ -30,8 +30,8 @@
 .shared-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 2rem 0;
-    margin-bottom: 2rem;
+    padding: 1.5rem 0;
+    margin-bottom: 1.5rem;
     position: relative;
     overflow: hidden;
 }
@@ -53,40 +53,42 @@
 }
 
 .shared-title {
-    font-size: 2.5rem;
+    font-size: 1.75rem;
     font-weight: 700;
     margin: 0;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
 }
 
 .shared-subtitle {
-    font-size: 1rem;
+    font-size: 0.875rem;
     opacity: 0.9;
-    margin: 0.5rem 0 0;
+    margin: 0.25rem 0 0;
 }
 
 .shared-stats {
     display: flex;
-    gap: 2rem;
-    margin-top: 1rem;
+    gap: 1.5rem;
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
 }
 
 .stat-item {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.35rem;
 }
 
 .shared-btn-primary {
     background: rgba(255,255,255,0.2);
     border: 1px solid rgba(255,255,255,0.3);
     color: white;
-    padding: 0.5rem 1.25rem;
+    padding: 0.4rem 1rem;
     border-radius: 50px;
     text-decoration: none;
     transition: all 0.3s;
+    font-size: 0.875rem;
 }
 
 .shared-btn-primary:hover {
@@ -95,19 +97,25 @@
     color: white;
 }
 
-/* 网格布局 */
+/* 网格布局 - 更多列数，更小的卡片 */
 .masonry-grid {
-    column-count: 5;
-    column-gap: 20px;
+    column-count: 6;
+    column-gap: 12px;
 }
 
 @media (max-width: 1400px) {
+    .masonry-grid {
+        column-count: 5;
+    }
+}
+
+@media (max-width: 1200px) {
     .masonry-grid {
         column-count: 4;
     }
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 992px) {
     .masonry-grid {
         column-count: 3;
     }
@@ -127,16 +135,16 @@
 
 .masonry-item {
     break-inside: avoid;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
 }
 
-/* 图片卡片 */
+/* 图片卡片 - 更紧凑的设计 */
 .photo-card {
     background: white;
-    border-radius: 16px;
+    border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    transition: all 0.3s ease;
     cursor: pointer;
     position: relative;
     text-decoration: none;
@@ -144,29 +152,26 @@
 }
 
 .photo-card:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
 }
 
 .photo-img {
     width: 100%;
     display: block;
-    min-height: 200px;
+    max-height: 180px;
     object-fit: cover;
     transition: filter 0.3s ease;
 }
 
-/* 加密图片样式 */
-.photo-card.has-password {
-    position: relative;
-}
-
+/* 加密图片样式 - 加强模糊 */
 .photo-card.has-password .photo-img {
-    filter: blur(30px);
+    filter: blur(50px) brightness(0.7);
+    transform: scale(1.05);
 }
 
 .photo-card.has-password:hover .photo-img {
-    filter: blur(25px);
+    filter: blur(50px) brightness(0.7);
 }
 
 .password-overlay {
@@ -179,81 +184,83 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.4) 100%);
+    background: rgba(0,0,0,0.75);
     color: white;
     pointer-events: none;
-    z-index: 1;
-    backdrop-filter: blur(5px);
+    z-index: 10;
 }
 
 .password-content {
     text-align: center;
-    padding: 1rem;
+    padding: 0.75rem;
 }
 
 .password-content i {
     display: block;
-    margin-bottom: 0.5rem;
-    font-size: 2rem;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    margin-bottom: 0.25rem;
+    font-size: 1.5rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
 }
 
 .password-content p {
     margin: 0;
     font-weight: 600;
-    font-size: 0.95rem;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    font-size: 0.8rem;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
 
-/* 图片信息 */
+/* 图片信息 - 更紧凑 */
 .photo-info {
-    padding: 16px;
+    padding: 10px;
     background: white;
 }
 
 .photo-info h6 {
-    margin-bottom: 8px;
+    margin: 0 0 6px 0;
     font-weight: 600;
     color: #212529;
+    font-size: 0.875rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    line-height: 1.3;
 }
 
 .photo-info .photo-description {
     color: #495057;
     font-weight: 400;
+    font-size: 0.8rem;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    line-height: 1.5;
-    max-height: 3em;
-    margin-bottom: 8px;
+    line-height: 1.4;
+    max-height: 2.2em;
+    margin-bottom: 6px;
 }
 
 .photo-info .photo-title {
     display: block;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     color: #6c757d;
 }
 
 .photo-meta {
     display: flex;
     align-items: center;
-    gap: 12px;
-    font-size: 0.85rem;
+    gap: 8px;
+    font-size: 0.75rem;
     color: #6c757d;
     flex-wrap: wrap;
 }
 
 .photo-meta i {
-    font-size: 1rem;
+    font-size: 0.875rem;
 }
 
-.badge {
-    padding: 0.35rem 0.65rem;
-    font-size: 0.75rem;
+.photo-meta .badge {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.7rem;
     font-weight: 500;
 }
 
@@ -261,10 +268,13 @@
 .empty-state {
     text-align: center;
     padding: 4rem 2rem;
+    background: white;
+    border-radius: 16px;
+    margin: 2rem 0;
 }
 
 .empty-state i {
-    font-size: 4rem;
+    font-size: 3.5rem;
     color: #dee2e6;
     margin-bottom: 1rem;
 }
@@ -272,20 +282,27 @@
 .empty-state h5 {
     color: #495057;
     margin-bottom: 0.5rem;
+    font-weight: 600;
 }
 
 .empty-state p {
     color: #6c757d;
+    margin-bottom: 1rem;
 }
 
 /* 分页样式 */
+.pagination {
+    margin-top: 2rem;
+}
+
 .pagination .page-link {
     border-radius: 8px;
     margin: 0 2px;
-    padding: 0.5rem 1rem;
+    padding: 0.4rem 0.8rem;
     border: 1px solid #dee2e6;
     color: #495057;
     transition: all 0.3s;
+    font-size: 0.875rem;
 }
 
 .pagination .page-link:hover {
@@ -300,16 +317,11 @@
     color: white;
 }
 
-/* 移除链接下划线 */
-a {
-    text-decoration: none;
-}
-
 /* 动画 */
 @keyframes fadeInUp {
     from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(15px);
     }
     to {
         opacity: 1;
@@ -318,19 +330,20 @@ a {
 }
 
 .masonry-item {
-    animation: fadeInUp 0.5s ease-out;
+    animation: fadeInUp 0.4s ease-out;
 }
 
 .masonry-item:nth-child(1) { animation-delay: 0s; }
-.masonry-item:nth-child(2) { animation-delay: 0.05s; }
-.masonry-item:nth-child(3) { animation-delay: 0.1s; }
-.masonry-item:nth-child(4) { animation-delay: 0.15s; }
-.masonry-item:nth-child(5) { animation-delay: 0.2s; }
-.masonry-item:nth-child(6) { animation-delay: 0.25s; }
-.masonry-item:nth-child(7) { animation-delay: 0.3s; }
-.masonry-item:nth-child(8) { animation-delay: 0.35s; }
-.masonry-item:nth-child(9) { animation-delay: 0.4s; }
-.masonry-item:nth-child(10) { animation-delay: 0.45s; }
+.masonry-item:nth-child(2) { animation-delay: 0.03s; }
+.masonry-item:nth-child(3) { animation-delay: 0.06s; }
+.masonry-item:nth-child(4) { animation-delay: 0.09s; }
+.masonry-item:nth-child(5) { animation-delay: 0.12s; }
+.masonry-item:nth-child(6) { animation-delay: 0.15s; }
+.masonry-item:nth-child(7) { animation-delay: 0.18s; }
+.masonry-item:nth-child(8) { animation-delay: 0.21s; }
+.masonry-item:nth-child(9) { animation-delay: 0.24s; }
+.masonry-item:nth-child(10) { animation-delay: 0.27s; }
+.masonry-item:nth-child(n+11) { animation-delay: 0.3s; }
 
 @media (prefers-reduced-motion: reduce) {
     .masonry-item {
@@ -362,7 +375,7 @@ function handleImageError(img) {
                     <h1 class="shared-title">
                         <i class="bi bi-globe-americas"></i> 共享空间
                     </h1>
-                    <p class="shared-subtitle">发现社区精彩瞬间，探索无限可能</p>
+                    <p class="shared-subtitle">发现社区精彩瞬间</p>
                 </div>
                 <a href="{{ url_for('gallery.index') }}" class="shared-btn-primary">
                     <i class="bi bi-folder"></i> 我的相册
@@ -376,7 +389,7 @@ function handleImageError(img) {
                 </div>
                 <div class="stat-item">
                     <i class="bi bi-people"></i>
-                    <span>来自社区</span>
+                    <span>社区分享</span>
                 </div>
             </div>
             {% endif %}
@@ -385,32 +398,39 @@ function handleImageError(img) {
 </div>
 
 <!-- 内容区域 -->
-<div class="container pb-5">
-    <!-- 瀀布流展示 -->
+<div class="container pb-4">
+    <!-- 瀑布流展示 -->
     <div class="masonry-grid" id="masonryGrid">
         {% for photo in photos.items %}
         <div class="masonry-item">
             <a href="{{ url_for('gallery.shared_photo_detail', photo_id=photo.id) }}" class="photo-card {% if photo.access_password %}has-password{% endif %}">
-                <img src="{{ photo.file_path }}"
+                {% if photo.thumbnail_path %}
+                <img src="{{ photo.thumbnail_path }}"
                      data-original-url="{{ photo.file_path }}"
                      data-raw-url="{{ photo.backup_url }}"
                      alt="{{ photo.title or photo.filename }}"
                      loading="lazy" class="photo-img"
-                     onerror="handleImageError(this)"
-                     {% if photo.width and photo.height %}style="aspect-ratio: {{ photo.width }}/{{ photo.height }};min-height: {{ (300 * photo.height // photo.width) if photo.width and photo.height else '' }}px;{% endif %}>
+                     onerror="handleImageError(this)">
+                {% else %}
+                <img src="{{ photo.file_path }}"
+                     data-raw-url="{{ photo.backup_url }}"
+                     alt="{{ photo.title or photo.filename }}"
+                     loading="lazy" class="photo-img"
+                     onerror="handleImageError(this)">
+                {% endif %}
 
                 {% if photo.access_password %}
                 <div class="password-overlay">
                     <div class="password-content">
                         <i class="bi bi-lock-fill"></i>
-                        <p>需要密码访问</p>
+                        <p>密码保护</p>
                     </div>
                 </div>
                 {% endif %}
 
                 <div class="photo-info">
                     {% if photo.description %}
-                    <h6 class="photo-description">{{ photo.description }}</h6>
+                    <div class="photo-description">{{ photo.description }}</div>
                     {% if photo.title %}
                     <small class="photo-title">{{ photo.title }}</small>
                     {% endif %}
@@ -421,7 +441,7 @@ function handleImageError(img) {
                         <span><i class="bi bi-person-circle"></i> {{ photo.user.username }}</span>
                         <span><i class="bi bi-eye"></i> {{ photo.views }}</span>
                         {% if photo.access_password %}
-                        <span class="badge bg-warning"><i class="bi bi-lock-fill"></i> 加密</span>
+                        <span class="badge bg-warning"><i class="bi bi-lock-fill"></i></span>
                         {% endif %}
                     </div>
                 </div>
@@ -444,7 +464,7 @@ function handleImageError(img) {
 
     <!-- 分页 -->
     {% if photos.pages > 1 %}
-    <nav aria-label="分页" class="mt-5">
+    <nav aria-label="分页">
         <ul class="pagination justify-content-center">
             {% if photos.has_prev %}
                 <li class="page-item">
