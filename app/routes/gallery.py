@@ -771,8 +771,6 @@ def shared():
     """
     共享空间 - 显示所有用户公开分享的图片
     """
-    from flask_sqlalchemy.pagination import Pagination
-
     page = request.args.get('page', 1, type=int)
     per_page = current_app.config.get('PHOTOS_PER_PAGE', 20)
 
@@ -783,8 +781,20 @@ def shared():
         Photo.created_at.desc()
     ).paginate(page=page, per_page=per_page, error_out=False)
 
-    # 暂时禁用相册功能
-    albums = Pagination([], 0, per_page, per_page, page)
+    # 创建空的相册分页对象（模拟 Pagination 接口）
+    class EmptyPagination:
+        def __init__(self):
+            self.items = []
+            self.total = 0
+            self.pages = 0
+            self.page = 1
+            self.has_prev = False
+            self.has_next = False
+            self.prev_num = None
+            self.next_num = None
+            self.iter_pages = lambda: []
+
+    albums = EmptyPagination()
 
     return render_template('gallery/shared_space.html', photos=photos, albums=albums)
 
