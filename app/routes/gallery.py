@@ -226,7 +226,7 @@ def view_album(album_id):
     非私密相册：其他用户只能看到公开的图片
     """
     try:
-        album = Album.query.get_or_404(album_id)
+        album = Album.query.options(joinedload(Album.user)).get_or_404(album_id)
 
         # 权限检查（超级管理员可以访问所有相册）
         is_superuser = getattr(current_user, 'is_superuser', False)

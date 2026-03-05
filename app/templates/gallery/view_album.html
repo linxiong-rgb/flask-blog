@@ -226,7 +226,7 @@ async function toggleAlbumVisibility(albumId, makePublic) {
             <p class="text-muted">
                 <i class="bi bi-images"></i> {{ photos|length }} 张照片
                 {% if album.is_private %}
-                    <span class="badge bg-warning"><i class="bi bi-lock-fill"></i> 私密相册</span>
+                    <span class="badge bg-danger"><i class="bi bi-lock-fill"></i> 私密相册</span>
                 {% elif album.is_public %}
                     <span class="badge bg-success"><i class="bi bi-globe"></i> 公开相册</span>
                     {% if album.access_password %}
