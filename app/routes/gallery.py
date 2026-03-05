@@ -232,17 +232,6 @@ def view_album(album_id):
                           is_superuser=is_superuser,
                           is_owner=is_owner)
 
-    # 获取相册中的图片
-    photos = Photo.query.filter_by(album_id=album_id).order_by(Photo.created_at.desc()).all()
-
-    # 获取子相册
-    child_albums = Album.query.filter_by(parent_id=album_id).order_by(Album.sort_order, Album.name).all()
-
-    return render_template('gallery/view_album.html',
-                          album=album,
-                          photos=photos,
-                          child_albums=child_albums)
-
 
 @bp.route('/album/<int:album_id>/edit', methods=['GET', 'POST'])
 @login_required

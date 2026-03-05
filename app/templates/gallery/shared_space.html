@@ -57,18 +57,27 @@
     color: white;
 }
 
-/* 网格布局 - 两列 */
+/* 网格布局 - 三列 */
 .shared-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
     padding: 0 1rem;
 }
 
-@media (max-width: 768px) {
+/* 平板显示两列 */
+@media (max-width: 992px) {
+    .shared-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+}
+
+/* 手机显示单列 */
+@media (max-width: 576px) {
     .shared-grid {
         grid-template-columns: 1fr;
-        gap: 15px;
+        gap: 16px;
     }
 }
 
