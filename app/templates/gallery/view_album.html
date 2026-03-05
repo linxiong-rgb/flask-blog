@@ -129,7 +129,7 @@
                          data-backup="{{ photo.backup_url }}"
                          alt="{{ photo.title or photo.filename }}"
                          loading="lazy" class="photo-img"
-                         onerror="this.src=this.dataset.backup;">
+                         onerror="handleImageError(this)">
                     <div class="photo-overlay">
                         <div class="photo-info">
                             {% if photo.title %}
@@ -327,6 +327,21 @@ const photos = [
 ];
 let currentPhotoIndex = 0;
 let currentPhotoId = null;
+
+// 图片加载错误处理
+function handleImageError(img) {
+    if (img.dataset.usedBackup === 'true') {
+        // 备用URL也失败了，显示占位图
+        img.outerHTML = '<div class="image-placeholder"><i class="bi bi-image"></i></div>';
+    } else if (img.dataset.backup && img.dataset.backup !== img.src) {
+        // 尝试加载备用URL
+        img.src = img.dataset.backup;
+        img.dataset.usedBackup = 'true';
+    } else {
+        // 没有备用URL或备用URL相同，显示占位图
+        img.outerHTML = '<div class="image-placeholder"><i class="bi bi-image"></i></div>';
+    }
+}
 
 // 上传照片
 function uploadPhotos(input) {
@@ -1107,6 +1122,26 @@ function showBatchActions() {
 @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.8; }
+}
+
+/* 图片加载失败占位 */
+.image-placeholder {
+    width: 100%;
+    padding-top: 100%;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    position: relative;
+}
+
+.image-placeholder i {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
 }
 </style>
 {% endblock %}

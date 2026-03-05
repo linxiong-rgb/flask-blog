@@ -161,16 +161,31 @@ class Photo(db.Model):
 
     @property
     def backup_url(self):
-        """获取备用图片URL（GitHub raw）"""
-        # 从 jsDelivr CDN URL 转换为 GitHub raw URL
-        if self.file_path and 'cdn.jsdelivr.net' in self.file_path:
-            import re
+        """获取备用图片URL（CDN和raw互为备份）"""
+        import re
+
+        if not self.file_path:
+            return self.file_path
+
+        # 如果当前是 jsDelivr CDN URL，返回 GitHub raw URL
+        if 'cdn.jsdelivr.net' in self.file_path:
             match = re.match(r'https://cdn\.jsdelivr\.net/gh/([^@]+)@([^/]+)/(.+)', self.file_path)
             if match:
                 repo = match.group(1)
                 branch = match.group(2)
                 path = match.group(3)
                 return f'https://raw.githubusercontent.com/{repo}/{branch}/{path}'
+
+        # 如果当前是 GitHub raw URL，返回 jsDelivr CDN URL
+        elif 'raw.githubusercontent.com' in self.file_path:
+            match = re.match(r'https://raw\.githubusercontent\.com/([^/]+)/([^/]+)/([^/]+)/(.+)', self.file_path)
+            if match:
+                repo = f"{match.group(1)}/{match.group(2)}"
+                branch = match.group(3)
+                path = match.group(4)
+                return f'https://cdn.jsdelivr.net/gh/{repo}@{branch}/{path}'
+
+        # 其他情况返回原URL
         return self.file_path
 
     def __repr__(self):

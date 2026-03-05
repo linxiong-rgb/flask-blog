@@ -24,14 +24,14 @@
                      data-backup="{{ photo.backup_url }}"
                      alt="{{ photo.title or photo.filename }}"
                      loading="lazy" class="photo-img lazy-image"
-                     onerror="this.src=this.dataset.backup;this.classList.remove('lazy-image');"
+                     onerror="handleImageError(this)"
                      style="{% if photo.width and photo.height %}aspect-ratio: {{ photo.width }}/{{ photo.height }};{% endif %} filter: blur(20px) !important;">
                 {% else %}
                 <img src="{{ photo.file_path }}"
                      data-backup="{{ photo.backup_url }}"
                      alt="{{ photo.title or photo.filename }}"
                      loading="lazy" class="photo-img lazy-image"
-                     onerror="this.src=this.dataset.backup;this.classList.remove('lazy-image');"
+                     onerror="handleImageError(this)"
                      {% if photo.width and photo.height %}style="aspect-ratio: {{ photo.width }}/{{ photo.height }};"{% endif %}>
                 {% endif %}
                 {% if photo.access_password %}
@@ -100,6 +100,44 @@
     </nav>
     {% endif %}
 </div>
+
+<script>
+// 图片加载错误处理
+function handleImageError(img) {
+    if (img.dataset.usedBackup === 'true') {
+        // 备用URL也失败了，显示占位图
+        img.outerHTML = '<div class="image-placeholder"><i class="bi bi-image"></i></div>';
+    } else if (img.dataset.backup && img.dataset.backup !== img.src) {
+        // 尝试加载备用URL
+        img.src = img.dataset.backup;
+        img.dataset.usedBackup = 'true';
+    } else {
+        // 没有备用URL或备用URL相同，显示占位图
+        img.outerHTML = '<div class="image-placeholder"><i class="bi bi-image"></i></div>';
+    }
+}
+</script>
+
+<style>
+.image-placeholder {
+    width: 100%;
+    padding-top: 75%;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    position: relative;
+}
+
+.image-placeholder i {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+}
+</style>
 
 <style>
 .masonry-grid {
