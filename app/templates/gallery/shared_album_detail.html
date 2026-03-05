@@ -1,0 +1,552 @@
+{% extends "base.html" %}
+
+{% block title %}{{ album.name }} - 共享相册{% endblock %}
+
+{% block content %}
+<style>
+.album-detail-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem;
+}
+
+.breadcrumb-nav {
+    margin-bottom: 1rem;
+}
+
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #333;
+    font-size: 0.85rem;
+    transition: all 0.3s;
+}
+
+.btn-back:hover {
+    background: #e9ecef;
+    color: #333;
+}
+
+/* 相册头部 */
+.album-header {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.album-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+}
+
+.album-cover {
+    width: 120px;
+    height: 120px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #f8f9fa;
+    flex-shrink: 0;
+}
+
+.album-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.album-cover-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.album-cover-placeholder i {
+    font-size: 2.5rem;
+}
+
+.album-details {
+    flex: 1;
+}
+
+.album-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.album-description {
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.album-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.meta-item i {
+    color: #999;
+}
+
+/* 图片网格 */
+.photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.photo-item {
+    position: relative;
+}
+
+.photo-card {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    aspect-ratio: 1;
+    background: #f8f9fa;
+}
+
+.photo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+}
+
+.photo-card:hover .photo-img {
+    transform: scale(1.05);
+}
+
+/* 加密图片模糊 */
+.photo-card.has-password .photo-img {
+    filter: blur(25px) brightness(0.4);
+}
+
+.photo-card.has-password:hover .photo-img {
+    filter: blur(20px) brightness(0.45);
+}
+
+/* 密码覆盖层 */
+.password-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.password-overlay i {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.password-overlay span {
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+/* 悬停信息 */
+.photo-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    color: white;
+    padding: 10px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.photo-card:hover .photo-overlay {
+    opacity: 1;
+}
+
+.photo-info h6 {
+    margin: 0 0 4px 0;
+    font-size: 0.85rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.photo-info p {
+    margin: 0;
+    font-size: 0.7rem;
+    opacity: 0.9;
+}
+
+/* 密码标签 */
+.password-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(220, 53, 69, 0.95);
+    color: white;
+    padding: 3px 6px;
+    border-radius: 12px;
+    font-size: 0.6rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.password-badge i {
+    font-size: 0.6rem;
+}
+
+/* 空状态 */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    background: white;
+    border-radius: 8px;
+    margin: 1rem 0;
+}
+
+.empty-state i {
+    font-size: 2rem;
+    color: #dee2e6;
+    margin-bottom: 0.5rem;
+}
+
+.empty-state h5 {
+    color: #495057;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.empty-state p {
+    color: #6c757d;
+    margin-bottom: 1rem;
+    font-size: 0.8rem;
+}
+
+/* 灯箱样式 */
+.lightbox {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.lightbox.active {
+    display: flex;
+}
+
+.lightbox-image {
+    max-width: 95%;
+    max-height: 95%;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.3s;
+}
+
+.lightbox-close:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+.lightbox-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: white;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.3s;
+}
+
+.lightbox-nav:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+.lightbox-prev {
+    left: 1rem;
+}
+
+.lightbox-next {
+    right: 1rem;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    .album-info {
+        flex-direction: column;
+    }
+
+    .album-cover {
+        width: 100%;
+        height: 200px;
+    }
+
+    .album-title {
+        font-size: 1.2rem;
+    }
+}
+</style>
+
+<script>
+// 灯箱功能
+let currentIndex = 0;
+const photos = [
+    {% for photo in photos %}
+    {
+        id: {{ photo.id }},
+        url: '{{ photo.url }}',
+        backupUrl: '{{ photo.backup_url }}',
+        title: '{{ photo.title or photo.filename }}',
+        hasPassword: {{ 'true' if photo.access_password else 'false' }}
+    },
+    {% endfor %}
+];
+
+function openLightbox(index) {
+    if (photos[index].hasPassword) {
+        // 有密码的图片跳转到详情页
+        window.location.href = '/shared/' + photos[index].id;
+        return;
+    }
+
+    currentIndex = index;
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImage = document.getElementById('lightboxImage');
+
+    lightboxImage.src = photos[index].url;
+    lightboxImage.onerror = function() {
+        this.src = photos[index].backupUrl;
+    };
+
+    lightbox.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    updateNavButtons();
+}
+
+function closeLightbox() {
+    const lightbox = document.getElementById('lightbox');
+    lightbox.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function showPrev() {
+    if (currentIndex > 0) {
+        openLightbox(currentIndex - 1);
+    }
+}
+
+function showNext() {
+    if (currentIndex < photos.length - 1) {
+        openLightbox(currentIndex + 1);
+    }
+}
+
+function updateNavButtons() {
+    const prevBtn = document.getElementById('lightboxPrev');
+    const nextBtn = document.getElementById('lightboxNext');
+
+    prevBtn.style.visibility = currentIndex > 0 ? 'visible' : 'hidden';
+    nextBtn.style.visibility = currentIndex < photos.length - 1 ? 'visible' : 'hidden';
+}
+
+// 键盘导航
+document.addEventListener('keydown', function(e) {
+    if (!document.getElementById('lightbox').classList.contains('active')) return;
+
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft') showPrev();
+    if (e.key === 'ArrowRight') showNext();
+});
+
+// 图片加载错误处理
+function handleImageError(img) {
+    const rawUrl = img.dataset.rawUrl;
+    if (rawUrl && img.src !== rawUrl && !img.dataset.usedRaw) {
+        img.dataset.usedRaw = 'true';
+        img.src = rawUrl;
+    } else {
+        const card = img.closest('.photo-card');
+        if (card) {
+            card.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f8f9fa;color:#adb5bd;"><i class="bi bi-image"></i></div>';
+        }
+    }
+}
+</script>
+
+<div class="album-detail-container">
+    <!-- 面包屑导航 -->
+    <div class="breadcrumb-nav">
+        <a href="{{ url_for('gallery.shared') }}" class="btn-back">
+            <i class="bi bi-arrow-left"></i> 返回共享空间
+        </a>
+    </div>
+
+    <!-- 相册头部 -->
+    <div class="album-header">
+        <div class="album-info">
+            <div class="album-cover">
+                {% if album.cover_photo %}
+                <img src="{{ album.cover_photo.file_path }}" alt="{{ album.name }}">
+                {% else %}
+                <div class="album-cover-placeholder">
+                    <i class="bi bi-images"></i>
+                </div>
+                {% endif %}
+            </div>
+            <div class="album-details">
+                <h1 class="album-title">{{ album.name }}</h1>
+                {% if album.description %}
+                <p class="album-description">{{ album.description }}</p>
+                {% endif %}
+                <div class="album-meta">
+                    <div class="meta-item">
+                        <i class="bi bi-person-circle"></i>
+                        <span>{{ album.user.username }}</span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="bi bi-images"></i>
+                        <span>{{ photos|length }} 张照片</span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="bi bi-calendar3"></i>
+                        <span>{{ album.created_at.strftime('%Y年%m月%d日') }}</span>
+                    </div>
+                    {% if album.access_password %}
+                    <div class="meta-item">
+                        <i class="bi bi-lock-fill"></i>
+                        <span>密码保护</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 图片网格 -->
+    {% if photos %}
+    <div class="photo-grid">
+        {% for photo in photos %}
+        <div class="photo-item">
+            <div class="photo-card {% if photo.access_password %}has-password{% endif %}"
+                 onclick="openLightbox({{ loop.index0 }})">
+                {% if photo.thumbnail_path %}
+                <img src="{{ photo.thumbnail_path }}"
+                     data-raw-url="{{ photo.backup_url }}"
+                     alt="{{ photo.title or photo.filename }}"
+                     loading="lazy"
+                     class="photo-img"
+                     onerror="handleImageError(this)">
+                {% else %}
+                <img src="{{ photo.file_path }}"
+                     data-raw-url="{{ photo.backup_url }}"
+                     alt="{{ photo.title or photo.filename }}"
+                     loading="lazy"
+                     class="photo-img"
+                     onerror="handleImageError(this)">
+                {% endif %}
+
+                {% if photo.access_password %}
+                <div class="password-overlay">
+                    <i class="bi bi-lock-fill"></i>
+                    <span>密码保护</span>
+                </div>
+                <div class="password-badge">
+                    <i class="bi bi-lock-fill"></i>
+                    <span>加密</span>
+                </div>
+                {% endif %}
+
+                <div class="photo-overlay">
+                    <div class="photo-info">
+                        {% if photo.title %}
+                        <h6>{{ photo.title }}</h6>
+                        {% endif %}
+                        <p><i class="bi bi-eye"></i> {{ photo.views }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-images"></i>
+        <h5>相册暂无照片</h5>
+        <p>该相册还没有公开的照片</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 灯箱 -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <button class="lightbox-nav lightbox-prev" id="lightboxPrev" onclick="event.stopPropagation(); showPrev()">
+        <i class="bi bi-chevron-left"></i>
+    </button>
+    <button class="lightbox-close">
+        <i class="bi bi-x-lg"></i>
+    </button>
+    <button class="lightbox-nav lightbox-next" id="lightboxNext" onclick="event.stopPropagation(); showNext()">
+        <i class="bi bi-chevron-right"></i>
+    </button>
+    <img src="" alt="" class="lightbox-image" id="lightboxImage" onclick="event.stopPropagation()">
+</div>
+{% endblock %}

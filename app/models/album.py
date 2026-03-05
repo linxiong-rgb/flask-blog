@@ -56,6 +56,8 @@ class Album(db.Model):
     parent_id = db.Column(db.Integer, db.ForeignKey('album.id'), nullable=True)
     cover_photo_id = db.Column(db.Integer, db.ForeignKey('photo.id'), nullable=True)
     is_private = db.Column(db.Boolean, default=True)
+    is_public = db.Column(db.Boolean, default=False)  # 是否在共享空间显示
+    access_password = db.Column(db.String(100))  # 相册访问密码
     sort_order = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

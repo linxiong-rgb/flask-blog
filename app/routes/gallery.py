@@ -727,11 +727,49 @@ def shared_detail(photo_id):
     return render_template('gallery/shared_detail.html', photo=photo)
 
 
+@bp.route('/shared/album/<int:album_id>', methods=['GET', 'POST'])
+@login_required
+def shared_album_detail(album_id):
+    """
+    共享相册详情页 - 检查密码后显示所有图片
+    """
+    album = Album.query.options(
+        joinedload(Album.user),
+        joinedload(Album.cover_photo)
+    ).get_or_404(album_id)
+
+    # 验证相册是否公开
+    if not album.is_public:
+        flash('该相册未公开分享', 'warning')
+        return redirect(url_for('gallery.shared'))
+
+    # 检查访问密码
+    if album.access_password:
+        session_key = f'shared_album_{album_id}'
+        if session.get(session_key) != album.access_password:
+            if request.method == 'POST':
+                if request.form.get('password') == album.access_password:
+                    session[session_key] = album.access_password
+                    return redirect(url_for('gallery.shared_album_detail', album_id=album_id))
+                else:
+                    flash('密码错误，请重试', 'danger')
+            return render_template('gallery/shared_album_password.html', album=album)
+
+    # 获取相册中的所有公开图片
+    photos = Photo.query.options(
+        joinedload(Photo.user)
+    ).filter_by(album_id=album_id, is_public=True).order_by(
+        Photo.created_at.desc()
+    ).all()
+
+    return render_template('gallery/shared_album_detail.html', album=album, photos=photos)
+
+
 @bp.route('/shared')
 @login_required
 def shared():
     """
-    共享空间 - 显示所有用户公开分享的图片
+    共享空间 - 显示所有用户公开分享的图片和相册
     """
     page = request.args.get('page', 1, type=int)
     per_page = current_app.config.get('PHOTOS_PER_PAGE', 20)
@@ -743,7 +781,15 @@ def shared():
         Photo.created_at.desc()
     ).paginate(page=page, per_page=per_page, error_out=False)
 
-    return render_template('gallery/shared_space.html', photos=photos)
+    # 获取所有公开相册，按创建时间倒序
+    albums = Album.query.options(
+        joinedload(Album.user),
+        joinedload(Album.cover_photo)
+    ).filter_by(is_public=True).order_by(
+        Album.created_at.desc()
+    ).paginate(page=page, per_page=per_page, error_out=False)
+
+    return render_template('gallery/shared_space.html', photos=photos, albums=albums)
 
 
 @bp.route('/shared/<token>')
