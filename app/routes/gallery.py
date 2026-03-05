@@ -797,6 +797,13 @@ def shared_album_detail(album_id):
         flash('该相册未公开分享', 'warning')
         return redirect(url_for('gallery.shared'))
 
+    # 计算公开照片数量
+    public_photo_count = Photo.query.filter_by(
+        album_id=album_id,
+        is_public=True
+    ).count()
+    album.public_photo_count = public_photo_count
+
     # 检查访问密码
     if album.access_password:
         session_key = f'shared_album_{album_id}'
@@ -853,6 +860,14 @@ def shared():
 
         valid_album_ids = [id[0] for id in album_ids_with_public_photos]
         public_albums = [a for a in public_albums if a.id in valid_album_ids]
+
+        # 为每个相册计算公开照片数量
+        for album in public_albums:
+            public_count = Photo.query.filter_by(
+                album_id=album.id,
+                is_public=True
+            ).count()
+            album.public_photo_count = public_count
 
         # 分页处理相册
         total_albums = len(public_albums)
