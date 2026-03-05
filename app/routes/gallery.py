@@ -131,29 +131,40 @@ def index():
     显示当前用户的所有相册（树形结构）
     超级管理员可以查看所有用户的相册
     """
-    is_superuser = getattr(current_user, 'is_superuser', False)
+    try:
+        is_superuser = getattr(current_user, 'is_superuser', False)
 
-    if is_superuser:
-        # 超级管理员查看所有相册
-        root_albums = Album.query.filter_by(parent_id=None).order_by(
-            Album.sort_order, Album.name
-        ).all()
-        total_photos = Photo.query.count()
-        total_albums = Album.query.count()
-    else:
-        # 普通用户只查看自己的相册
-        root_albums = Album.query.filter_by(
-            user_id=current_user.id,
-            parent_id=None
-        ).order_by(Album.sort_order, Album.name).all()
-        total_photos = Photo.query.filter_by(user_id=current_user.id).count()
-        total_albums = Album.query.filter_by(user_id=current_user.id).count()
+        if is_superuser:
+            # 超级管理员查看所有相册
+            root_albums = Album.query.filter_by(parent_id=None).order_by(
+                Album.sort_order, Album.name
+            ).all()
+            total_photos = Photo.query.count()
+            total_albums = Album.query.count()
+        else:
+            # 普通用户只查看自己的相册
+            root_albums = Album.query.filter_by(
+                user_id=current_user.id,
+                parent_id=None
+            ).order_by(Album.sort_order, Album.name).all()
+            total_photos = Photo.query.filter_by(user_id=current_user.id).count()
+            total_albums = Album.query.filter_by(user_id=current_user.id).count()
 
-    return render_template('gallery/index.html',
-                          root_albums=root_albums,
-                          total_photos=total_photos,
-                          total_albums=total_albums,
-                          is_superuser=is_superuser)
+        return render_template('gallery/index.html',
+                              root_albums=root_albums,
+                              total_photos=total_photos,
+                              total_albums=total_albums,
+                              is_superuser=is_superuser)
+    except Exception as e:
+        current_app.logger.error(f'Error in gallery index: {str(e)}', exc_info=True)
+        flash(f'加载相册时出错: {str(e)}', 'danger')
+
+        # 返回简化的页面
+        return render_template('gallery/index.html',
+                              root_albums=[],
+                              total_photos=0,
+                              total_albums=0,
+                              is_superuser=getattr(current_user, 'is_superuser', False))
 
 
 @bp.route('/album/new', methods=['GET', 'POST'])
