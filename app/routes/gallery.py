@@ -300,19 +300,31 @@ def delete_album(album_id):
         if album.user_id != current_user.id and not is_superuser:
             return jsonify({'success': False, 'message': '您没有权限删除此相册'}), 403
 
-        # 删除相册中的所有图片文件
-        for photo in album.photos:
-            delete_photo_file(photo)
+        # 获取相册中的所有图片
+        photos = Photo.query.filter_by(album_id=album_id).all()
 
+        # 删除每张图片及其关联数据
+        for photo in photos:
+            # 删除分享记录
+            from app.models.album import PhotoShare
+            PhotoShare.query.filter_by(photo_id=photo.id).delete()
+            # 删除标签关系
+            photo.tags.clear()
+            # 删除文件
+            delete_photo_file(photo)
+            # 删除记录
+            db.session.delete(photo)
+
+        # 删除相册
         db.session.delete(album)
         db.session.commit()
 
-        return jsonify({'success': True, 'message': '相册已删除'})
+        return jsonify({'success': True, 'message': '相册及所有照片已删除'})
 
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f'删除相册失败: {str(e)}')
-        return jsonify({'success': False, 'message': f'删除失败: {str(e)}'}), 500
+        current_app.logger.error(f'删除相册失败 [ID:{album_id}]: {str(e)}', exc_info=True)
+        return jsonify({'success': False, 'message': f'删除失败，请稍后重试'}), 500
 
 
 # ==================== 图片上传 ====================
@@ -485,6 +497,13 @@ def delete_photo(photo_id):
         if photo.user_id != current_user.id and not is_superuser:
             return jsonify({'success': False, 'message': '您没有权限删除此图片'}), 403
 
+        # 先删除关联的分享记录
+        from app.models.album import PhotoShare
+        PhotoShare.query.filter_by(photo_id=photo_id).delete()
+
+        # 删除关联的标签关系（不会删除标签本身，只删除关系）
+        photo.tags.clear()
+
         # 删除文件
         delete_photo_file(photo)
 
@@ -496,8 +515,8 @@ def delete_photo(photo_id):
 
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f'删除图片失败: {str(e)}')
-        return jsonify({'success': False, 'message': f'删除失败: {str(e)}'}), 500
+        current_app.logger.error(f'删除图片失败 [ID:{photo_id}]: {str(e)}', exc_info=True)
+        return jsonify({'success': False, 'message': f'删除失败，请稍后重试'}), 500
 
 
 @bp.route('/photo/<int:photo_id>/move', methods=['POST'])
@@ -808,21 +827,46 @@ def batch_delete():
     """
     批量删除图片
     """
-    photo_ids = request.json.get('photo_ids', [])
+    try:
+        photo_ids = request.json.get('photo_ids', [])
 
-    # 获取图片并检查权限
-    photos = Photo.query.filter(
-        Photo.id.in_(photo_ids),
-        Photo.user_id == current_user.id
-    ).all()
+        if not photo_ids:
+            return jsonify({'success': False, 'message': '未选择任何图片'}), 400
 
-    for photo in photos:
-        delete_photo_file(photo)
-        db.session.delete(photo)
+        # 超级管理员检查
+        is_superuser = getattr(current_user, 'is_superuser', False)
 
-    db.session.commit()
+        # 构建查询条件
+        query = Photo.query.filter(Photo.id.in_(photo_ids))
+        if not is_superuser:
+            query = query.filter_by(user_id=current_user.id)
 
-    return jsonify({'success': True, 'message': f'已删除 {len(photos)} 张图片'})
+        photos = query.all()
+
+        deleted_count = 0
+        for photo in photos:
+            # 先删除关联的分享记录
+            from app.models.album import PhotoShare
+            PhotoShare.query.filter_by(photo_id=photo.id).delete()
+
+            # 删除关联的标签关系
+            photo.tags.clear()
+
+            # 删除文件
+            delete_photo_file(photo)
+
+            # 删除数据库记录
+            db.session.delete(photo)
+            deleted_count += 1
+
+        db.session.commit()
+
+        return jsonify({'success': True, 'message': f'已删除 {deleted_count} 张图片'})
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'批量删除图片失败: {str(e)}', exc_info=True)
+        return jsonify({'success': False, 'message': f'删除失败，请稍后重试'}), 500
 
 
 @bp.route('/batch/share', methods=['POST'])
