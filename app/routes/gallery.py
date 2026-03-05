@@ -280,6 +280,16 @@ def edit_album(album_id):
         is_private_hidden = request.form.get('is_private_hidden') == 'true'
         is_public_hidden = request.form.get('is_public_hidden') == 'true'
 
+        # 处理访问密码（在可见性检查之前处理）
+        remove_password = request.form.get('remove_password') == 'on'
+        access_password = request.form.get('access_password', '').strip()
+
+        if remove_password:
+            album.access_password = None
+        elif access_password:
+            album.access_password = access_password
+        # 如果两者都没设置，保持原密码不变
+
         # 确保逻辑一致：私密相册 is_private=True, is_public=False；公开相册相反
         if is_public_hidden:
             # 设为公开
@@ -300,16 +310,6 @@ def edit_album(album_id):
             # 设为私密
             album.is_private = True
             album.is_public = False
-
-        # 处理访问密码
-        remove_password = request.form.get('remove_password') == 'on'
-        access_password = request.form.get('access_password', '').strip()
-
-        if remove_password:
-            album.access_password = None
-        elif access_password:
-            album.access_password = access_password
-        # 如果两者都没设置，保持原密码不变
 
         db.session.commit()
         flash('相册更新成功')
