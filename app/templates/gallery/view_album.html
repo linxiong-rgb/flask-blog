@@ -188,6 +188,8 @@ function handleImageErrorMultiCdn(img) {
                             data-photo-id="{{ photo.id }}"
                             data-photo-title="{{ photo.title or '' }}"
                             data-photo-description="{{ photo.description or '' }}"
+                            data-photo-is-public="{{ 'true' if photo.is_public else 'false' }}"
+                            data-photo-has-password="{{ 'true' if photo.access_password else 'false' }}"
                             onclick="event.stopPropagation(); editPhotoInfo(this)"
                             title="编辑信息">
                         <i class="bi bi-pencil"></i>
@@ -195,6 +197,9 @@ function handleImageErrorMultiCdn(img) {
                     <button type="button" class="btn btn-sm btn-light" onclick="event.stopPropagation(); togglePhotoPublic({{ photo.id }}, this)"
                             title="{% if photo.is_public %}设为私密{% else %}设为公开{% endif %}">
                         <i class="bi bi-{% if photo.is_public %}lock-fill{% else %}globe{% endif %}"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light" onclick="event.stopPropagation(); editPhotoPassword({{ photo.id }})" title="设置密码">
+                        <i class="bi bi-key"></i>
                     </button>
                     <button type="button" class="btn btn-sm btn-light" onclick="event.stopPropagation(); toggleShare({{ photo.id }})" title="分享">
                         <i class="bi bi-share"></i>
@@ -337,6 +342,28 @@ function handleImageErrorMultiCdn(img) {
                     </label>
                     <textarea class="form-control" id="photoDescription" rows="3" placeholder="添加图片描述、故事背景或说明"></textarea>
                     <div class="form-text">图片介绍会在共享空间展示给其他用户</div>
+                </div>
+                <hr>
+                <div class="mb-3">
+                    <label for="photoAccessPassword" class="form-label">
+                        <i class="bi bi-key"></i> 访问密码
+                    </label>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="photoAccessPassword" placeholder="设置访问密码（留空则无需密码）">
+                        <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('photoAccessPassword')">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                    <div class="form-text">
+                        设置密码后，其他用户在共享空间查看此图片需要输入密码
+                        <span id="currentPasswordIndicator" class="ms-2"></span>
+                    </div>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="removePhotoPassword">
+                    <label class="form-check-label" for="removePhotoPassword">
+                        移除密码保护
+                    </label>
                 </div>
             </div>
             <div class="modal-footer">
@@ -718,14 +745,80 @@ function editPhotoInfo(button) {
     const photoId = button.getAttribute('data-photo-id');
     const title = button.getAttribute('data-photo-title');
     const description = button.getAttribute('data-photo-description');
+    const hasPassword = button.getAttribute('data-photo-has-password') === 'true';
 
     currentPhotoId = photoId;
     document.getElementById('editPhotoId').value = photoId;
     document.getElementById('photoTitle').value = title || '';
     document.getElementById('photoDescription').value = description || '';
 
+    // 密码字段
+    document.getElementById('photoAccessPassword').value = '';
+    document.getElementById('removePhotoPassword').checked = false;
+
+    // 显示当前密码状态
+    const passwordIndicator = document.getElementById('currentPasswordIndicator');
+    if (hasPassword) {
+        passwordIndicator.innerHTML = '<span class="badge bg-warning"><i class="bi bi-lock-fill"></i> 当前已设置密码</span>';
+    } else {
+        passwordIndicator.innerHTML = '';
+    }
+
     const modal = new bootstrap.Modal(document.getElementById('photoInfoModal'));
     modal.show();
+}
+
+// 切换密码可见性
+function togglePasswordVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    const button = input.nextElementSibling;
+    const icon = button.querySelector('i');
+
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+}
+
+// 直接编辑密码
+function editPhotoPassword(photoId) {
+    currentPhotoId = photoId;
+
+    // 清空字段
+    document.getElementById('editPhotoId').value = photoId;
+    document.getElementById('photoTitle').value = '';
+    document.getElementById('photoDescription').value = '';
+    document.getElementById('photoAccessPassword').value = '';
+    document.getElementById('removePhotoPassword').checked = false;
+
+    // 获取当前照片数据
+    const photo = photos.find(p => p.id === photoId);
+    if (photo) {
+        document.getElementById('photoTitle').value = photo.title || '';
+        document.getElementById('photoDescription').value = photo.description || '';
+    }
+
+    // 显示密码状态提示
+    const button = document.querySelector(`button[data-photo-id="${photoId}"]`);
+    const hasPassword = button && button.getAttribute('data-photo-has-password') === 'true';
+    const passwordIndicator = document.getElementById('currentPasswordIndicator');
+    if (hasPassword) {
+        passwordIndicator.innerHTML = '<span class="badge bg-warning"><i class="bi bi-lock-fill"></i> 当前已设置密码</span>';
+    } else {
+        passwordIndicator.innerHTML = '';
+    }
+
+    // 聚焦到密码输入框
+    const modal = new bootstrap.Modal(document.getElementById('photoInfoModal'));
+    modal.show();
+    setTimeout(() => {
+        document.getElementById('photoAccessPassword').focus();
+    }, 500);
 }
 
 // 保存图片信息
@@ -733,6 +826,20 @@ function savePhotoInfo() {
     const photoId = currentPhotoId;
     const title = document.getElementById('photoTitle').value;
     const description = document.getElementById('photoDescription').value;
+    const password = document.getElementById('photoAccessPassword').value;
+    const removePassword = document.getElementById('removePhotoPassword').checked;
+
+    const requestData = {
+        title: title,
+        description: description
+    };
+
+    // 只有在设置了新密码或选择了移除密码时才发送密码相关数据
+    if (removePassword) {
+        requestData.access_password = '';
+    } else if (password) {
+        requestData.access_password = password;
+    }
 
     fetch(`/gallery/photo/${photoId}/edit-info`, {
         method: 'POST',
@@ -740,10 +847,7 @@ function savePhotoInfo() {
             'Content-Type': 'application/json',
             'X-CSRFToken': '{{ csrf_token() }}'
         },
-        body: JSON.stringify({
-            title: title,
-            description: description
-        })
+        body: JSON.stringify(requestData)
     })
     .then(response => response.json())
     .then(data => {

@@ -615,7 +615,7 @@ def set_photo_public(photo_id):
 @login_required
 def edit_photo_info(photo_id):
     """
-    编辑图片标题和描述
+    编辑图片标题、描述和访问密码
     超级管理员可以编辑任何图片的信息
     """
     photo = Photo.query.get_or_404(photo_id)
@@ -628,15 +628,25 @@ def edit_photo_info(photo_id):
     data = request.json
     title = data.get('title')
     description = data.get('description')
+    access_password = data.get('access_password')
 
     photo.title = title if title else None
     photo.description = description if description else None
+
+    # 处理密码更新
+    if access_password is not None:
+        # 空字符串表示移除密码
+        if access_password == '':
+            photo.access_password = None
+        else:
+            photo.access_password = access_password if access_password else None
 
     db.session.commit()
 
     return jsonify({
         'success': True,
-        'message': '图片信息已更新'
+        'message': '图片信息已更新',
+        'has_password': bool(photo.access_password)
     })
 
 
