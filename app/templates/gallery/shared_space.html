@@ -37,7 +37,14 @@
                 </div>
                 {% endif %}
                 <div class="photo-info">
-                    <h6>{{ photo.description or photo.title or photo.filename }}</h6>
+                    {% if photo.description %}
+                    <h6 class="photo-description">{{ photo.description }}</h6>
+                    {% if photo.title %}
+                    <small class="text-muted photo-title">{{ photo.title }}</small>
+                    {% endif %}
+                    {% else %}
+                    <h6>{{ photo.title or photo.filename }}</h6>
+                    {% endif %}
                     <p class="mb-0 text-muted">
                         <i class="bi bi-person"></i> {{ photo.user.username }}
                         <i class="bi bi-eye ms-2"></i> {{ photo.views }}
@@ -189,6 +196,24 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.photo-info .photo-description {
+    color: #212529;
+    font-weight: 500;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.4;
+    max-height: 2.8em;
+}
+
+.photo-info .photo-title {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.85em;
+    opacity: 0.8;
 }
 
 /* 移除链接下划线 */

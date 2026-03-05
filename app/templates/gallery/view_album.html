@@ -144,6 +144,9 @@
                     </div>
                 </div>
                 <div class="photo-actions">
+                    <button type="button" class="btn btn-sm btn-light" onclick="event.stopPropagation(); editPhotoInfo({{ photo.id }}, '{{ photo.title or '' }}', '{{ photo.description or '' }}')" title="编辑信息">
+                        <i class="bi bi-pencil"></i>
+                    </button>
                     <button type="button" class="btn btn-sm btn-light" onclick="event.stopPropagation(); togglePhotoPublic({{ photo.id }}, this)"
                             title="{% if photo.is_public %}设为私密{% else %}设为公开{% endif %}">
                         <i class="bi bi-{% if photo.is_public %}lock-fill{% else %}globe{% endif %}"></i>
@@ -260,6 +263,40 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
                 <button type="button" class="btn btn-primary" onclick="savePassword()">
+                    <i class="bi bi-check-lg"></i> 保存
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 图片信息编辑模态框 -->
+<div class="modal fade" id="photoInfoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-pencil"></i> 编辑图片信息</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editPhotoId">
+                <div class="mb-3">
+                    <label for="photoTitle" class="form-label">
+                        <i class="bi bi-type"></i> 图片标题
+                    </label>
+                    <input type="text" class="form-control" id="photoTitle" placeholder="为图片起个名字">
+                </div>
+                <div class="mb-3">
+                    <label for="photoDescription" class="form-label">
+                        <i class="bi bi-card-text"></i> 图片介绍
+                    </label>
+                    <textarea class="form-control" id="photoDescription" rows="3" placeholder="添加图片描述、故事背景或说明"></textarea>
+                    <div class="form-text">图片介绍会在共享空间展示给其他用户</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="savePhotoInfo()">
                     <i class="bi bi-check-lg"></i> 保存
                 </button>
             </div>
@@ -581,6 +618,61 @@ function copyShareUrl() {
         document.execCommand('copy');
         showNotification('success', '✓ 链接已复制到剪贴板！');
     }
+}
+
+// 编辑图片信息
+function editPhotoInfo(photoId, title, description) {
+    currentPhotoId = photoId;
+    document.getElementById('editPhotoId').value = photoId;
+    document.getElementById('photoTitle').value = title || '';
+    document.getElementById('photoDescription').value = description || '';
+
+    const modal = new bootstrap.Modal(document.getElementById('photoInfoModal'));
+    modal.show();
+}
+
+// 保存图片信息
+function savePhotoInfo() {
+    const photoId = currentPhotoId;
+    const title = document.getElementById('photoTitle').value;
+    const description = document.getElementById('photoDescription').value;
+
+    fetch(`/gallery/photo/${photoId}/edit-info`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            title: title,
+            description: description
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 关闭模态框
+            const modal = bootstrap.Modal.getInstance(document.getElementById('photoInfoModal'));
+            modal.hide();
+
+            showNotification('success', '✓ 图片信息已更新');
+
+            // 更新照片数据
+            const photo = photos.find(p => p.id === photoId);
+            if (photo) {
+                photo.title = title || photo.title;
+                photo.description = description;
+            }
+
+            // 刷新页面以显示更新后的信息
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showNotification('danger', data.message || '更新失败');
+        }
+    })
+    .catch(error => {
+        showNotification('danger', '操作失败: ' + error.message);
+    });
 }
 
 // 删除相册

@@ -579,6 +579,35 @@ def set_photo_public(photo_id):
     })
 
 
+@bp.route('/photo/<int:photo_id>/edit-info', methods=['POST'])
+@login_required
+def edit_photo_info(photo_id):
+    """
+    编辑图片标题和描述
+    超级管理员可以编辑任何图片的信息
+    """
+    photo = Photo.query.get_or_404(photo_id)
+
+    # 权限检查（超级管理员可以编辑任何图片）
+    is_superuser = getattr(current_user, 'is_superuser', False)
+    if photo.user_id != current_user.id and not is_superuser:
+        return jsonify({'success': False, 'message': '您没有权限编辑此图片'}), 403
+
+    data = request.json
+    title = data.get('title')
+    description = data.get('description')
+
+    photo.title = title if title else None
+    photo.description = description if description else None
+
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'message': '图片信息已更新'
+    })
+
+
 # ==================== 图片分享 ====================
 
 @bp.route('/photo/<int:photo_id>/share', methods=['POST'])
