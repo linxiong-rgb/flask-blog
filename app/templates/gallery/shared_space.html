@@ -551,13 +551,9 @@ function switchTab(tab) {
                 {% for album in albums.items %}
                 <a href="{{ url_for('gallery.shared_album_detail', album_id=album.id) }}" class="album-card">
                     <div class="album-cover">
-                        {% if album.cover_photo %}
-                        <img src="{{ album.cover_photo.file_path }}" alt="{{ album.name }}">
-                        {% else %}
                         <div class="album-cover-placeholder">
                             <i class="bi bi-images"></i>
                         </div>
-                        {% endif %}
                         {% if album.access_password %}
                         <div class="password-badge" style="top: 8px; right: 8px; position: absolute;">
                             <i class="bi bi-lock-fill"></i>

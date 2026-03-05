@@ -768,8 +768,7 @@ def shared_album_detail(album_id):
     共享相册详情页 - 检查密码后显示所有图片
     """
     album = Album.query.options(
-        joinedload(Album.user),
-        joinedload(Album.cover_photo)
+        joinedload(Album.user)
     ).get_or_404(album_id)
 
     # 验证相册是否公开

@@ -444,8 +444,8 @@ function handleImageError(img) {
     <div class="album-header">
         <div class="album-info">
             <div class="album-cover">
-                {% if album.cover_photo %}
-                <img src="{{ album.cover_photo.file_path }}" alt="{{ album.name }}">
+                {% if album.cover_photo_id %}
+                <img src="{{ url_for('main.static', filename='uploads/photos/placeholder.jpg') }}" alt="{{ album.name }}">
                 {% else %}
                 <div class="album-cover-placeholder">
                     <i class="bi bi-images"></i>
