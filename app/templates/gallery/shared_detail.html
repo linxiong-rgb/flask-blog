@@ -4,21 +4,39 @@
 
 {% block head %}
 <style>
-.shared-detail-container {
-    max-width: 1200px;
+.detail-container {
+    max-width: 1000px;
     margin: 0 auto;
-    padding: 2rem 1rem;
+    padding: 1.5rem 1rem;
 }
 
 .breadcrumb-nav {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #333;
+    font-size: 0.85rem;
+    transition: all 0.3s;
+}
+
+.btn-back:hover {
+    background: #e9ecef;
+    color: #333;
 }
 
 .image-container {
     background: #000;
     border-radius: 8px;
     overflow: hidden;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .detail-image {
@@ -32,12 +50,12 @@
 .info-card {
     background: white;
     border-radius: 8px;
-    padding: 1.5rem;
+    padding: 1rem;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .info-title {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
     color: #333;
@@ -47,22 +65,23 @@
     color: #666;
     margin-bottom: 1rem;
     line-height: 1.6;
+    font-size: 0.9rem;
 }
 
 .info-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 1.5rem;
-    padding-top: 1rem;
+    gap: 1rem;
+    padding-top: 0.75rem;
     border-top: 1px solid #f0f0f0;
 }
 
 .meta-item {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
     color: #666;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 .meta-item i {
@@ -73,15 +92,15 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 1rem;
+    padding: 0.75rem;
     background: #f8f9fa;
     border-radius: 8px;
     margin-bottom: 1rem;
 }
 
 .user-avatar {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: 50%;
     display: flex;
@@ -89,48 +108,37 @@
     justify-content: center;
     color: white;
     font-weight: 600;
+    font-size: 0.9rem;
 }
 
 .user-name {
     font-weight: 500;
     color: #333;
+    font-size: 0.9rem;
 }
 
-.btn-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: #f8f9fa;
-    border-radius: 8px;
-    text-decoration: none;
-    color: #333;
-    transition: all 0.3s;
-}
-
-.btn-back:hover {
-    background: #e9ecef;
-    color: #333;
+.user-date {
+    font-size: 0.75rem;
+    color: #999;
 }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="shared-detail-container">
+<div class="detail-container">
     <!-- 面包屑导航 -->
-    <nav aria-label="breadcrumb" class="breadcrumb-nav">
+    <div class="breadcrumb-nav">
         <a href="{{ url_for('gallery.shared') }}" class="btn-back">
             <i class="bi bi-arrow-left"></i> 返回共享空间
         </a>
-    </nav>
+    </div>
 
     <!-- 图片展示 -->
     <div class="image-container">
         <img src="{{ photo.url }}"
-             data-backup-url="{{ photo.backup_url }}"
+             onerror="this.src='{{ photo.backup_url }}'"
              alt="{{ photo.title or photo.filename }}"
-             class="detail-image"
-             onerror="this.src=this.dataset.backupUrl">
+             class="detail-image">
     </div>
 
     <!-- 图片信息 -->
@@ -142,7 +150,7 @@
             </div>
             <div>
                 <div class="user-name">{{ photo.user.username }}</div>
-                <small class="text-muted">分享于 {{ photo.created_at.strftime('%Y-%m-%d') }}</small>
+                <div class="user-date">{{ photo.created_at.strftime('%Y-%m-%d') }}</div>
             </div>
         </div>
 
@@ -159,7 +167,7 @@
         <div class="info-meta">
             <div class="meta-item">
                 <i class="bi bi-eye"></i>
-                <span>{{ photo.views }} 次浏览</span>
+                <span>{{ photo.views }}</span>
             </div>
             <div class="meta-item">
                 <i class="bi bi-calendar3"></i>

@@ -4,16 +4,16 @@
 
 {% block head %}
 <style>
-/* 共享空间 - 完全参考相册布局 */
+/* 共享空间 - 完全复制相册布局 */
 .shared-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 1.5rem 0;
-    margin-bottom: 1.5rem;
+    padding: 1rem 0;
+    margin-bottom: 1rem;
 }
 
 .shared-title {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 600;
     margin: 0;
     display: flex;
@@ -22,22 +22,16 @@
 }
 
 .shared-subtitle {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     opacity: 0.9;
-    margin: 0.25rem 0 0;
+    margin: 0;
 }
 
 .shared-stats {
     display: flex;
     gap: 1rem;
     margin-top: 0.5rem;
-    font-size: 0.8rem;
-}
-
-.stat-item {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
+    font-size: 0.75rem;
 }
 
 .shared-btn {
@@ -48,7 +42,7 @@
     border-radius: 20px;
     text-decoration: none;
     transition: all 0.3s;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
 }
 
 .shared-btn:hover {
@@ -56,17 +50,15 @@
     color: white;
 }
 
-/* 图片网格 - 完全参考相册布局 */
+/* 图片网格 - 完全复制相册样式 */
 .photo-grid {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
-    gap: 15px !important;
-    width: 100% !important;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
 }
 
 .photo-item {
     position: relative;
-    width: 100% !important;
 }
 
 .photo-card {
@@ -76,8 +68,6 @@
     cursor: pointer;
     aspect-ratio: 1;
     background: #f8f9fa;
-    display: block !important;
-    width: 100% !important;
 }
 
 .photo-img {
@@ -91,7 +81,7 @@
     transform: scale(1.05);
 }
 
-/* 加密图片模糊保护 */
+/* 加密图片模糊 */
 .photo-card.has-password .photo-img {
     filter: blur(25px) brightness(0.4);
 }
@@ -100,7 +90,7 @@
     filter: blur(20px) brightness(0.45);
 }
 
-/* 密码保护覆盖层 */
+/* 密码覆盖层 */
 .password-overlay {
     position: absolute;
     top: 0;
@@ -118,16 +108,16 @@
 }
 
 .password-overlay i {
-    font-size: 1.8rem;
+    font-size: 1.5rem;
     margin-bottom: 0.25rem;
 }
 
 .password-overlay span {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 500;
 }
 
-/* 悬停信息叠加层 */
+/* 悬停信息 */
 .photo-overlay {
     position: absolute;
     bottom: 0;
@@ -146,7 +136,7 @@
 
 .photo-info h6 {
     margin: 0 0 4px 0;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 500;
     white-space: nowrap;
     overflow: hidden;
@@ -155,7 +145,7 @@
 
 .photo-info p {
     margin: 0;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     opacity: 0.9;
 }
 
@@ -165,19 +155,20 @@
     top: 8px;
     left: 8px;
     background: rgba(255,255,255,0.95);
-    padding: 4px 8px;
-    border-radius: 20px;
-    font-size: 0.75rem;
+    padding: 3px 6px;
+    border-radius: 12px;
+    font-size: 0.65rem;
     font-weight: 500;
     color: #333;
     display: flex;
     align-items: center;
-    gap: 4px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    gap: 3px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 
 .user-badge i {
     color: #667eea;
+    font-size: 0.7rem;
 }
 
 /* 密码标签 */
@@ -187,18 +178,18 @@
     right: 8px;
     background: rgba(220, 53, 69, 0.95);
     color: white;
-    padding: 4px 8px;
-    border-radius: 20px;
-    font-size: 0.7rem;
+    padding: 3px 6px;
+    border-radius: 12px;
+    font-size: 0.6rem;
     font-weight: 500;
     display: flex;
     align-items: center;
-    gap: 3px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    gap: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 
 .password-badge i {
-    font-size: 0.7rem;
+    font-size: 0.6rem;
 }
 
 /* 空状态 */
@@ -211,32 +202,32 @@
 }
 
 .empty-state i {
-    font-size: 2.5rem;
+    font-size: 2rem;
     color: #dee2e6;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
 }
 
 .empty-state h5 {
     color: #495057;
     margin-bottom: 0.5rem;
-    font-size: 1rem;
+    font-size: 0.9rem;
 }
 
 .empty-state p {
     color: #6c757d;
     margin-bottom: 1rem;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
 }
 
 /* 分页 */
 .pagination .page-link {
-    border-radius: 8px;
-    margin: 0 3px;
-    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    margin: 0 2px;
+    padding: 0.4rem 0.8rem;
     border: 1px solid #e0e0e0;
     color: #555;
     transition: all 0.3s;
-    font-size: 0.875rem;
+    font-size: 0.8rem;
 }
 
 .pagination .page-link:hover {
@@ -263,7 +254,7 @@
 }
 
 .image-placeholder i {
-    font-size: 2rem;
+    font-size: 1.5rem;
 }
 </style>
 <script>
@@ -280,17 +271,11 @@ function handleImageError(img) {
         }
     }
 }
-
-// 点击跳转到详情页
-function openPhotoDetail(photoId) {
-    window.location.href = "{{ url_for('gallery.shared_detail', photo_id=0) }}".replace('0', photoId);
-}
 </script>
 {% endblock %}
 
 {% block content %}
-<!-- 调试标记：如果你看到红色背景，说明新样式已加载 -->
-<div class="container-fluid mt-4" style="background: #fff0f0;">
+<div class="container-fluid mt-3">
     <!-- 页面头部 -->
     <div class="row mb-3">
         <div class="col-12">
@@ -322,7 +307,7 @@ function openPhotoDetail(photoId) {
             {% for photo in photos.items %}
             <div class="photo-item">
                 <div class="photo-card {% if photo.access_password %}has-password{% endif %}"
-                     onclick="openPhotoDetail({{ photo.id }})">
+                     onclick="location.href='{{ url_for('gallery.shared_detail', photo_id=photo.id) }}'">
                     {% if photo.thumbnail_path %}
                     <img src="{{ photo.thumbnail_path }}"
                          data-raw-url="{{ photo.backup_url }}"
