@@ -379,10 +379,10 @@ const photos = [
     {% for photo in photos %}
     {
         id: {{ photo.id }},
-        url: '{{ photo.url }}',
-        backupUrl: '{{ photo.backup_url }}',
-        title: '{{ photo.title or photo.filename }}',
-        description: '{{ photo.description or "" }}'
+        url: {{ photo.url | tojson }},
+        backupUrl: {{ photo.backup_url | tojson }},
+        title: {{ (photo.title or photo.filename) | tojson }},
+        description: {{ photo.description | tojson }}
     }{% if not loop.last %},{% endif %}
     {% endfor %}
 ];
