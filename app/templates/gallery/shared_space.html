@@ -2,7 +2,7 @@
 
 {% block title %}共享空间 - 云相册{% endblock %}
 
-{% block head %}
+{% block content %}
 <style>
 /* 共享空间 - 完全复制相册布局 */
 .shared-header {
@@ -241,22 +241,8 @@
     border-color: #667eea;
     color: white;
 }
-
-/* 图片加载错误占位符 */
-.image-placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    color: #adb5bd;
-}
-
-.image-placeholder i {
-    font-size: 1.5rem;
-}
 </style>
+
 <script>
 // 图片加载错误处理
 function handleImageError(img) {
@@ -267,14 +253,12 @@ function handleImageError(img) {
     } else {
         const card = img.closest('.photo-card');
         if (card) {
-            card.innerHTML = '<div class="image-placeholder"><i class="bi bi-image"></i></div>';
+            card.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f8f9fa;color:#adb5bd;"><i class="bi bi-image"></i></div>';
         }
     }
 }
 </script>
-{% endblock %}
 
-{% block content %}
 <div class="container-fluid mt-3">
     <!-- 页面头部 -->
     <div class="row mb-3">
