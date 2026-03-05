@@ -1069,6 +1069,7 @@ def migrate_database():
                         description TEXT,
                         exif_data JSONB,
                         is_public BOOLEAN DEFAULT FALSE,
+                        access_password VARCHAR(100),
                         views INTEGER DEFAULT 0,
                         likes INTEGER DEFAULT 0,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1079,6 +1080,24 @@ def migrate_database():
                 results.append('photo 表创建成功')
             else:
                 results.append('photo 表已存在')
+
+            # 检查并添加 photo 表的 access_password 列（已存在的表）
+            if 'photo' in existing_tables:
+                result = conn.execute(text("""
+                    SELECT column_name
+                    FROM information_schema.columns
+                    WHERE table_name = 'photo'
+                    AND column_name = 'access_password'
+                """))
+                if not result.fetchone():
+                    current_app.logger.info('正在添加 photo.access_password 列...')
+                    conn.execute(text("""
+                        ALTER TABLE photo ADD COLUMN access_password VARCHAR(100)
+                    """))
+                    conn.commit()
+                    results.append('photo.access_password 列添加成功')
+                else:
+                    results.append('photo.access_password 列已存在')
 
             # 创建 photo_tags 关联表
             if 'photo_tags' not in existing_tables:
