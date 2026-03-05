@@ -125,7 +125,7 @@
                     <input type="checkbox" class="form-check-input photo-checkbox" value="{{ photo.id }}" onchange="updateSelection()">
                 </div>
                 <div class="photo-card" onclick="openLightbox({{ loop.index0 }})">
-                    <img src="{{ photo.thumbnail_url }}" alt="{{ photo.title or photo.filename }}"
+                    <img src="{{ photo.file_path }}" alt="{{ photo.title or photo.filename }}"
                          loading="lazy" class="photo-img">
                     <div class="photo-overlay">
                         <div class="photo-info">

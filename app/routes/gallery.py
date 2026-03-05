@@ -39,9 +39,9 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'}
 
 # 缩略图尺寸
 THUMBNAIL_SIZES = {
-    'small': (150, 150),
-    'medium': (300, 300),
-    'large': (800, 600)
+    'small': (200, 200),
+    'medium': (400, 400),
+    'large': (1200, 900)
 }
 
 
