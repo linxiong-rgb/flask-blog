@@ -167,26 +167,78 @@ class Photo(db.Model):
         if not self.file_path:
             return self.file_path
 
-        # 如果当前是 jsDelivr CDN URL，返回 GitHub raw URL
+        # 提取仓库信息和文件路径
+        repo = None
+        branch = 'main'
+        path = None
+
+        # 从 jsDelivr CDN URL 解析
         if 'cdn.jsdelivr.net' in self.file_path:
             match = re.match(r'https://cdn\.jsdelivr\.net/gh/([^@]+)@([^/]+)/(.+)', self.file_path)
             if match:
                 repo = match.group(1)
                 branch = match.group(2)
                 path = match.group(3)
-                return f'https://raw.githubusercontent.com/{repo}/{branch}/{path}'
 
-        # 如果当前是 GitHub raw URL，返回 jsDelivr CDN URL
+        # 从 GitHub raw URL 解析
         elif 'raw.githubusercontent.com' in self.file_path:
             match = re.match(r'https://raw\.githubusercontent\.com/([^/]+)/([^/]+)/([^/]+)/(.+)', self.file_path)
             if match:
                 repo = f"{match.group(1)}/{match.group(2)}"
                 branch = match.group(3)
                 path = match.group(4)
-                return f'https://cdn.jsdelivr.net/gh/{repo}@{branch}/{path}'
 
-        # 其他情况返回原URL
+        # 如果成功解析，优先使用 GitHub raw（更稳定）
+        if repo and path:
+            raw_url = f'https://raw.githubusercontent.com/{repo}/{branch}/{path}'
+            if raw_url != self.file_path:
+                return raw_url
+
         return self.file_path
+
+    @property
+    def cdn_urls(self):
+        """获取所有可用的 CDN URL 列表"""
+        import re
+
+        urls = [self.file_path]
+
+        if not self.file_path:
+            return urls
+
+        # 提取仓库信息和文件路径
+        repo = None
+        branch = 'main'
+        path = None
+
+        # 从 jsDelivr CDN URL 解析
+        if 'cdn.jsdelivr.net' in self.file_path:
+            match = re.match(r'https://cdn\.jsdelivr\.net/gh/([^@]+)@([^/]+)/(.+)', self.file_path)
+            if match:
+                repo = match.group(1)
+                branch = match.group(2)
+                path = match.group(3)
+
+        # 从 GitHub raw URL 解析
+        elif 'raw.githubusercontent.com' in self.file_path:
+            match = re.match(r'https://raw\.githubusercontent\.com/([^/]+)/([^/]+)/([^/]+)/(.+)', self.file_path)
+            if match:
+                repo = f"{match.group(1)}/{match.group(2)}"
+                branch = match.group(3)
+                path = match.group(4)
+
+        # 如果成功解析，添加所有可用的镜像
+        if repo and path:
+            mirrors = [
+                f'https://raw.githubusercontent.com/{repo}/{branch}/{path}',  # GitHub raw
+                f'https://gh-proxy.com/{repo}/{branch}/{path}',  # gh-proxy 镜像
+                f'https://cdn.jsdelivr.net/gh/{repo}@{branch}/{path}',  # jsDelivr
+            ]
+            for mirror in mirrors:
+                if mirror not in urls:
+                    urls.append(mirror)
+
+        return urls
 
     def __repr__(self):
         return f'<Photo {self.filename}>'

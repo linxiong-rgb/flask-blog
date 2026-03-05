@@ -126,10 +126,11 @@
                 </div>
                 <div class="photo-card" onclick="openLightbox({{ loop.index0 }})">
                     <img src="{{ photo.file_path }}"
-                         data-backup="{{ photo.backup_url }}"
+                         data-cdn-urls="{{ photo.cdn_urls|join(',') }}"
+                         data-current-index="0"
                          alt="{{ photo.title or photo.filename }}"
                          loading="lazy" class="photo-img"
-                         onerror="handleImageError(this)">
+                         onerror="handleImageErrorMultiCdn(this)">
                     <div class="photo-overlay">
                         <div class="photo-info">
                             {% if photo.title %}
@@ -328,17 +329,18 @@ const photos = [
 let currentPhotoIndex = 0;
 let currentPhotoId = null;
 
-// 图片加载错误处理
-function handleImageError(img) {
-    if (img.dataset.usedBackup === 'true') {
-        // 备用URL也失败了，显示占位图
-        img.outerHTML = '<div class="image-placeholder"><i class="bi bi-image"></i></div>';
-    } else if (img.dataset.backup && img.dataset.backup !== img.src) {
-        // 尝试加载备用URL
-        img.src = img.dataset.backup;
-        img.dataset.usedBackup = 'true';
+// 多CDN图片加载错误处理
+function handleImageErrorMultiCdn(img) {
+    const urls = img.dataset.cdnUrls ? img.dataset.cdnUrls.split(',') : [];
+    let currentIndex = parseInt(img.dataset.currentIndex) || 0;
+
+    // 尝试下一个 CDN URL
+    if (currentIndex < urls.length - 1) {
+        currentIndex++;
+        img.dataset.currentIndex = currentIndex;
+        img.src = urls[currentIndex];
     } else {
-        // 没有备用URL或备用URL相同，显示占位图
+        // 所有 CDN 都失败了，显示占位图
         img.outerHTML = '<div class="image-placeholder"><i class="bi bi-image"></i></div>';
     }
 }

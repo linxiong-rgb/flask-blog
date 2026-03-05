@@ -20,18 +20,20 @@
             <a href="{{ url_for('gallery.shared_photo_detail', photo_id=photo.id) }}" class="photo-card {% if photo.access_password %}has-password{% endif %}">
                 {% if photo.access_password %}
                 <!-- 加密图片使用缩略图，防止查看源代码获取原图 -->
-                <img src="{{ photo.thumbnail_url or photo.file_path }}"
-                     data-backup="{{ photo.backup_url }}"
+                <img src="{{ photo.file_path }}"
+                     data-cdn-urls="{{ photo.cdn_urls|join(',') }}"
+                     data-current-index="0"
                      alt="{{ photo.title or photo.filename }}"
                      loading="lazy" class="photo-img lazy-image"
-                     onerror="handleImageError(this)"
+                     onerror="handleImageErrorMultiCdn(this)"
                      style="{% if photo.width and photo.height %}aspect-ratio: {{ photo.width }}/{{ photo.height }};{% endif %} filter: blur(20px) !important;">
                 {% else %}
                 <img src="{{ photo.file_path }}"
-                     data-backup="{{ photo.backup_url }}"
+                     data-cdn-urls="{{ photo.cdn_urls|join(',') }}"
+                     data-current-index="0"
                      alt="{{ photo.title or photo.filename }}"
                      loading="lazy" class="photo-img lazy-image"
-                     onerror="handleImageError(this)"
+                     onerror="handleImageErrorMultiCdn(this)"
                      {% if photo.width and photo.height %}style="aspect-ratio: {{ photo.width }}/{{ photo.height }};"{% endif %}>
                 {% endif %}
                 {% if photo.access_password %}
@@ -102,17 +104,18 @@
 </div>
 
 <script>
-// 图片加载错误处理
-function handleImageError(img) {
-    if (img.dataset.usedBackup === 'true') {
-        // 备用URL也失败了，显示占位图
-        img.outerHTML = '<div class="image-placeholder"><i class="bi bi-image"></i></div>';
-    } else if (img.dataset.backup && img.dataset.backup !== img.src) {
-        // 尝试加载备用URL
-        img.src = img.dataset.backup;
-        img.dataset.usedBackup = 'true';
+// 多CDN图片加载错误处理
+function handleImageErrorMultiCdn(img) {
+    const urls = img.dataset.cdnUrls ? img.dataset.cdnUrls.split(',') : [];
+    let currentIndex = parseInt(img.dataset.currentIndex) || 0;
+
+    // 尝试下一个 CDN URL
+    if (currentIndex < urls.length - 1) {
+        currentIndex++;
+        img.dataset.currentIndex = currentIndex;
+        img.src = urls[currentIndex];
     } else {
-        // 没有备用URL或备用URL相同，显示占位图
+        // 所有 CDN 都失败了，显示占位图
         img.outerHTML = '<div class="image-placeholder"><i class="bi bi-image"></i></div>';
     }
 }
