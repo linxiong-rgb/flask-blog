@@ -42,8 +42,11 @@
 
                     <!-- 图片容器 -->
                     <div class="image-container" id="imageContainer">
-                        <img src="{{ photo.file_path }}" alt="{{ photo.title or photo.filename }}"
+                        <img src="{{ photo.file_path }}"
+                             data-backup="{{ photo.backup_url }}"
+                             alt="{{ photo.title or photo.filename }}"
                              class="viewer-image" id="viewerImage"
+                             onerror="this.src=this.dataset.backup;"
                              {% if photo.width and photo.height %}style="aspect-ratio: {{ photo.width }}/{{ photo.height }};"{% endif %}>
                     </div>
 

@@ -186,11 +186,25 @@ class GitHubStorage(StorageBackend):
             logger.error(f'GitHub 删除失败: {str(e)}')
             return False
 
-    def get_url(self, object_name):
-        """获取 GitHub 文件访问 URL"""
-        # 使用 GitHub raw URL（更稳定，减少故障点）
-        # 格式: https://raw.githubusercontent.com/user/repo/branch/path/file
-        # 如果需要 CDN 加速，前端可以自动转换为 jsDelivr
+    def get_url(self, object_name, use_cdn=True):
+        """
+        获取 GitHub 文件访问 URL
+
+        Args:
+            object_name: 文件名
+            use_cdn: 是否使用 jsDelivr CDN 加速（默认True）
+        """
+        if use_cdn:
+            # 使用 jsDelivr CDN 加速，国内可直接访问
+            # 格式: https://cdn.jsdelivr.net/gh/user/repo@branch/path/file
+            cdn_url = f'https://cdn.jsdelivr.net/gh/{self.repo}@{self.branch}/{self.path}/{object_name}'
+            return cdn_url
+        else:
+            # 备用：GitHub raw URL
+            return f'https://raw.githubusercontent.com/{self.repo}/{self.branch}/{self.path}/{object_name}'
+
+    def get_raw_url(self, object_name):
+        """获取 GitHub raw URL（备用）"""
         return f'https://raw.githubusercontent.com/{self.repo}/{self.branch}/{self.path}/{object_name}'
 
 

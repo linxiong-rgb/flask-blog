@@ -159,6 +159,20 @@ class Photo(db.Model):
         """获取缩略图URL"""
         return self.thumbnail_path or self.file_path
 
+    @property
+    def backup_url(self):
+        """获取备用图片URL（GitHub raw）"""
+        # 从 jsDelivr CDN URL 转换为 GitHub raw URL
+        if self.file_path and 'cdn.jsdelivr.net' in self.file_path:
+            import re
+            match = re.match(r'https://cdn\.jsdelivr\.net/gh/([^@]+)@([^/]+)/(.+)', self.file_path)
+            if match:
+                repo = match.group(1)
+                branch = match.group(2)
+                path = match.group(3)
+                return f'https://raw.githubusercontent.com/{repo}/{branch}/{path}'
+        return self.file_path
+
     def __repr__(self):
         return f'<Photo {self.filename}>'
 

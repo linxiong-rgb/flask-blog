@@ -837,43 +837,71 @@ def batch_share():
 @login_required
 def migrate_urls():
     """
-    迁移图片URL从 jsDelivr CDN 到 GitHub raw
+    迁移图片URL格式
+    - direction='to_raw': 从 jsDelivr CDN 迁移到 GitHub raw
+    - direction='to_cdn': 从 GitHub raw 迁移到 jsDelivr CDN
     """
     # 只允许超级管理员执行
     is_superuser = getattr(current_user, 'is_superuser', False)
     if not is_superuser:
         return jsonify({'success': False, 'message': '需要超级管理员权限'}), 403
 
+    direction = request.json.get('direction', 'to_cdn')
+
     try:
-        # 获取所有使用 jsDelivr CDN 的图片
-        photos = Photo.query.filter(Photo.file_path.like('https://cdn.jsdelivr.net/%')).all()
-
         migrated = 0
-        for photo in photos:
-            # 转换 URL
-            # jsDelivr: https://cdn.jsdelivr.net/gh/user/repo@branch/path/file
-            # Raw: https://raw.githubusercontent.com/user/repo/branch/path/file
-            old_url = photo.file_path
 
-            # 使用正则表达式转换 URL
-            match = re.match(r'https://cdn\.jsdelivr\.net/gh/([^@]+)@([^/]+)/(.+)', old_url)
-            if match:
-                repo = match.group(1)
-                branch = match.group(2)
-                path = match.group(3)
-                new_url = f'https://raw.githubusercontent.com/{repo}/{branch}/{path}'
+        if direction == 'to_cdn':
+            # 从 GitHub raw 迁移到 jsDelivr CDN
+            photos = Photo.query.filter(Photo.file_path.like('https://raw.githubusercontent.com/%')).all()
+            for photo in photos:
+                # Raw: https://raw.githubusercontent.com/user/repo/branch/path/file
+                # CDN: https://cdn.jsdelivr.net/gh/user/repo@branch/path/file
+                old_url = photo.file_path
+                match = re.match(r'https://raw\.githubusercontent\.com/([^/]+)/([^/]+)/([^/]+)/(.+)', old_url)
+                if match:
+                    repo = f"{match.group(1)}/{match.group(2)}"
+                    branch = match.group(3)
+                    path = match.group(4)
+                    new_url = f'https://cdn.jsdelivr.net/gh/{repo}@{branch}/{path}'
 
-                photo.file_path = new_url
-                migrated += 1
+                    photo.file_path = new_url
+                    migrated += 1
 
-                # 同样更新缩略图 URL
-                if photo.thumbnail_path and photo.thumbnail_path.startswith('https://cdn.jsdelivr.net/'):
-                    match_thumb = re.match(r'https://cdn\.jsdelivr\.net/gh/([^@]+)@([^/]+)/(.+)', photo.thumbnail_path)
-                    if match_thumb:
-                        repo = match_thumb.group(1)
-                        branch = match_thumb.group(2)
-                        path = match_thumb.group(3)
-                        photo.thumbnail_path = f'https://raw.githubusercontent.com/{repo}/{branch}/{path}'
+                    # 同样更新缩略图 URL
+                    if photo.thumbnail_path and photo.thumbnail_path.startswith('https://raw.githubusercontent.com/'):
+                        match_thumb = re.match(r'https://raw\.githubusercontent\.com/([^/]+)/([^/]+)/([^/]+)/(.+)', photo.thumbnail_path)
+                        if match_thumb:
+                            repo = f"{match_thumb.group(1)}/{match_thumb.group(2)}"
+                            branch = match_thumb.group(3)
+                            path = match_thumb.group(4)
+                            photo.thumbnail_path = f'https://cdn.jsdelivr.net/gh/{repo}@{branch}/{path}'
+
+        else:  # to_raw
+            # 从 jsDelivr CDN 迁移到 GitHub raw
+            photos = Photo.query.filter(Photo.file_path.like('https://cdn.jsdelivr.net/%')).all()
+            for photo in photos:
+                # CDN: https://cdn.jsdelivr.net/gh/user/repo@branch/path/file
+                # Raw: https://raw.githubusercontent.com/user/repo/branch/path/file
+                old_url = photo.file_path
+                match = re.match(r'https://cdn\.jsdelivr\.net/gh/([^@]+)@([^/]+)/(.+)', old_url)
+                if match:
+                    repo = match.group(1)
+                    branch = match.group(2)
+                    path = match.group(3)
+                    new_url = f'https://raw.githubusercontent.com/{repo}/{branch}/{path}'
+
+                    photo.file_path = new_url
+                    migrated += 1
+
+                    # 同样更新缩略图 URL
+                    if photo.thumbnail_path and photo.thumbnail_path.startswith('https://cdn.jsdelivr.net/'):
+                        match_thumb = re.match(r'https://cdn\.jsdelivr\.net/gh/([^@]+)@([^/]+)/(.+)', photo.thumbnail_path)
+                        if match_thumb:
+                            repo = match_thumb.group(1)
+                            branch = match_thumb.group(2)
+                            path = match_thumb.group(3)
+                            photo.thumbnail_path = f'https://raw.githubusercontent.com/{repo}/{branch}/{path}'
 
         db.session.commit()
 

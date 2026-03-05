@@ -20,12 +20,18 @@
             <a href="{{ url_for('gallery.shared_photo_detail', photo_id=photo.id) }}" class="photo-card {% if photo.access_password %}has-password{% endif %}">
                 {% if photo.access_password %}
                 <!-- 加密图片使用缩略图，防止查看源代码获取原图 -->
-                <img src="{{ photo.thumbnail_url or photo.file_path }}" alt="{{ photo.title or photo.filename }}"
-                     loading="lazy" class="photo-img"
+                <img src="{{ photo.thumbnail_url or photo.file_path }}"
+                     data-backup="{{ photo.backup_url }}"
+                     alt="{{ photo.title or photo.filename }}"
+                     loading="lazy" class="photo-img lazy-image"
+                     onerror="this.src=this.dataset.backup;this.classList.remove('lazy-image');"
                      style="{% if photo.width and photo.height %}aspect-ratio: {{ photo.width }}/{{ photo.height }};{% endif %} filter: blur(20px) !important;">
                 {% else %}
-                <img src="{{ photo.file_path }}" alt="{{ photo.title or photo.filename }}"
-                     loading="lazy" class="photo-img"
+                <img src="{{ photo.file_path }}"
+                     data-backup="{{ photo.backup_url }}"
+                     alt="{{ photo.title or photo.filename }}"
+                     loading="lazy" class="photo-img lazy-image"
+                     onerror="this.src=this.dataset.backup;this.classList.remove('lazy-image');"
                      {% if photo.width and photo.height %}style="aspect-ratio: {{ photo.width }}/{{ photo.height }};"{% endif %}>
                 {% endif %}
                 {% if photo.access_password %}

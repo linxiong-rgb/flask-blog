@@ -125,8 +125,11 @@
                     <input type="checkbox" class="form-check-input photo-checkbox" value="{{ photo.id }}" onchange="updateSelection()">
                 </div>
                 <div class="photo-card" onclick="openLightbox({{ loop.index0 }})">
-                    <img src="{{ photo.file_path }}" alt="{{ photo.title or photo.filename }}"
-                         loading="lazy" class="photo-img">
+                    <img src="{{ photo.file_path }}"
+                         data-backup="{{ photo.backup_url }}"
+                         alt="{{ photo.title or photo.filename }}"
+                         loading="lazy" class="photo-img"
+                         onerror="this.src=this.dataset.backup;">
                     <div class="photo-overlay">
                         <div class="photo-info">
                             {% if photo.title %}
@@ -311,6 +314,7 @@ const photos = [
     {
         id: {{ photo.id }},
         url: '{{ photo.url }}',
+        backupUrl: '{{ photo.backup_url }}',
         title: '{{ photo.title or photo.filename }}',
         description: '{{ photo.description or "" }}'
     }{% if not loop.last %},{% endif %}
@@ -378,7 +382,14 @@ function closeLightbox() {
 function showCurrentPhoto() {
     if (photos.length === 0) return;
     const photo = photos[currentPhotoIndex];
-    document.getElementById('lightboxImage').src = photo.url;
+    const lightboxImage = document.getElementById('lightboxImage');
+    lightboxImage.src = photo.url;
+    // 添加错误处理，自动切换到备用URL
+    lightboxImage.onerror = function() {
+        if (this.src !== photo.backupUrl) {
+            this.src = photo.backupUrl;
+        }
+    };
     document.getElementById('lightboxCaption').textContent = photo.title;
 }
 
