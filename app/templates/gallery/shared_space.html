@@ -110,15 +110,30 @@
     transform: scale(1.05);
 }
 
-/* 加密图片模糊 - 使用高斯模糊 + 轻微透明度 */
+/* 加密图片模糊 - 使用轻度模糊 + 颗粒质感 */
 .photo-card.has-password .photo-img {
-    filter: blur(20px);
-    opacity: 0.7;
+    filter: blur(8px) contrast(1.1) saturate(0.8);
+    opacity: 0.85;
+    position: relative;
 }
 
 .photo-card.has-password:hover .photo-img {
-    filter: blur(15px);
-    opacity: 0.75;
+    filter: blur(6px) contrast(1.15) saturate(0.85);
+    opacity: 0.9;
+}
+
+/* 颗粒质感层 */
+.photo-card.has-password::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
+    pointer-events: none;
+    opacity: 0.6;
+    z-index: 1;
 }
 
 /* 密码覆盖层 */
