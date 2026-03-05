@@ -708,7 +708,8 @@ def shared_photo_detail(photo_id):
                 if password == photo.access_password:
                     session[session_key] = password
                 else:
-                    flash('密码错误', 'danger')
+                    flash('密码错误，请重试', 'danger')
+                    return render_template('gallery/photo_password.html', photo=photo)
             else:
                 return render_template('gallery/photo_password.html', photo=photo)
 
