@@ -58,13 +58,15 @@
 
 /* 图片网格 - 完全参考相册布局 */
 .photo-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 15px;
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+    gap: 15px !important;
+    width: 100% !important;
 }
 
 .photo-item {
     position: relative;
+    width: 100% !important;
 }
 
 .photo-card {
@@ -74,6 +76,8 @@
     cursor: pointer;
     aspect-ratio: 1;
     background: #f8f9fa;
+    display: block !important;
+    width: 100% !important;
 }
 
 .photo-img {
@@ -285,7 +289,8 @@ function openPhotoDetail(photoId) {
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
+<!-- 调试标记：如果你看到红色背景，说明新样式已加载 -->
+<div class="container-fluid mt-4" style="background: #fff0f0;">
     <!-- 页面头部 -->
     <div class="row mb-3">
         <div class="col-12">
