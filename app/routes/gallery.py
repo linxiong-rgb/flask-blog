@@ -290,14 +290,16 @@ def delete_album(album_id):
     注意：会删除相册中的所有图片
     超级管理员可以删除任何相册
     """
-    album = Album.query.get_or_404(album_id)
-
-    # 权限检查（超级管理员可以删除任何相册）
-    is_superuser = getattr(current_user, 'is_superuser', False)
-    if album.user_id != current_user.id and not is_superuser:
-        return jsonify({'success': False, 'message': '您没有权限删除此相册'}), 403
-
     try:
+        album = Album.query.get(album_id)
+        if not album:
+            return jsonify({'success': False, 'message': '相册不存在'}), 404
+
+        # 权限检查（超级管理员可以删除任何相册）
+        is_superuser = getattr(current_user, 'is_superuser', False)
+        if album.user_id != current_user.id and not is_superuser:
+            return jsonify({'success': False, 'message': '您没有权限删除此相册'}), 403
+
         # 删除相册中的所有图片文件
         for photo in album.photos:
             delete_photo_file(photo)
@@ -306,10 +308,11 @@ def delete_album(album_id):
         db.session.commit()
 
         return jsonify({'success': True, 'message': '相册已删除'})
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'删除相册失败: {str(e)}')
-        return jsonify({'success': False, 'message': '删除失败'}), 500
+        return jsonify({'success': False, 'message': f'删除失败: {str(e)}'}), 500
 
 
 # ==================== 图片上传 ====================
@@ -472,23 +475,29 @@ def delete_photo(photo_id):
     删除图片
     超级管理员可以删除任何图片
     """
-    photo = Photo.query.get_or_404(photo_id)
-
-    # 权限检查（超级管理员可以删除任何图片）
-    is_superuser = getattr(current_user, 'is_superuser', False)
-    if photo.user_id != current_user.id and not is_superuser:
-        return jsonify({'success': False, 'message': '您没有权限删除此图片'}), 403
-
     try:
+        photo = Photo.query.get(photo_id)
+        if not photo:
+            return jsonify({'success': False, 'message': '图片不存在'}), 404
+
+        # 权限检查（超级管理员可以删除任何图片）
+        is_superuser = getattr(current_user, 'is_superuser', False)
+        if photo.user_id != current_user.id and not is_superuser:
+            return jsonify({'success': False, 'message': '您没有权限删除此图片'}), 403
+
+        # 删除文件
         delete_photo_file(photo)
+
+        # 删除数据库记录
         db.session.delete(photo)
         db.session.commit()
 
         return jsonify({'success': True, 'message': '图片已删除'})
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'删除图片失败: {str(e)}')
-        return jsonify({'success': False, 'message': '删除失败'}), 500
+        return jsonify({'success': False, 'message': f'删除失败: {str(e)}'}), 500
 
 
 @bp.route('/photo/<int:photo_id>/move', methods=['POST'])

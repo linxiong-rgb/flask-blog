@@ -8,6 +8,7 @@
     <meta name="description" content="{% block description %}专注于网络安全与渗透测试的技术博客，分享学习笔记与实践经验。{% endblock %}">
     <meta name="keywords" content="{% block keywords %}网络安全,渗透测试,技术博客,编程,Python,Flask{% endblock %}">
     <meta name="author" content="linxiong">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="{% block og_type %}website{% endblock %}">
