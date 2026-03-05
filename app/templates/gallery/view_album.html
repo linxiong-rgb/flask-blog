@@ -191,15 +191,12 @@ function handleImageErrorMultiCdn(img) {
                             data-photo-is-public="{{ 'true' if photo.is_public else 'false' }}"
                             data-photo-has-password="{{ 'true' if photo.access_password else 'false' }}"
                             onclick="event.stopPropagation(); editPhotoInfo(this)"
-                            title="编辑信息">
+                            title="编辑信息（标题、描述、密码）">
                         <i class="bi bi-pencil"></i>
                     </button>
                     <button type="button" class="btn btn-sm btn-light" onclick="event.stopPropagation(); togglePhotoPublic({{ photo.id }}, this)"
                             title="{% if photo.is_public %}设为私密{% else %}设为公开{% endif %}">
                         <i class="bi bi-{% if photo.is_public %}lock-fill{% else %}globe{% endif %}"></i>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-light" onclick="event.stopPropagation(); editPhotoPassword({{ photo.id }})" title="设置密码">
-                        <i class="bi bi-key"></i>
                     </button>
                     <button type="button" class="btn btn-sm btn-light" onclick="event.stopPropagation(); toggleShare({{ photo.id }})" title="分享">
                         <i class="bi bi-share"></i>
@@ -783,42 +780,6 @@ function togglePasswordVisibility(inputId) {
         icon.classList.remove('bi-eye-slash');
         icon.classList.add('bi-eye');
     }
-}
-
-// 直接编辑密码
-function editPhotoPassword(photoId) {
-    currentPhotoId = photoId;
-
-    // 清空字段
-    document.getElementById('editPhotoId').value = photoId;
-    document.getElementById('photoTitle').value = '';
-    document.getElementById('photoDescription').value = '';
-    document.getElementById('photoAccessPassword').value = '';
-    document.getElementById('removePhotoPassword').checked = false;
-
-    // 获取当前照片数据
-    const photo = photos.find(p => p.id === photoId);
-    if (photo) {
-        document.getElementById('photoTitle').value = photo.title || '';
-        document.getElementById('photoDescription').value = photo.description || '';
-    }
-
-    // 显示密码状态提示
-    const button = document.querySelector(`button[data-photo-id="${photoId}"]`);
-    const hasPassword = button && button.getAttribute('data-photo-has-password') === 'true';
-    const passwordIndicator = document.getElementById('currentPasswordIndicator');
-    if (hasPassword) {
-        passwordIndicator.innerHTML = '<span class="badge bg-warning"><i class="bi bi-lock-fill"></i> 当前已设置密码</span>';
-    } else {
-        passwordIndicator.innerHTML = '';
-    }
-
-    // 聚焦到密码输入框
-    const modal = new bootstrap.Modal(document.getElementById('photoInfoModal'));
-    modal.show();
-    setTimeout(() => {
-        document.getElementById('photoAccessPassword').focus();
-    }, 500);
 }
 
 // 保存图片信息
