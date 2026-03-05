@@ -769,8 +769,10 @@ def shared_album_detail(album_id):
 @login_required
 def shared():
     """
-    共享空间 - 显示所有用户公开分享的图片和相册
+    共享空间 - 显示所有用户公开分享的图片
     """
+    from flask_sqlalchemy.pagination import Pagination
+
     page = request.args.get('page', 1, type=int)
     per_page = current_app.config.get('PHOTOS_PER_PAGE', 20)
 
@@ -781,29 +783,8 @@ def shared():
         Photo.created_at.desc()
     ).paginate(page=page, per_page=per_page, error_out=False)
 
-    # 安全地获取公开相册
-    albums = None
-    try:
-        from sqlalchemy import inspect
-        inspector = inspect(db.engine)
-        columns = [col['name'] for col in inspector.get_columns('album')]
-
-        if 'is_public' in columns:
-            # 使用更简单的查询，不加载 cover_photo 关系
-            albums_list = Album.query.filter_by(is_public=True).order_by(Album.created_at.desc()).all()
-            # 手动加载用户信息
-            for album in albums_list:
-                db.session.refresh(album, ['user'])
-            # 创建分页对象
-            from flask_sqlalchemy.pagination import Pagination
-            albums = Pagination(albums_list, page, per_page, per_page, len(albums_list), False)
-        else:
-            from flask_sqlalchemy.pagination import Pagination
-            albums = Pagination([], 0, per_page, per_page, page)
-    except Exception as e:
-        current_app.logger.error(f'获取公开相册失败: {e}')
-        from flask_sqlalchemy.pagination import Pagination
-        albums = Pagination([], 0, per_page, per_page, page)
+    # 暂时禁用相册功能
+    albums = Pagination([], 0, per_page, per_page, page)
 
     return render_template('gallery/shared_space.html', photos=photos, albums=albums)
 
