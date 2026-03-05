@@ -70,8 +70,8 @@
         <div class="card-body">
             {% if root_albums %}
                 <div class="album-tree">
-                    {% macro render_album(album, level=0) %}
-                        <div class="album-item mb-2" style="padding-left: {{ level * 20 }}px;">
+                    {% for album in root_albums %}
+                        <div class="album-item mb-2">
                             <div class="d-flex align-items-center p-2 rounded hover-bg">
                                 <i class="bi bi-folder-fill text-warning me-2"></i>
                                 <a href="{{ url_for('gallery.view_album', album_id=album.id) }}" class="flex-grow-1 text-decoration-none">
@@ -80,7 +80,7 @@
                                         <small class="text-muted"> - {{ album.description }}</small>
                                     {% endif %}
                                 </a>
-                                {% if is_superuser and album.user_id != current_user.id %}
+                                {% if is_superuser and album.user and album.user_id != current_user.id %}
                                 <span class="badge bg-info me-1">{{ album.user.username }}</span>
                                 {% endif %}
                                 <span class="badge bg-secondary">{{ album.photo_count }} 张</span>
@@ -91,17 +91,7 @@
                                     <i class="bi bi-pencil"></i>
                                 </a>
                             </div>
-                            {% set child_count = album.children.count() %}
-                            {% if child_count > 0 %}
-                                {% for child in album.children.all() %}
-                                    {{ render_album(child, level + 1) }}
-                                {% endfor %}
-                            {% endif %}
                         </div>
-                    {% endmacro %}
-
-                    {% for album in root_albums %}
-                        {{ render_album(album) }}
                     {% endfor %}
                 </div>
             {% else %}

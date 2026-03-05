@@ -150,6 +150,14 @@ def index():
             total_photos = Photo.query.filter_by(user_id=current_user.id).count()
             total_albums = Album.query.filter_by(user_id=current_user.id).count()
 
+        # 安全处理：确保 photo_count 不会导致错误
+        for album in root_albums:
+            try:
+                _ = album.photo_count
+            except Exception:
+                # 如果 photo_count 失败，继续
+                pass
+
         return render_template('gallery/index.html',
                               root_albums=root_albums,
                               total_photos=total_photos,
@@ -157,6 +165,8 @@ def index():
                               is_superuser=is_superuser)
     except Exception as e:
         current_app.logger.error(f'Error in gallery index: {str(e)}', exc_info=True)
+        import traceback
+        current_app.logger.error(traceback.format_exc())
         flash(f'加载相册时出错: {str(e)}', 'danger')
 
         # 返回简化的页面

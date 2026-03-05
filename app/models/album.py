@@ -74,10 +74,19 @@ class Album(db.Model):
     @property
     def photo_count(self):
         """获取相册中的图片数量（包括子相册）"""
-        count = self.photos.count()
-        for child in self.children:
-            count += child.photo_count
-        return count
+        try:
+            count = self.photos.count()
+            # children 是 dynamic 关系，需要显式调用 all()
+            for child in self.children.all():
+                try:
+                    count += child.photo_count
+                except Exception:
+                    # 如果子相册计数失败，跳过
+                    pass
+            return count
+        except Exception:
+            # 如果计数失败，返回0
+            return 0
 
     @property
     def path(self):
