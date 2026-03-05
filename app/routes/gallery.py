@@ -275,10 +275,31 @@ def edit_album(album_id):
     if request.method == 'POST':
         album.name = request.form.get('name')
         album.description = request.form.get('description')
-        album.is_private = request.form.get('is_private') == 'on'
 
-        # 更新分享设置
-        album.is_public = request.form.get('is_public') == 'on'
+        # 从隐藏字段获取可见性状态
+        is_private_hidden = request.form.get('is_private_hidden') == 'true'
+        is_public_hidden = request.form.get('is_public_hidden') == 'true'
+
+        # 确保逻辑一致：私密相册 is_private=True, is_public=False；公开相册相反
+        if is_public_hidden:
+            # 设为公开
+            # 检查是否有私密照片
+            private_photos_count = Photo.query.filter_by(
+                album_id=album_id,
+                is_public=False
+            ).count()
+
+            if private_photos_count > 0:
+                flash(f'无法设为公开：相册中有 {private_photos_count} 张私密照片。请先将这些照片设为公开。', 'warning')
+                return redirect(url_for('gallery.edit_album', album_id=album_id))
+
+            # 没有私密照片，可以设为公开
+            album.is_private = False
+            album.is_public = True
+        else:
+            # 设为私密
+            album.is_private = True
+            album.is_public = False
 
         # 处理访问密码
         remove_password = request.form.get('remove_password') == 'on'
@@ -802,19 +823,67 @@ def shared_album_detail(album_id):
 @login_required
 def shared():
     """
-    共享空间 - 显示所有用户公开分享的图片
+    共享空间 - 显示所有用户公开分享的图片和相册
     """
     try:
         page = request.args.get('page', 1, type=int)
         per_page = current_app.config.get('PHOTOS_PER_PAGE', 20)
+        tab = request.args.get('tab', 'photos')
 
         # 获取所有公开图片，按创建时间倒序
-        # 不使用 joinedload，让 SQLAlchemy 自动处理
         photos = Photo.query.filter_by(is_public=True).order_by(
             Photo.created_at.desc()
         ).paginate(page=page, per_page=per_page, error_out=False)
 
-        # 创建空的相册分页对象（模拟 Pagination 接口）
+        # 获取所有公开相册（is_public=True 且 is_private=False）
+        # 只显示有公开照片的相册
+        from sqlalchemy import func
+
+        public_albums = Album.query.options(
+            joinedload(Album.user)
+        ).filter(
+            Album.is_public == True,
+            Album.is_private == False
+        ).all()
+
+        # 过滤出有公开照片的相册
+        album_ids_with_public_photos = db.session.query(Photo.album_id).filter(
+            Photo.is_public == True
+        ).distinct().all()
+
+        valid_album_ids = [id[0] for id in album_ids_with_public_photos]
+        public_albums = [a for a in public_albums if a.id in valid_album_ids]
+
+        # 分页处理相册
+        total_albums = len(public_albums)
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        albums_page = public_albums[start_idx:end_idx]
+
+        # 创建相册分页对象
+        class AlbumPagination:
+            def __init__(self, items, total, page, per_page):
+                self.items = items
+                self.total = total
+                self.pages = (total + per_page - 1) // per_page
+                self.page = page
+                self.has_prev = page > 1
+                self.has_next = page < self.pages
+                self.prev_num = page - 1 if page > 1 else None
+                self.next_num = page + 1 if page < self.pages else None
+                self.iter_pages = lambda: range(1, self.pages + 1)
+
+        albums = AlbumPagination(albums_page, total_albums, page, per_page)
+
+        return render_template('gallery/shared_space.html', photos=photos, albums=albums, tab=tab)
+
+    except Exception as e:
+        current_app.logger.error(f'Error in shared route: {str(e)}', exc_info=True)
+        import traceback
+        current_app.logger.error(traceback.format_exc())
+        flash(f'加载共享空间时出错: {str(e)}', 'danger')
+
+        # 返回空页面
         class EmptyPagination:
             def __init__(self):
                 self.items = []
@@ -827,9 +896,10 @@ def shared():
                 self.next_num = None
                 self.iter_pages = lambda: []
 
-        albums = EmptyPagination()
-
-        return render_template('gallery/shared_space.html', photos=photos, albums=albums)
+        return render_template('gallery/shared_space.html',
+                             photos=EmptyPagination(),
+                             albums=EmptyPagination(),
+                             tab='photos')
 
     except Exception as e:
         # 记录错误并显示友好的错误消息

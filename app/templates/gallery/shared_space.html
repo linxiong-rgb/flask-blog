@@ -381,10 +381,12 @@ function handleImageError(img) {
 }
 
 // 切换标签
-function switchTab(tab) {
-    // 更新标签状态
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
+function switchTab(tab, event) {
+    // 如果是从点击事件触发，使用 event；否则查找按钮
+    if (event) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+    }
 
     // 隐藏所有内容
     document.getElementById('photos-content').style.display = 'none';
@@ -397,6 +399,28 @@ function switchTab(tab) {
         document.getElementById('albums-content').style.display = 'block';
     }
 }
+
+// 页面加载时初始化标签状态
+document.addEventListener('DOMContentLoaded', function() {
+    const currentTab = '{{ tab }}';
+    const photosBtn = document.querySelector('.tab-btn:nth-child(1)');
+    const albumsBtn = document.querySelector('.tab-btn:nth-child(2)');
+
+    // 移除所有 active 类
+    photosBtn.classList.remove('active');
+    albumsBtn.classList.remove('active');
+
+    // 根据当前标签设置 active
+    if (currentTab === 'albums') {
+        albumsBtn.classList.add('active');
+        document.getElementById('photos-content').style.display = 'none';
+        document.getElementById('albums-content').style.display = 'block';
+    } else {
+        photosBtn.classList.add('active');
+        document.getElementById('photos-content').style.display = 'block';
+        document.getElementById('albums-content').style.display = 'none';
+    }
+});
 </script>
 
 <div class="container-fluid mt-3">
@@ -431,10 +455,10 @@ function switchTab(tab) {
 
     <!-- 标签切换 -->
     <div class="shared-tabs">
-        <button class="tab-btn active" onclick="switchTab('photos')">
+        <button class="tab-btn" onclick="switchTab('photos', event)">
             <i class="bi bi-images"></i> 照片
         </button>
-        <button class="tab-btn" onclick="switchTab('albums')">
+        <button class="tab-btn" onclick="switchTab('albums', event)">
             <i class="bi bi-folder"></i> 相册
         </button>
     </div>
