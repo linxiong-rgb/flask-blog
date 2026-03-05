@@ -364,7 +364,7 @@ const photos = [
 function openLightbox(index) {
     if (photos[index].hasPassword) {
         // 有密码的图片跳转到详情页
-        window.location.href = '/shared/' + photos[index].id;
+        window.location.href = '/gallery/shared/' + photos[index].id;
         return;
     }
 
