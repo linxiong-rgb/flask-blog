@@ -733,17 +733,14 @@ def shared_photo(token):
 
 @bp.route('/shared')
 @login_required
-def shared_space():
+def shared():
     """
-    共享空间
-
-    显示所有用户公开分享的图片
+    共享空间 - 显示所有用户公开分享的图片
     """
-    # 分页
     page = request.args.get('page', 1, type=int)
-    per_page = 20
+    per_page = current_app.config.get('PHOTOS_PER_PAGE', 20)
 
-    # 获取所有公开的图片，预加载用户信息
+    # 获取所有公开图片，按创建时间倒序
     photos = Photo.query.options(
         joinedload(Photo.user)
     ).filter_by(is_public=True).order_by(
@@ -753,40 +750,38 @@ def shared_space():
     return render_template('gallery/shared_space.html', photos=photos)
 
 
-@bp.route('/shared/photo/<int:photo_id>', methods=['GET', 'POST'])
+@bp.route('/shared/<int:photo_id>', methods=['GET', 'POST'])
 @login_required
-def shared_photo_detail(photo_id):
+def shared_detail(photo_id):
     """
-    共享空间图片详情
-
-    检查访问密码并显示图片详情
+    共享图片详情页 - 检查密码后显示
     """
-    photo = Photo.query.get_or_404(photo_id)
+    photo = Photo.query.options(
+        joinedload(Photo.user)
+    ).get_or_404(photo_id)
 
-    # 检查是否公开
+    # 验证图片是否公开
     if not photo.is_public:
         flash('该图片未公开分享', 'warning')
-        return redirect(url_for('gallery.shared_space'))
+        return redirect(url_for('gallery.shared'))
 
     # 检查访问密码
     if photo.access_password:
-        session_key = f'photo_password_{photo_id}'
+        session_key = f'shared_photo_{photo_id}'
         if session.get(session_key) != photo.access_password:
             if request.method == 'POST':
-                password = request.form.get('password')
-                if password == photo.access_password:
-                    session[session_key] = password
-                    # 密码正确后重定向到GET请求
-                    return redirect(url_for('gallery.shared_photo_detail', photo_id=photo_id))
+                if request.form.get('password') == photo.access_password:
+                    session[session_key] = photo.access_password
+                    return redirect(url_for('gallery.shared_detail', photo_id=photo_id))
                 else:
                     flash('密码错误，请重试', 'danger')
-            return render_template('gallery/photo_password.html', photo=photo)
+            return render_template('gallery/shared_password.html', photo=photo)
 
     # 增加浏览次数
     photo.views += 1
     db.session.commit()
 
-    return render_template('gallery/shared_photo_detail.html', photo=photo)
+    return render_template('gallery/shared_detail.html', photo=photo)
 
 
 # ==================== 批量操作 ====================

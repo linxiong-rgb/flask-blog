@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}{{ photo.title or photo.filename }} - 共享空间{% endblock %}
+
+{% block head %}
+<style>
+.shared-detail-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.breadcrumb-nav {
+    margin-bottom: 1.5rem;
+}
+
+.image-container {
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.detail-image {
+    width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+}
+
+.info-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.info-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.info-description {
+    color: #666;
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+.info-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f0f0f0;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.meta-item i {
+    color: #999;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+}
+
+.user-name {
+    font-weight: 500;
+    color: #333;
+}
+
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #333;
+    transition: all 0.3s;
+}
+
+.btn-back:hover {
+    background: #e9ecef;
+    color: #333;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="shared-detail-container">
+    <!-- 面包屑导航 -->
+    <nav aria-label="breadcrumb" class="breadcrumb-nav">
+        <a href="{{ url_for('gallery.shared') }}" class="btn-back">
+            <i class="bi bi-arrow-left"></i> 返回共享空间
+        </a>
+    </nav>
+
+    <!-- 图片展示 -->
+    <div class="image-container">
+        <img src="{{ photo.url }}"
+             data-backup-url="{{ photo.backup_url }}"
+             alt="{{ photo.title or photo.filename }}"
+             class="detail-image"
+             onerror="this.src=this.dataset.backupUrl">
+    </div>
+
+    <!-- 图片信息 -->
+    <div class="info-card">
+        <!-- 用户信息 -->
+        <div class="user-info">
+            <div class="user-avatar">
+                {{ photo.user.username[0]|upper }}
+            </div>
+            <div>
+                <div class="user-name">{{ photo.user.username }}</div>
+                <small class="text-muted">分享于 {{ photo.created_at.strftime('%Y-%m-%d') }}</small>
+            </div>
+        </div>
+
+        <!-- 标题和描述 -->
+        {% if photo.title %}
+        <h2 class="info-title">{{ photo.title }}</h2>
+        {% endif %}
+
+        {% if photo.description %}
+        <p class="info-description">{{ photo.description }}</p>
+        {% endif %}
+
+        <!-- 元数据 -->
+        <div class="info-meta">
+            <div class="meta-item">
+                <i class="bi bi-eye"></i>
+                <span>{{ photo.views }} 次浏览</span>
+            </div>
+            <div class="meta-item">
+                <i class="bi bi-calendar3"></i>
+                <span>{{ photo.created_at.strftime('%Y年%m月%d日') }}</span>
+            </div>
+            {% if photo.access_password %}
+            <div class="meta-item">
+                <i class="bi bi-lock-fill"></i>
+                <span>密码保护</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
