@@ -4,7 +4,7 @@
 
 {% block head %}
 <style>
-/* 共享空间 - 参考相册布局 */
+/* 共享空间 - 完全参考相册布局 */
 .shared-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -110,6 +110,7 @@
     background: rgba(0,0,0,0.5);
     color: white;
     z-index: 5;
+    pointer-events: none;
 }
 
 .password-overlay i {
@@ -130,7 +131,7 @@
     right: 0;
     background: linear-gradient(transparent, rgba(0,0,0,0.7));
     color: white;
-    padding: 8px 10px;
+    padding: 10px;
     opacity: 0;
     transition: opacity 0.3s;
 }
@@ -140,8 +141,8 @@
 }
 
 .photo-info h6 {
-    margin: 0 0 2px 0;
-    font-size: 0.8rem;
+    margin: 0 0 4px 0;
+    font-size: 0.9rem;
     font-weight: 500;
     white-space: nowrap;
     overflow: hidden;
@@ -150,7 +151,7 @@
 
 .photo-info p {
     margin: 0;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     opacity: 0.9;
 }
 
@@ -160,20 +161,19 @@
     top: 8px;
     left: 8px;
     background: rgba(255,255,255,0.95);
-    padding: 3px 6px;
-    border-radius: 12px;
-    font-size: 0.65rem;
+    padding: 4px 8px;
+    border-radius: 20px;
+    font-size: 0.75rem;
     font-weight: 500;
     color: #333;
     display: flex;
     align-items: center;
-    gap: 3px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    gap: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .user-badge i {
     color: #667eea;
-    font-size: 0.7rem;
 }
 
 /* 密码标签 */
@@ -183,18 +183,18 @@
     right: 8px;
     background: rgba(220, 53, 69, 0.95);
     color: white;
-    padding: 3px 6px;
-    border-radius: 12px;
-    font-size: 0.65rem;
+    padding: 4px 8px;
+    border-radius: 20px;
+    font-size: 0.7rem;
     font-weight: 500;
     display: flex;
     align-items: center;
-    gap: 2px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    gap: 3px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
 .password-badge i {
-    font-size: 0.65rem;
+    font-size: 0.7rem;
 }
 
 /* 空状态 */
@@ -224,24 +224,42 @@
     font-size: 0.85rem;
 }
 
+/* 分页 */
+.pagination .page-link {
+    border-radius: 8px;
+    margin: 0 3px;
+    padding: 0.5rem 1rem;
+    border: 1px solid #e0e0e0;
+    color: #555;
+    transition: all 0.3s;
+    font-size: 0.875rem;
+}
+
+.pagination .page-link:hover {
+    background-color: #667eea;
+    border-color: #667eea;
+    color: white;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #667eea;
+    border-color: #667eea;
+    color: white;
+}
+
 /* 图片加载错误占位符 */
 .image-placeholder {
     width: 100%;
-    padding-top: 100%;
-    background: #f8f9fa;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #6c757d;
-    position: relative;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    color: #adb5bd;
 }
 
 .image-placeholder i {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 1.5rem;
+    font-size: 2rem;
 }
 </style>
 <script>
@@ -257,6 +275,11 @@ function handleImageError(img) {
             card.innerHTML = '<div class="image-placeholder"><i class="bi bi-image"></i></div>';
         }
     }
+}
+
+// 点击跳转到详情页
+function openPhotoDetail(photoId) {
+    window.location.href = "{{ url_for('gallery.shared_detail', photo_id=0) }}".replace('0', photoId);
 }
 </script>
 {% endblock %}
@@ -293,55 +316,54 @@ function handleImageError(img) {
         {% if photos.items %}
             {% for photo in photos.items %}
             <div class="photo-item">
-                <a href="{{ url_for('gallery.shared_detail', photo_id=photo.id) }}" class="text-decoration-none">
-                    <div class="photo-card {% if photo.access_password %}has-password{% endif %}">
-                        {% if photo.thumbnail_path %}
-                        <img src="{{ photo.thumbnail_path }}"
-                             data-raw-url="{{ photo.backup_url }}"
-                             alt="{{ photo.title or photo.filename }}"
-                             loading="lazy"
-                             class="photo-img"
-                             onerror="handleImageError(this)">
-                        {% else %}
-                        <img src="{{ photo.file_path }}"
-                             data-raw-url="{{ photo.backup_url }}"
-                             alt="{{ photo.title or photo.filename }}"
-                             loading="lazy"
-                             class="photo-img"
-                             onerror="handleImageError(this)">
-                        {% endif %}
+                <div class="photo-card {% if photo.access_password %}has-password{% endif %}"
+                     onclick="openPhotoDetail({{ photo.id }})">
+                    {% if photo.thumbnail_path %}
+                    <img src="{{ photo.thumbnail_path }}"
+                         data-raw-url="{{ photo.backup_url }}"
+                         alt="{{ photo.title or photo.filename }}"
+                         loading="lazy"
+                         class="photo-img"
+                         onerror="handleImageError(this)">
+                    {% else %}
+                    <img src="{{ photo.file_path }}"
+                         data-raw-url="{{ photo.backup_url }}"
+                         alt="{{ photo.title or photo.filename }}"
+                         loading="lazy"
+                         class="photo-img"
+                         onerror="handleImageError(this)">
+                    {% endif %}
 
-                        <!-- 用户标签 -->
-                        <div class="user-badge">
-                            <i class="bi bi-person-circle"></i>
-                            <span>{{ photo.user.username }}</span>
-                        </div>
+                    <!-- 用户标签 -->
+                    <div class="user-badge">
+                        <i class="bi bi-person-circle"></i>
+                        <span>{{ photo.user.username }}</span>
+                    </div>
 
-                        <!-- 密码保护 -->
-                        {% if photo.access_password %}
-                        <div class="password-overlay">
-                            <i class="bi bi-lock-fill"></i>
-                            <span>密码保护</span>
-                        </div>
-                        <div class="password-badge">
-                            <i class="bi bi-lock-fill"></i>
-                            <span>加密</span>
-                        </div>
-                        {% endif %}
+                    <!-- 密码保护 -->
+                    {% if photo.access_password %}
+                    <div class="password-overlay">
+                        <i class="bi bi-lock-fill"></i>
+                        <span>密码保护</span>
+                    </div>
+                    <div class="password-badge">
+                        <i class="bi bi-lock-fill"></i>
+                        <span>加密</span>
+                    </div>
+                    {% endif %}
 
-                        <!-- 悬停信息 -->
-                        <div class="photo-overlay">
-                            <div class="photo-info">
-                                {% if photo.description %}
-                                <h6>{{ photo.description }}</h6>
-                                {% elif photo.title %}
-                                <h6>{{ photo.title }}</h6>
-                                {% endif %}
-                                <p><i class="bi bi-eye"></i> {{ photo.views }}</p>
-                            </div>
+                    <!-- 悬停信息 -->
+                    <div class="photo-overlay">
+                        <div class="photo-info">
+                            {% if photo.description %}
+                            <h6>{{ photo.description }}</h6>
+                            {% elif photo.title %}
+                            <h6>{{ photo.title }}</h6>
+                            {% endif %}
+                            <p><i class="bi bi-eye"></i> {{ photo.views }}</p>
                         </div>
                     </div>
-                </a>
+                </div>
             </div>
             {% endfor %}
         {% else %}
