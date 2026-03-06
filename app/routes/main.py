@@ -755,6 +755,7 @@ def init_database():
     """
     from app import db
     from app.models.friend_link import FriendLink
+    from app.models.gallery import Album, Photo
 
     try:
         # 创建所有数据库表
