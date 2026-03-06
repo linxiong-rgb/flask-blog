@@ -69,21 +69,9 @@
                         </a>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="othersDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-cloud"></i> 相册
+                        <a class="nav-link" href="{{ url_for('gallery.index') }}">
+                            <i class="bi bi-images"></i> 相册
                         </a>
-                        <ul class="dropdown-menu">
-                            <li>
-                                <a class="dropdown-item" href="{{ url_for('gallery.index') }}">
-                                    <i class="bi bi-images"></i> 我的相册
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="{{ url_for('gallery.shared') }}">
-                                    <i class="bi bi-globe-americas"></i> 共享空间
-                                </a>
-                            </li>
-                        </ul>
                     </li>
                 </ul>
 
