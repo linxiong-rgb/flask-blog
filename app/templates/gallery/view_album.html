@@ -49,7 +49,11 @@
     <div class="photo-grid">
         {% for photo in photos %}
         <div class="photo-card" data-photo-id="{{ photo.id }}">
-            <img src="{{ photo.file_path }}" alt="{{ photo.display_name }}" loading="lazy" onerror="this.src='/static/img/no-image.png'">
+            <img src="{{ photo.file_path }}"
+                 alt="{{ photo.display_name }}"
+                 loading="lazy"
+                 onerror="this.src='/static/img/no-image.png'"
+                 onclick="openLightbox({{ loop.index0 }})">
             <div class="overlay">
                 <small class="photo-title">{{ photo.display_name }}</small>
                 {% if is_owner %}
@@ -83,6 +87,54 @@
 <!-- 隐藏的文件上传输入 -->
 <input type="file" id="photoUploadInput" accept="image/*" multiple style="display: none" onchange="uploadPhotos(this)">
 
+<!-- 图片灯箱查看器 -->
+<div class="lightbox" id="lightbox" style="display: none;">
+    <div class="lightbox-overlay" onclick="closeLightbox()"></div>
+    <div class="lightbox-container">
+        <!-- 关闭按钮 -->
+        <button class="lightbox-close" onclick="closeLightbox()">
+            <i class="bi bi-x-lg"></i>
+        </button>
+
+        <!-- 工具栏 -->
+        <div class="lightbox-toolbar">
+            <button class="btn btn-sm btn-light" onclick="zoomOut()" title="缩小">
+                <i class="bi bi-zoom-out"></i>
+            </button>
+            <span class="zoom-level" id="zoomLevel">100%</span>
+            <button class="btn btn-sm btn-light" onclick="zoomIn()" title="放大">
+                <i class="bi bi-zoom-in"></i>
+            </button>
+            <button class="btn btn-sm btn-light" onclick="resetZoom()" title="重置">
+                <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
+            <div class="divider"></div>
+            <button class="btn btn-sm btn-light" onclick="downloadPhoto()" title="下载">
+                <i class="bi bi-download"></i> 下载
+            </button>
+        </div>
+
+        <!-- 图片信息 -->
+        <div class="lightbox-info">
+            <h5 id="lightboxTitle"></h5>
+            <small class="text-muted" id="lightboxFilename"></small>
+        </div>
+
+        <!-- 上一张/下一张按钮 -->
+        <button class="lightbox-prev" onclick="prevPhoto()" {% if photos|length <= 1 %}style="display:none"{% endif %}>
+            <i class="bi bi-chevron-left"></i>
+        </button>
+        <button class="lightbox-next" onclick="nextPhoto()" {% if photos|length <= 1 %}style="display:none"{% endif %}>
+            <i class="bi bi-chevron-right"></i>
+        </button>
+
+        <!-- 图片容器 -->
+        <div class="lightbox-image-wrapper">
+            <img id="lightboxImage" src="" alt="">
+        </div>
+    </div>
+</div>
+
 <!-- 编辑主题模态框 -->
 <div class="modal fade" id="editTitleModal" tabindex="-1">
     <div class="modal-dialog">
@@ -108,6 +160,139 @@
 </div>
 
 <script>
+// 图片数据
+const photosData = [
+    {% for photo in photos %}
+    {
+        id: {{ photo.id }},
+        url: '{{ photo.file_path }}',
+        title: '{{ photo.title or '' }}',
+        filename: '{{ photo.filename }}',
+        display_name: '{{ photo.display_name }}'
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+
+let currentIndex = 0;
+let currentZoom = 1;
+
+// 打开灯箱
+function openLightbox(index) {
+    currentIndex = index;
+    currentZoom = 1;
+    updateLightbox();
+    document.getElementById('lightbox').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+// 关闭灯箱
+function closeLightbox() {
+    document.getElementById('lightbox').style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+// 更新灯箱内容
+function updateLightbox() {
+    const photo = photosData[currentIndex];
+    const img = document.getElementById('lightboxImage');
+
+    img.src = photo.url;
+    img.style.transform = `scale(${currentZoom})`;
+    document.getElementById('lightboxTitle').textContent = photo.display_name;
+    document.getElementById('lightboxFilename').textContent = photo.filename;
+    document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
+}
+
+// 上一张
+function prevPhoto() {
+    currentIndex = (currentIndex - 1 + photosData.length) % photosData.length;
+    currentZoom = 1;
+    updateLightbox();
+}
+
+// 下一张
+function nextPhoto() {
+    currentIndex = (currentIndex + 1) % photosData.length;
+    currentZoom = 1;
+    updateLightbox();
+}
+
+// 放大
+function zoomIn() {
+    currentZoom = Math.min(currentZoom + 0.25, 3);
+    applyZoom();
+}
+
+// 缩小
+function zoomOut() {
+    currentZoom = Math.max(currentZoom - 0.25, 0.5);
+    applyZoom();
+}
+
+// 重置缩放
+function resetZoom() {
+    currentZoom = 1;
+    applyZoom();
+}
+
+// 应用缩放
+function applyZoom() {
+    document.getElementById('lightboxImage').style.transform = `scale(${currentZoom})`;
+    document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
+}
+
+// 下载图片
+function downloadPhoto() {
+    const photo = photosData[currentIndex];
+    const link = document.createElement('a');
+    link.href = photo.url;
+    link.download = photo.filename;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// 键盘快捷键
+document.addEventListener('keydown', function(e) {
+    if (document.getElementById('lightbox').style.display === 'none') return;
+
+    switch(e.key) {
+        case 'Escape':
+            closeLightbox();
+            break;
+        case 'ArrowLeft':
+            prevPhoto();
+            break;
+        case 'ArrowRight':
+            nextPhoto();
+            break;
+        case '+':
+        case '=':
+            zoomIn();
+            break;
+        case '-':
+        case '_':
+            zoomOut();
+            break;
+        case '0':
+            resetZoom();
+            break;
+    }
+});
+
+// 滚轮缩放
+document.getElementById('lightbox').addEventListener('wheel', function(e) {
+    if (e.target.id === 'lightboxImage' || e.target.classList.contains('lightbox-image-wrapper')) {
+        if (e.deltaY < 0) {
+            zoomIn();
+        } else {
+            zoomOut();
+        }
+        e.preventDefault();
+    }
+});
+
 // 上传照片
 function uploadPhotos(input) {
     const files = input.files;
@@ -222,11 +407,9 @@ function savePhotoTitle() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // 关闭模态框
             const modal = bootstrap.Modal.getInstance(document.getElementById('editTitleModal'));
             modal.hide();
 
-            // 更新显示
             const photoCard = document.querySelector(`[data-photo-id="${photoId}"]`);
             const titleElement = photoCard.querySelector('.photo-title');
             titleElement.textContent = data.display_name;
@@ -268,6 +451,172 @@ function showNotification(type, message) {
 .photo-actions .btn {
     font-size: 0.75rem;
     padding: 0.2rem 0.5rem;
+}
+
+/* 灯箱样式 */
+.lightbox {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    display: none;
+    flex-direction: column;
+}
+
+.lightbox-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.9);
+}
+
+.lightbox-container {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.lightbox-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.lightbox-toolbar {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    padding: 10px 20px;
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.lightbox-toolbar .divider {
+    width: 1px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.zoom-level {
+    color: white;
+    min-width: 50px;
+    text-align: center;
+}
+
+.lightbox-info {
+    position: absolute;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    color: white;
+}
+
+.lightbox-info h5 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.lightbox-image-wrapper {
+    max-width: 90%;
+    max-height: 70%;
+    overflow: hidden;
+}
+
+#lightboxImage {
+    max-width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+    transition: transform 0.3s ease;
+    cursor: grab;
+}
+
+#lightboxImage:active {
+    cursor: grabbing;
+}
+
+.lightbox-prev,
+.lightbox-next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    font-size: 2rem;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.lightbox-prev:hover,
+.lightbox-next:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.lightbox-prev {
+    left: 20px;
+}
+
+.lightbox-next {
+    right: 20px;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    .lightbox-toolbar {
+        flex-wrap: wrap;
+        justify-content: center;
+        width: 90%;
+    }
+
+    .lightbox-info {
+        bottom: 100px;
+        padding: 0 20px;
+    }
+
+    .lightbox-prev,
+    .lightbox-next {
+        width: 40px;
+        height: 40px;
+        font-size: 1.5rem;
+    }
+
+    .lightbox-prev {
+        left: 10px;
+    }
+
+    .lightbox-next {
+        right: 10px;
+    }
 }
 </style>
 {% endblock %}
