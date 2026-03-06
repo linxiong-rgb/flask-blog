@@ -121,17 +121,20 @@
         </div>
 
         <!-- 上一张/下一张按钮 -->
-        <button class="lightbox-prev" onclick="prevPhoto()" {% if photos|length <= 1 %}style="display:none"{% endif %}>
+        <button class="lightbox-prev" id="lightboxPrev" onclick="prevPhoto()">
             <i class="bi bi-chevron-left"></i>
         </button>
-        <button class="lightbox-next" onclick="nextPhoto()" {% if photos|length <= 1 %}style="display:none"{% endif %}>
+        <button class="lightbox-next" id="lightboxNext" onclick="nextPhoto()">
             <i class="bi bi-chevron-right"></i>
         </button>
 
-        <!-- 图片容器 -->
-        <div class="lightbox-image-wrapper">
-            <img id="lightboxImage" src="" alt="">
+        <!-- 图片容器（可拖拽平移） -->
+        <div class="lightbox-image-wrapper" id="imageWrapper">
+            <img id="lightboxImage" src="" alt="" draggable="false">
         </div>
+
+        <!-- 图片计数 -->
+        <div class="lightbox-counter" id="lightboxCounter"></div>
     </div>
 </div>
 
@@ -175,12 +178,20 @@ const photosData = [
 
 let currentIndex = 0;
 let currentZoom = 1;
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let panX = 0;
+let panY = 0;
 
 // 打开灯箱
 function openLightbox(index) {
     currentIndex = index;
     currentZoom = 1;
+    panX = 0;
+    panY = 0;
     updateLightbox();
+    updateNavButtons();
     document.getElementById('lightbox').style.display = 'flex';
     document.body.style.overflow = 'hidden';
 }
@@ -191,53 +202,69 @@ function closeLightbox() {
     document.body.style.overflow = '';
 }
 
+// 更新导航按钮显示状态
+function updateNavButtons() {
+    const hasMultiplePhotos = photosData.length > 1;
+    document.getElementById('lightboxPrev').style.display = hasMultiplePhotos ? 'block' : 'none';
+    document.getElementById('lightboxNext').style.display = hasMultiplePhotos ? 'block' : 'none';
+}
+
 // 更新灯箱内容
 function updateLightbox() {
     const photo = photosData[currentIndex];
     const img = document.getElementById('lightboxImage');
 
     img.src = photo.url;
-    img.style.transform = `scale(${currentZoom})`;
+    img.style.transform = `scale(${currentZoom}) translate(${panX}px, ${panY}px)`;
     document.getElementById('lightboxTitle').textContent = photo.display_name;
     document.getElementById('lightboxFilename').textContent = photo.filename;
     document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
+    document.getElementById('lightboxCounter').textContent = `${currentIndex + 1} / ${photosData.length}`;
 }
 
 // 上一张
 function prevPhoto() {
+    if (photosData.length <= 1) return;
     currentIndex = (currentIndex - 1 + photosData.length) % photosData.length;
     currentZoom = 1;
+    panX = 0;
+    panY = 0;
     updateLightbox();
 }
 
 // 下一张
 function nextPhoto() {
+    if (photosData.length <= 1) return;
     currentIndex = (currentIndex + 1) % photosData.length;
     currentZoom = 1;
+    panX = 0;
+    panY = 0;
     updateLightbox();
 }
 
 // 放大
 function zoomIn() {
-    currentZoom = Math.min(currentZoom + 0.25, 3);
+    currentZoom = Math.min(currentZoom + 0.25, 5);
     applyZoom();
 }
 
 // 缩小
 function zoomOut() {
-    currentZoom = Math.max(currentZoom - 0.25, 0.5);
+    currentZoom = Math.max(currentZoom - 0.25, 0.1);
     applyZoom();
 }
 
 // 重置缩放
 function resetZoom() {
     currentZoom = 1;
+    panX = 0;
+    panY = 0;
     applyZoom();
 }
 
-// 应用缩放
+// 应用缩放和平移
 function applyZoom() {
-    document.getElementById('lightboxImage').style.transform = `scale(${currentZoom})`;
+    document.getElementById('lightboxImage').style.transform = `scale(${currentZoom}) translate(${panX}px, ${panY}px)`;
     document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
 }
 
@@ -252,6 +279,55 @@ function downloadPhoto() {
     link.click();
     document.body.removeChild(link);
 }
+
+// 拖拽平移功能
+const imageWrapper = document.getElementById('imageWrapper');
+const lightboxImage = document.getElementById('lightboxImage');
+
+imageWrapper.addEventListener('mousedown', function(e) {
+    if (currentZoom > 1) {
+        isDragging = true;
+        dragStartX = e.clientX - panX;
+        dragStartY = e.clientY - panY;
+        lightboxImage.style.cursor = 'grabbing';
+    }
+});
+
+document.addEventListener('mousemove', function(e) {
+    if (isDragging) {
+        e.preventDefault();
+        panX = e.clientX - dragStartX;
+        panY = e.clientY - dragStartY;
+        applyZoom();
+    }
+});
+
+document.addEventListener('mouseup', function() {
+    if (isDragging) {
+        isDragging = false;
+        lightboxImage.style.cursor = 'grab';
+    }
+});
+
+// 触摸屏拖拽支持
+let touchStartX = 0;
+let touchStartY = 0;
+
+imageWrapper.addEventListener('touchstart', function(e) {
+    if (currentZoom > 1 && e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX - panX;
+        touchStartY = e.touches[0].clientY - panY;
+    }
+}, { passive: true });
+
+imageWrapper.addEventListener('touchmove', function(e) {
+    if (currentZoom > 1 && e.touches.length === 1) {
+        e.preventDefault();
+        panX = e.touches[0].clientX - touchStartX;
+        panY = e.touches[0].clientY - touchStartY;
+        applyZoom();
+    }
+}, { passive: false });
 
 // 键盘快捷键
 document.addEventListener('keydown', function(e) {
@@ -471,7 +547,7 @@ function showNotification(type, message) {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.9);
+    background: rgba(0, 0, 0, 0.95);
 }
 
 .lightbox-container {
@@ -482,6 +558,7 @@ function showNotification(type, message) {
     align-items: center;
     justify-content: center;
     z-index: 1;
+    overflow: hidden;
 }
 
 .lightbox-close {
@@ -497,6 +574,7 @@ function showNotification(type, message) {
     border-radius: 50%;
     cursor: pointer;
     transition: background 0.2s;
+    z-index: 10;
 }
 
 .lightbox-close:hover {
@@ -515,6 +593,7 @@ function showNotification(type, message) {
     display: flex;
     align-items: center;
     gap: 10px;
+    z-index: 10;
 }
 
 .lightbox-toolbar .divider {
@@ -536,6 +615,8 @@ function showNotification(type, message) {
     transform: translateX(-50%);
     text-align: center;
     color: white;
+    z-index: 10;
+    pointer-events: none;
 }
 
 .lightbox-info h5 {
@@ -543,18 +624,34 @@ function showNotification(type, message) {
     font-size: 1.2rem;
 }
 
+.lightbox-counter {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    z-index: 10;
+}
+
 .lightbox-image-wrapper {
-    max-width: 90%;
-    max-height: 70%;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     overflow: hidden;
+    position: relative;
 }
 
 #lightboxImage {
-    max-width: 100%;
-    max-height: 70vh;
-    object-fit: contain;
-    transition: transform 0.3s ease;
+    max-width: none;
+    max-height: none;
+    width: auto;
+    height: auto;
+    transition: transform 0.1s ease-out;
     cursor: grab;
+    user-select: none;
+    -webkit-user-drag: none;
 }
 
 #lightboxImage:active {
@@ -575,6 +672,7 @@ function showNotification(type, message) {
     border-radius: 50%;
     cursor: pointer;
     transition: background 0.2s;
+    z-index: 10;
 }
 
 .lightbox-prev:hover,
@@ -596,11 +694,18 @@ function showNotification(type, message) {
         flex-wrap: wrap;
         justify-content: center;
         width: 90%;
+        top: 10px;
     }
 
     .lightbox-info {
         bottom: 100px;
         padding: 0 20px;
+    }
+
+    .lightbox-counter {
+        bottom: 10px;
+        right: 10px;
+        font-size: 0.8rem;
     }
 
     .lightbox-prev,
@@ -616,6 +721,14 @@ function showNotification(type, message) {
 
     .lightbox-next {
         right: 10px;
+    }
+
+    .lightbox-close {
+        top: 10px;
+        right: 10px;
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
     }
 }
 </style>
