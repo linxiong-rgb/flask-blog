@@ -265,6 +265,42 @@ def test():
             import traceback
             debug_info['traceback'] = traceback.format_exc()
 
+        # 测试模板渲染
+        try:
+            from flask import render_template_string
+            test_template = '''
+            <html>
+            <head><title>测试</title></head>
+            <body>
+                <h1>模板渲染测试</h1>
+                {% if albums %}
+                <p>相册数量: {{ albums|length }}</p>
+                <ul>
+                {% for album in albums %}
+                <li>{{ album.name }} - {{ album._photo_count if album._photo_count is defined else 0 }} 张</li>
+                {% endfor %}
+                </ul>
+                {% else %}
+                <p>没有相册</p>
+                {% endif %}
+            </body>
+            </html>
+            '''
+
+            # 预计算 _photo_count
+            for album in root_albums:
+                try:
+                    album._photo_count = album.photo_count
+                except:
+                    album._photo_count = 0
+
+            html = render_template_string(test_template, albums=root_albums)
+            return html
+
+        except Exception as template_error:
+            import traceback
+            return f'<h1>模板错误</h1><pre>{str(template_error)}\n\n{traceback.format_exc()}</pre>'
+
         return f'<h1>调试信息</h1><pre>{json.dumps(debug_info, indent=2)}</pre>'
 
     except Exception as e:
