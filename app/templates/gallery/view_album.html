@@ -92,12 +92,12 @@
     <div class="lightbox-overlay" onclick="closeLightbox()"></div>
     <div class="lightbox-container">
         <!-- 关闭按钮 -->
-        <button class="lightbox-close" onclick="closeLightbox()">
+        <button class="lightbox-close" onclick="closeLightbox()" style="display: none;">
             <i class="bi bi-x-lg"></i>
         </button>
 
         <!-- 工具栏 -->
-        <div class="lightbox-toolbar">
+        <div class="lightbox-toolbar" style="display: none;">
             <button class="btn btn-sm btn-light" onclick="zoomOut()" title="缩小">
                 <i class="bi bi-zoom-out"></i>
             </button>
@@ -115,16 +115,16 @@
         </div>
 
         <!-- 图片信息 -->
-        <div class="lightbox-info">
+        <div class="lightbox-info" style="display: none;">
             <h5 id="lightboxTitle"></h5>
             <small class="text-muted" id="lightboxFilename"></small>
         </div>
 
         <!-- 上一张/下一张按钮 -->
-        <button class="lightbox-prev" id="lightboxPrev" onclick="prevPhoto()">
+        <button class="lightbox-prev" id="lightboxPrev" onclick="prevPhoto(event)" style="display: none;">
             <i class="bi bi-chevron-left"></i>
         </button>
-        <button class="lightbox-next" id="lightboxNext" onclick="nextPhoto()">
+        <button class="lightbox-next" id="lightboxNext" onclick="nextPhoto(event)" style="display: none;">
             <i class="bi bi-chevron-right"></i>
         </button>
 
@@ -134,7 +134,7 @@
         </div>
 
         <!-- 图片计数 -->
-        <div class="lightbox-counter" id="lightboxCounter"></div>
+        <div class="lightbox-counter" id="lightboxCounter" style="display: none;"></div>
     </div>
 </div>
 
@@ -183,6 +183,7 @@ let dragStartX = 0;
 let dragStartY = 0;
 let panX = 0;
 let panY = 0;
+let lightboxOpen = false;
 
 // 打开灯箱
 function openLightbox(index) {
@@ -190,23 +191,42 @@ function openLightbox(index) {
     currentZoom = 1;
     panX = 0;
     panY = 0;
+    lightboxOpen = true;
+
+    // 显示灯箱和控制元素
+    const lightbox = document.getElementById('lightbox');
+    lightbox.style.display = 'flex';
+
+    // 显示控制元素
+    document.querySelector('.lightbox-close').style.display = 'block';
+    document.querySelector('.lightbox-toolbar').style.display = 'flex';
+    document.querySelector('.lightbox-info').style.display = 'block';
+    document.querySelector('.lightbox-counter').style.display = 'block';
+
     updateLightbox();
     updateNavButtons();
-    document.getElementById('lightbox').style.display = 'flex';
     document.body.style.overflow = 'hidden';
 }
 
 // 关闭灯箱
 function closeLightbox() {
+    lightboxOpen = false;
     document.getElementById('lightbox').style.display = 'none';
     document.body.style.overflow = '';
+
+    // 重置图片样式
+    const img = document.getElementById('lightboxImage');
+    img.style.transform = '';
+    img.style.maxWidth = '85vw';
+    img.style.maxHeight = '75vh';
 }
 
 // 更新导航按钮显示状态
 function updateNavButtons() {
     const hasMultiplePhotos = photosData.length > 1;
-    document.getElementById('lightboxPrev').style.display = hasMultiplePhotos ? 'block' : 'none';
-    document.getElementById('lightboxNext').style.display = hasMultiplePhotos ? 'block' : 'none';
+    const displayStyle = hasMultiplePhotos ? 'block' : 'none';
+    document.getElementById('lightboxPrev').style.display = displayStyle;
+    document.getElementById('lightboxNext').style.display = displayStyle;
 }
 
 // 更新灯箱内容
@@ -220,25 +240,33 @@ function updateLightbox() {
     document.getElementById('lightboxFilename').textContent = photo.filename;
     document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
     document.getElementById('lightboxCounter').textContent = `${currentIndex + 1} / ${photosData.length}`;
+
+    // 初始化时限制图片大小
+    if (currentZoom === 1) {
+        img.style.maxWidth = '85vw';
+        img.style.maxHeight = '75vh';
+    } else {
+        // 放大时移除大小限制
+        img.style.maxWidth = 'none';
+        img.style.maxHeight = 'none';
+    }
 }
 
 // 上一张
-function prevPhoto() {
+function prevPhoto(event) {
+    if (event) event.stopPropagation();
     if (photosData.length <= 1) return;
     currentIndex = (currentIndex - 1 + photosData.length) % photosData.length;
-    currentZoom = 1;
-    panX = 0;
-    panY = 0;
+    resetZoom();
     updateLightbox();
 }
 
 // 下一张
-function nextPhoto() {
+function nextPhoto(event) {
+    if (event) event.stopPropagation();
     if (photosData.length <= 1) return;
     currentIndex = (currentIndex + 1) % photosData.length;
-    currentZoom = 1;
-    panX = 0;
-    panY = 0;
+    resetZoom();
     updateLightbox();
 }
 
@@ -260,12 +288,24 @@ function resetZoom() {
     panX = 0;
     panY = 0;
     applyZoom();
+
+    // 重置时恢复大小限制
+    const img = document.getElementById('lightboxImage');
+    img.style.maxWidth = '85vw';
+    img.style.maxHeight = '75vh';
 }
 
 // 应用缩放和平移
 function applyZoom() {
-    document.getElementById('lightboxImage').style.transform = `scale(${currentZoom}) translate(${panX}px, ${panY}px)`;
+    const img = document.getElementById('lightboxImage');
+    img.style.transform = `scale(${currentZoom}) translate(${panX}px, ${panY}px)`;
     document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
+
+    // 放大时移除大小限制
+    if (currentZoom > 1) {
+        img.style.maxWidth = 'none';
+        img.style.maxHeight = 'none';
+    }
 }
 
 // 下载图片
@@ -331,7 +371,7 @@ imageWrapper.addEventListener('touchmove', function(e) {
 
 // 键盘快捷键
 document.addEventListener('keydown', function(e) {
-    if (document.getElementById('lightbox').style.display === 'none') return;
+    if (!lightboxOpen) return;
 
     switch(e.key) {
         case 'Escape':
@@ -504,7 +544,7 @@ function savePhotoTitle() {
 function showNotification(type, message) {
     const notification = document.createElement('div');
     notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 10000; min-width: 300px;';
     notification.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
     document.body.appendChild(notification);
 
@@ -574,7 +614,7 @@ function showNotification(type, message) {
     border-radius: 50%;
     cursor: pointer;
     transition: background 0.2s;
-    z-index: 10;
+    z-index: 100;
 }
 
 .lightbox-close:hover {
@@ -593,7 +633,7 @@ function showNotification(type, message) {
     display: flex;
     align-items: center;
     gap: 10px;
-    z-index: 10;
+    z-index: 100;
 }
 
 .lightbox-toolbar .divider {
@@ -615,7 +655,7 @@ function showNotification(type, message) {
     transform: translateX(-50%);
     text-align: center;
     color: white;
-    z-index: 10;
+    z-index: 100;
     pointer-events: none;
 }
 
@@ -630,7 +670,7 @@ function showNotification(type, message) {
     right: 20px;
     color: rgba(255, 255, 255, 0.7);
     font-size: 0.9rem;
-    z-index: 10;
+    z-index: 100;
 }
 
 .lightbox-image-wrapper {
@@ -641,13 +681,15 @@ function showNotification(type, message) {
     justify-content: center;
     overflow: hidden;
     position: relative;
+    z-index: 2;
 }
 
 #lightboxImage {
-    max-width: none;
-    max-height: none;
+    max-width: 85vw;
+    max-height: 75vh;
     width: auto;
     height: auto;
+    object-fit: contain;
     transition: transform 0.1s ease-out;
     cursor: grab;
     user-select: none;
@@ -663,7 +705,7 @@ function showNotification(type, message) {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.15);
     border: none;
     color: white;
     font-size: 2rem;
@@ -672,12 +714,13 @@ function showNotification(type, message) {
     border-radius: 50%;
     cursor: pointer;
     transition: background 0.2s;
-    z-index: 10;
+    z-index: 100;
+    pointer-events: auto !important;
 }
 
 .lightbox-prev:hover,
 .lightbox-next:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .lightbox-prev {
