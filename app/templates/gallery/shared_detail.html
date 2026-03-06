@@ -337,7 +337,7 @@
             <button class="control-btn" onclick="rotateImage()" title="旋转">
                 <i class="bi bi-arrow-clockwise"></i>
             </button>
-            <a href="{{ photo.backup_url }}" download="{{ photo.title or photo.filename }}" class="control-btn" title="下载">
+            <a href="{{ url_for('gallery.download_photo', photo_id=photo.id) }}" class="control-btn" title="下载">
                 <i class="bi bi-download"></i>
             </a>
             <button class="control-btn" onclick="openLightbox()" title="全屏查看">

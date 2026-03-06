@@ -793,6 +793,62 @@ def shared_detail(photo_id):
     return render_template('gallery/shared_detail.html', photo=photo)
 
 
+@bp.route('/photo/<int:photo_id>/download')
+@login_required
+def download_photo(photo_id):
+    """
+    下载图片代理
+    从服务器端获取图片并返回，避免直接链接到 GitHub
+    """
+    photo = Photo.query.get_or_404(photo_id)
+
+    # 权限检查
+    is_superuser = getattr(current_user, 'is_superuser', False)
+    if not photo.is_public and photo.user_id != current_user.id and not is_superuser:
+        flash('您没有权限下载此图片', 'danger')
+        return redirect(url_for('gallery.index'))
+
+    try:
+        # 尝试从原始 URL 下载图片
+        import requests
+        from werkzeug.utils import secure_filename
+
+        # 优先使用 backup_url（GitHub raw URL）
+        url = photo.backup_url or photo.file_path
+
+        # 下载图片
+        response = requests.get(url, timeout=30, stream=True)
+        if response.status_code == 200:
+            # 获取文件名
+            filename = secure_filename(photo.title or photo.filename)
+            if not filename.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
+                # 根据 mime_type 添加扩展名
+                ext = {
+                    'image/jpeg': '.jpg',
+                    'image/png': '.png',
+                    'image/gif': '.gif',
+                    'image/webp': '.webp'
+                }.get(photo.mime_type, '.jpg')
+                filename = f"{filename}{ext}"
+
+            # 创建文件响应
+            file_data = response.content
+            return send_file(
+                BytesIO(file_data),
+                mimetype=photo.mime_type or 'image/jpeg',
+                as_attachment=True,
+                download_name=filename
+            )
+        else:
+            flash('无法下载图片，请稍后重试', 'danger')
+            return redirect(url_for('gallery.shared'))
+
+    except Exception as e:
+        current_app.logger.error(f'下载图片失败: {str(e)}', exc_info=True)
+        flash('下载失败，请稍后重试', 'danger')
+        return redirect(url_for('gallery.shared'))
+
+
 @bp.route('/shared/album/<int:album_id>', methods=['GET', 'POST'])
 @login_required
 def shared_album_detail(album_id):
