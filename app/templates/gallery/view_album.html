@@ -176,16 +176,57 @@
                     </label>
                 </div>
                 <div class="mb-3">
-                    <label for="photoPassword" class="form-label">
-                        <i class="bi bi-key"></i> 访问密码（可选）
+                    <label class="form-label">
+                        <i class="bi bi-key"></i> 访问密码
                     </label>
-                    <div class="input-group">
-                        <input type="password" class="form-control" id="photoPassword" placeholder="设置访问密码，留空则无需密码">
-                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('photoPassword', this)">
-                            <i class="bi bi-eye-slash" id="photoPassword_icon"></i>
-                        </button>
+                    <input type="hidden" id="photoHasPassword" value="false">
+                    <input type="hidden" id="photoCurrentPassword" value="">
+
+                    <!-- 未设置密码时显示 -->
+                    <div id="photoNoPasswordContainer">
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="photoPassword" placeholder="设置访问密码，留空则无需密码">
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('photoPassword', this)">
+                                <i class="bi bi-eye-slash"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">
+                            <span class="text-muted">当前未设置密码</span>
+                        </div>
                     </div>
-                    <div class="form-text">公开图片可以设置访问密码，其他用户需要输入正确密码才能查看</div>
+
+                    <!-- 已设置密码时显示 -->
+                    <div id="photoHasPasswordContainer" style="display: none;">
+                        <div class="input-group mb-2">
+                            <input type="password" class="form-control bg-light" readonly
+                                   id="photoCurrentPasswordDisplay">
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePhotoCurrentPassword()" title="查看密码">
+                                <i class="bi bi-eye" id="photoCurrentPasswordIcon"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary" type="button" onclick="enablePhotoPasswordEdit()" title="修改密码">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" type="button" onclick="clearPhotoPassword()" title="删除密码">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">
+                            <span class="text-success"><i class="bi bi-check-circle"></i> 当前已设置密码</span>
+                        </div>
+                        <!-- 修改密码的输入框（默认隐藏） -->
+                        <div id="photoPasswordEditContainer" style="display: none;">
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="photoPasswordEdit"
+                                       placeholder="输入新密码">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('photoPasswordEdit', this)">
+                                    <i class="bi bi-eye-slash"></i>
+                                </button>
+                                <button class="btn btn-outline-secondary" type="button" onclick="cancelPhotoPasswordEdit()">
+                                    <i class="bi bi-x-lg"></i> 取消
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -236,7 +277,8 @@ const photosData = [
         filename: '{{ photo.filename }}',
         display_name: '{{ photo.display_name }}',
         is_public: {{ 'true' if photo._is_public else 'false' }},
-        has_password: {{ 'true' if photo._has_password else 'false' }}
+        has_password: {{ 'true' if photo._has_password else 'false' }},
+        access_password: '{{ photo.access_password or '' }}'
     }{% if not loop.last %},{% endif %}
     {% endfor %}
 ];
@@ -608,6 +650,23 @@ function editPhotoInfo(photoId, photo) {
     document.getElementById('photoIsPublic').checked = photo.is_public;
     document.getElementById('photoPassword').value = '';
 
+    // 根据是否有密码显示不同的界面
+    if (photo.has_password) {
+        document.getElementById('photoHasPassword').value = 'true';
+        document.getElementById('photoCurrentPassword').value = photo.access_password || '••••••';
+        document.getElementById('photoCurrentPasswordDisplay').value = photo.access_password || '••••••';
+        document.getElementById('photoHasPasswordContainer').style.display = 'block';
+        document.getElementById('photoNoPasswordContainer').style.display = 'none';
+    } else {
+        document.getElementById('photoHasPassword').value = 'false';
+        document.getElementById('photoHasPasswordContainer').style.display = 'none';
+        document.getElementById('photoNoPasswordContainer').style.display = 'block';
+    }
+
+    // 重置编辑状态
+    document.getElementById('photoPasswordEditContainer').style.display = 'none';
+    document.getElementById('photoCurrentPasswordDisplay').parentElement.style.display = 'flex';
+
     const modal = new bootstrap.Modal(document.getElementById('editTitleModal'));
     modal.show();
 }
@@ -617,7 +676,22 @@ function savePhotoInfo() {
     const photoId = document.getElementById('editPhotoId').value;
     const title = document.getElementById('photoTitle').value.trim();
     const is_public = document.getElementById('photoIsPublic').checked;
-    const access_password = document.getElementById('photoPassword').value.trim();
+    const hasPassword = document.getElementById('photoHasPassword').value === 'true';
+    const isEditingPassword = document.getElementById('photoPasswordEditContainer').style.display === 'block';
+
+    let access_password = '';
+    let clear_password = false;
+
+    if (hasPassword && !isEditingPassword) {
+        // 已有密码且不编辑，保持原密码
+        access_password = '';
+    } else if (isEditingPassword) {
+        // 正在编辑密码
+        access_password = document.getElementById('photoPasswordEdit').value.trim();
+    } else {
+        // 没有密码，使用新的密码输入框
+        access_password = document.getElementById('photoPassword').value.trim();
+    }
 
     fetch(`/gallery/photo/${photoId}/edit`, {
         method: 'POST',
@@ -628,7 +702,8 @@ function savePhotoInfo() {
         body: JSON.stringify({
             title: title,
             is_public: is_public,
-            access_password: access_password
+            access_password: access_password,
+            clear_password: clear_password
         })
     })
     .then(response => response.json())
@@ -661,6 +736,48 @@ function savePhotoInfo() {
     .catch(error => {
         showNotification('danger', '保存失败');
     });
+}
+
+// 切换当前图片密码显示/隐藏
+function togglePhotoCurrentPassword() {
+    const input = document.getElementById('photoCurrentPasswordDisplay');
+    const icon = document.getElementById('photoCurrentPasswordIcon');
+
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+}
+
+// 启用图片密码编辑
+function enablePhotoPasswordEdit() {
+    document.getElementById('photoCurrentPasswordDisplay').parentElement.style.display = 'none';
+    document.getElementById('photoPasswordEditContainer').style.display = 'block';
+    document.getElementById('photoPasswordEdit').focus();
+}
+
+// 取消图片密码编辑
+function cancelPhotoPasswordEdit() {
+    document.getElementById('photoPasswordEditContainer').style.display = 'none';
+    document.getElementById('photoCurrentPasswordDisplay').parentElement.style.display = 'flex';
+    document.getElementById('photoPasswordEdit').value = '';
+}
+
+// 清除图片密码
+function clearPhotoPassword() {
+    if (confirm('确定要删除密码吗？删除后图片将无需密码即可访问。')) {
+        // 设置标记以便保存时清除密码
+        document.getElementById('photoHasPassword').value = 'false';
+        document.getElementById('photoCurrentPassword').value = '';
+
+        // 直接提交保存
+        savePhotoInfo();
+    }
 }
 
 // 验证图片密码

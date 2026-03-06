@@ -176,6 +176,9 @@ def view_album(album_id):
     for photo in photos:
         photo._is_public = getattr(photo, 'is_public', False)
         photo._has_password = getattr(photo, 'has_password', False)
+        # 仅对相册所有者暴露当前密码，用于编辑界面显示
+        if is_owner:
+            photo.access_password = getattr(photo, 'access_password', '')
 
     return render_template('gallery/view_album.html',
                           album=album,
@@ -339,11 +342,21 @@ def edit_photo(photo_id):
     data = request.get_json()
     title = data.get('title', '').strip()
     is_public = data.get('is_public', False)
-    access_password = data.get('access_password', '').strip() or None
+    access_password = data.get('access_password', '').strip()
+    clear_password = data.get('clear_password', False)
 
     photo.title = title if title else None
     photo.is_public = is_public
-    photo.access_password = access_password
+
+    # 处理密码更新
+    if clear_password:
+        # 清除密码
+        photo.access_password = None
+    elif access_password:
+        # 更新密码
+        photo.access_password = access_password
+    # 如果密码为空且没有清除标记，保持原密码不变
+
     db.session.commit()
 
     return jsonify({
