@@ -89,7 +89,7 @@
 
 <!-- 图片灯箱查看器 -->
 <div class="lightbox" id="lightbox" style="display: none;">
-    <div class="lightbox-overlay" onclick="closeLightbox()"></div>
+    <div class="lightbox-overlay"></div>
     <div class="lightbox-container">
         <!-- 关闭按钮 -->
         <button class="lightbox-close" onclick="closeLightbox()" style="display: none;">
@@ -221,6 +221,15 @@ function closeLightbox() {
     img.style.maxHeight = '75vh';
 }
 
+// 点击遮罩层关闭灯箱（但排除控制元素）
+document.querySelector('.lightbox-overlay').addEventListener('click', function(e) {
+    // 如果点击的是控制元素或其子元素，不关闭灯箱
+    if (e.target.closest('.lightbox-container')) {
+        return;
+    }
+    closeLightbox();
+});
+
 // 更新导航按钮显示状态
 function updateNavButtons() {
     const hasMultiplePhotos = photosData.length > 1;
@@ -254,7 +263,10 @@ function updateLightbox() {
 
 // 上一张
 function prevPhoto(event) {
-    if (event) event.stopPropagation();
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
     if (photosData.length <= 1) return;
     currentIndex = (currentIndex - 1 + photosData.length) % photosData.length;
     resetZoom();
@@ -263,7 +275,10 @@ function prevPhoto(event) {
 
 // 下一张
 function nextPhoto(event) {
-    if (event) event.stopPropagation();
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
     if (photosData.length <= 1) return;
     currentIndex = (currentIndex + 1) % photosData.length;
     resetZoom();
@@ -397,17 +412,25 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// 滚轮缩放
+// 滚轮缩放 - 在整个灯箱区域都可以使用
 document.getElementById('lightbox').addEventListener('wheel', function(e) {
-    if (e.target.id === 'lightboxImage' || e.target.classList.contains('lightbox-image-wrapper')) {
-        if (e.deltaY < 0) {
-            zoomIn();
-        } else {
-            zoomOut();
-        }
-        e.preventDefault();
+    if (!lightboxOpen) return;
+
+    // 如果点击的是控制按钮或工具栏，不处理滚轮事件
+    if (e.target.closest('.lightbox-toolbar') ||
+        e.target.closest('.lightbox-close') ||
+        e.target.closest('.lightbox-prev') ||
+        e.target.closest('.lightbox-next')) {
+        return;
     }
-});
+
+    if (e.deltaY < 0) {
+        zoomIn();
+    } else {
+        zoomOut();
+    }
+    e.preventDefault();
+}, { passive: false });
 
 // 上传照片
 function uploadPhotos(input) {
@@ -682,6 +705,7 @@ function showNotification(type, message) {
     overflow: hidden;
     position: relative;
     z-index: 2;
+    pointer-events: none;
 }
 
 #lightboxImage {
@@ -694,6 +718,7 @@ function showNotification(type, message) {
     cursor: grab;
     user-select: none;
     -webkit-user-drag: none;
+    pointer-events: auto;
 }
 
 #lightboxImage:active {
