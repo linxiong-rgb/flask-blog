@@ -1370,3 +1370,110 @@ def set_superuser():
             'success': False,
             'message': f'设置失败: {str(e)}'
         }), 500
+
+
+@bp.route('/cleanup-old-tables')
+def cleanup_old_tables():
+    """
+    清理旧相册表路由
+
+    删除不再使用的旧相册系统相关表：
+    - album (旧相册表)
+    - photo (旧图片表)
+    - photo_share (旧图片分享表)
+    - photo_tag (旧标签表)
+    - photo_tags (旧标签关联表)
+
+    新的相册系统使用 gallery_album 和 gallery_photo 表。
+
+    Returns:
+        JSON: 清理结果
+    """
+    from app import db
+    from sqlalchemy import text
+
+    # 要删除的旧表
+    old_tables = [
+        'photo_share',
+        'photo_tags',
+        'photo_tag',
+        'photo',
+        'album'
+    ]
+
+    deleted_tables = []
+    not_found_tables = []
+    error_messages = []
+
+    try:
+        with db.engine.connect() as conn:
+            # 检查数据库类型
+            db_type = conn.dialect.name
+
+            # 获取所有现有表
+            if db_type == 'sqlite':
+                result = conn.execute(text("""
+                    SELECT name FROM sqlite_master
+                    WHERE type='table' AND name NOT LIKE 'sqlite_%'
+                    ORDER BY name
+                """))
+            else:  # PostgreSQL
+                result = conn.execute(text("""
+                    SELECT table_name FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                    ORDER BY table_name
+                """))
+
+            existing_tables = [row[0] for row in result]
+
+            # 删除存在的旧表
+            for table in old_tables:
+                if table in existing_tables:
+                    try:
+                        if db_type == 'sqlite':
+                            conn.execute(text(f"DROP TABLE IF EXISTS {table}"))
+                        else:  # PostgreSQL
+                            conn.execute(text(f'DROP TABLE IF EXISTS "{table}" CASCADE'))
+                        conn.commit()
+                        deleted_tables.append(table)
+                        current_app.logger.info(f'已删除旧表: {table}')
+                    except Exception as e:
+                        error_msg = f'删除 {table} 失败: {str(e)}'
+                        error_messages.append(error_msg)
+                        current_app.logger.error(error_msg)
+                else:
+                    not_found_tables.append(table)
+
+            # 获取清理后的表列表
+            if db_type == 'sqlite':
+                result = conn.execute(text("""
+                    SELECT name FROM sqlite_master
+                    WHERE type='table' AND name NOT LIKE 'sqlite_%'
+                    ORDER BY name
+                """))
+            else:  # PostgreSQL
+                result = conn.execute(text("""
+                    SELECT table_name FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                    ORDER BY table_name
+                """))
+
+            remaining_tables = [row[0] for row in result]
+
+            return jsonify({
+                'success': True,
+                'message': '旧表清理完成',
+                'deleted_tables': deleted_tables,
+                'not_found_tables': not_found_tables,
+                'errors': error_messages,
+                'remaining_tables': remaining_tables,
+                'table_count': len(remaining_tables),
+                'hint': '新相册系统使用 gallery_album 和 gallery_photo 表'
+            })
+
+    except Exception as e:
+        current_app.logger.error(f'清理旧表失败: {str(e)}')
+        return jsonify({
+            'success': False,
+            'message': f'清理失败: {str(e)}'
+        }), 500
