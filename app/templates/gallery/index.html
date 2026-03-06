@@ -83,7 +83,7 @@
                                 {% if is_superuser and album.user_id != current_user.id %}
                                 <span class="badge bg-info me-1">{{ album.user.username if album.user else '未知用户' }}</span>
                                 {% endif %}
-                                <span class="badge bg-secondary">{{ album.photo_count }} 张</span>
+                                <span class="badge bg-secondary">{{ album.photo_count if album.photo_count is not none else 0 }} 张</span>
                                 {% if album.is_private %}
                                     <span class="badge bg-danger"><i class="bi bi-lock-fill"></i></span>
                                 {% elif album.is_public %}
