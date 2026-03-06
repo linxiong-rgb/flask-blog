@@ -16,7 +16,11 @@
 """
 
 import os
+from dotenv import load_dotenv
 from app import create_app
+
+# 加载 .env 文件中的环境变量
+load_dotenv()
 
 # 创建应用实例
 app = create_app()

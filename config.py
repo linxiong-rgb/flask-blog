@@ -70,9 +70,8 @@ class ProductionConfig(Config):
     TESTING = False
 
     # 生产环境必须设置安全密钥，否则抛出错误
-    SECRET_KEY = os.environ.get('SECRET_KEY')
-    if not SECRET_KEY:
-        raise ValueError('生产环境必须设置 SECRET_KEY 环境变量')
+    # 注意：不能在类级别检查，因为导入时就会抛出错误
+    # 这个检查应该在应用启动时进行
 
     # 生产环境 Session 必须使用 HTTPS
     SESSION_COOKIE_SECURE = True

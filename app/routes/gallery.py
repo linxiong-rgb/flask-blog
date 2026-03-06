@@ -31,7 +31,8 @@ try:
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
-    current_app.logger.warning('PIL/Pillow not installed, image processing features will be limited')
+    # 注意：不能在这里使用 current_app.logger，因为还没有应用上下文
+    # 警告将在首次使用图片处理功能时记录
 
 bp = Blueprint('gallery', __name__, url_prefix='/gallery')
 

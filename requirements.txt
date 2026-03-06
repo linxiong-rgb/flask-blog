@@ -34,3 +34,6 @@ requests>=2.31.0
 
 # PostgreSQL 数据库（Render 部署使用）
 psycopg2-binary==2.9.10
+
+# 环境变量管理
+python-dotenv>=1.0.0

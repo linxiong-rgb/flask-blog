@@ -41,6 +41,12 @@ def create_app(config_name='default'):
     config_class = get_config(config_name)
     app.config.from_object(config_class)
 
+    # 生产环境安全检查
+    if config_name == 'production':
+        secret_key = app.config.get('SECRET_KEY')
+        if not secret_key or secret_key == 'dev-secret-key-请在生产环境修改':
+            raise ValueError('生产环境必须设置 SECRET_KEY 环境变量')
+
     # 初始化扩展
     _init_extensions(app)
 
