@@ -203,6 +203,38 @@ def index():
                               is_superuser=is_superuser)
 
 
+@bp.route('/test')
+@login_required
+def test():
+    """测试路由 - 诊断相册功能"""
+    try:
+        import json
+        debug_info = {
+            'user_id': current_user.id,
+            'username': current_user.username if hasattr(current_user, 'username') else 'N/A',
+            'is_superuser': getattr(current_user, 'is_superuser', False),
+            'database_url': 'configured' if current_app.config.get('SQLALCHEMY_DATABASE_URI') else 'not configured',
+        }
+
+        # 测试数据库连接
+        try:
+            album_count = Album.query.count()
+            debug_info['album_count'] = album_count
+
+            photo_count = Photo.query.count()
+            debug_info['photo_count'] = photo_count
+
+            user_albums = Album.query.filter_by(user_id=current_user.id).count()
+            debug_info['user_album_count'] = user_albums
+        except Exception as db_error:
+            debug_info['database_error'] = str(db_error)
+
+        return f'<h1>调试信息</h1><pre>{json.dumps(debug_info, indent=2)}</pre>'
+
+    except Exception as e:
+        return f'<h1>错误</h1><pre>{str(e)}</pre>'
+
+
 @bp.route('/album/new', methods=['GET', 'POST'])
 @login_required
 def new_album():
