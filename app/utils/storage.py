@@ -115,14 +115,17 @@ class GitHubStorage(StorageBackend):
             # 构造 API 请求
             url = f'{self.api_base}/repos/{self.repo}/contents/{file_path}'
 
+            logger.info(f'准备上传到 GitHub: {self.repo}/{file_path}')
+
             # 首先检查文件是否存在
             existing_file = None
             try:
                 response = requests.get(url, headers=self.headers, timeout=10)
                 if response.status_code == 200:
                     existing_file = response.json()
-            except:
-                pass
+                    logger.info(f'文件已存在，将更新: {object_name}')
+            except Exception as e:
+                logger.warning(f'检查文件存在性失败: {str(e)}')
 
             # 准备请求数据
             data = {
@@ -136,17 +139,21 @@ class GitHubStorage(StorageBackend):
                 data['sha'] = existing_file['sha']
 
             # 上传文件
+            logger.info(f'开始上传文件: {object_name} ({len(file_content)} bytes)')
             response = requests.put(url, headers=self.headers, json=data, timeout=30)
 
             if response.status_code in [201, 200]:
                 logger.info(f'图片已上传到 GitHub: {object_name}')
+                # 返回实际访问的 URL 用于调试
+                actual_url = self.get_url(object_name)
+                logger.info(f'图片访问URL: {actual_url}')
                 return True
             else:
-                logger.error(f'GitHub 上传失败: {response.text}')
+                logger.error(f'GitHub 上传失败 (状态码 {response.status_code}): {response.text}')
                 return False
 
         except Exception as e:
-            logger.error(f'GitHub 上传异常: {str(e)}')
+            logger.error(f'GitHub 上传异常: {str(e)}', exc_info=True)
             return False
 
     def upload_file(self, file_path, object_name):
