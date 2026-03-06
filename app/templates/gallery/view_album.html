@@ -49,17 +49,33 @@
     <div class="photo-grid">
         {% for photo in photos %}
         <div class="photo-card" data-photo-id="{{ photo.id }}">
+            {% if not is_owner and photo.has_password and (photo.id|string not in verified_photo_passwords) %}
+            <!-- 密码保护的图片 -->
+            <div class="password-protected-photo" onclick="showPhotoPasswordModal({{ photo.id }})">
+                <img src="{{ photo.file_path }}"
+                     alt="{{ photo.display_name }}"
+                     loading="lazy"
+                     style="filter: blur(10px);"
+                     onerror="this.src='/static/img/no-image.png'">
+                <div class="password-overlay">
+                    <i class="bi bi-lock-fill fs-1"></i>
+                    <p class="mt-2">点击输入密码</p>
+                </div>
+            </div>
+            {% else %}
+            <!-- 正常图片 -->
             <img src="{{ photo.file_path }}"
                  alt="{{ photo.display_name }}"
                  loading="lazy"
                  onerror="this.src='/static/img/no-image.png'"
                  onclick="openLightbox({{ loop.index0 }})">
+            {% endif %}
             <div class="overlay">
                 <small class="photo-title">{{ photo.display_name }}</small>
                 {% if is_owner %}
                 <div class="photo-actions">
-                    <button class="btn btn-sm btn-light" onclick="event.stopPropagation(); editPhotoTitle({{ photo.id }}, '{{ photo.title or '' }}', '{{ photo.filename }}')">
-                        <i class="bi bi-pencil"></i> 主题
+                    <button class="btn btn-sm btn-light" onclick="event.stopPropagation(); editPhotoInfo({{ photo.id }}, photosData[{{ loop.index0 }}])">
+                        <i class="bi bi-pencil"></i> 编辑
                     </button>
                     <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deletePhoto({{ photo.id }})">
                         <i class="bi bi-trash"></i>
@@ -138,12 +154,12 @@
     </div>
 </div>
 
-<!-- 编辑主题模态框 -->
+<!-- 编辑图片模态框 -->
 <div class="modal fade" id="editTitleModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-pencil"></i> 编辑图片主题</h5>
+                <h5 class="modal-title"><i class="bi bi-pencil"></i> 编辑图片</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -153,10 +169,47 @@
                     <input type="text" class="form-control" id="photoTitle" placeholder="为图片添加一个主题描述" maxlength="200">
                     <div class="form-text">原文件名：<span id="photoFilename"></span></div>
                 </div>
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="photoIsPublic">
+                    <label class="form-check-label" for="photoIsPublic">
+                        <i class="bi bi-globe"></i> 公开图片（其他用户可以访问）
+                    </label>
+                </div>
+                <div class="mb-3">
+                    <label for="photoPassword" class="form-label">
+                        <i class="bi bi-key"></i> 访问密码（可选）
+                    </label>
+                    <input type="password" class="form-control" id="photoPassword" placeholder="设置访问密码，留空则无需密码">
+                    <div class="form-text">公开图片可以设置访问密码，其他用户需要输入正确密码才能查看</div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                <button type="button" class="btn btn-primary" onclick="savePhotoTitle()">保存</button>
+                <button type="button" class="btn btn-primary" onclick="savePhotoInfo()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 图片密码验证模态框 -->
+<div class="modal fade" id="photoPasswordModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-lock-fill"></i> 图片访问受限</h5>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="passwordPhotoId">
+                <p class="text-muted">该图片设置了访问密码，请输入密码后继续</p>
+                <div class="mb-3">
+                    <label for="photoAccessPassword" class="form-label">访问密码</label>
+                    <input type="password" class="form-control" id="photoAccessPassword" placeholder="请输入访问密码">
+                    <div class="invalid-feedback" id="photoPasswordError"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="verifyPhotoPassword()">验证</button>
             </div>
         </div>
     </div>
@@ -171,7 +224,9 @@ const photosData = [
         url: '{{ photo.file_path }}',
         title: '{{ photo.title or '' }}',
         filename: '{{ photo.filename }}',
-        display_name: '{{ photo.display_name }}'
+        display_name: '{{ photo.display_name }}',
+        is_public: {{ 'true' if photo.is_public else 'false' }},
+        has_password: {{ 'true' if photo.has_password else 'false' }}
     }{% if not loop.last %},{% endif %}
     {% endfor %}
 ];
@@ -535,20 +590,24 @@ function deleteAlbum(albumId) {
     });
 }
 
-// 编辑图片主题
-function editPhotoTitle(photoId, currentTitle, filename) {
+// 编辑图片信息
+function editPhotoInfo(photoId, photo) {
     document.getElementById('editPhotoId').value = photoId;
-    document.getElementById('photoTitle').value = currentTitle;
-    document.getElementById('photoFilename').textContent = filename;
+    document.getElementById('photoTitle').value = photo.title || '';
+    document.getElementById('photoFilename').textContent = photo.filename;
+    document.getElementById('photoIsPublic').checked = photo.is_public;
+    document.getElementById('photoPassword').value = '';
 
     const modal = new bootstrap.Modal(document.getElementById('editTitleModal'));
     modal.show();
 }
 
-// 保存图片主题
-function savePhotoTitle() {
+// 保存图片信息
+function savePhotoInfo() {
     const photoId = document.getElementById('editPhotoId').value;
     const title = document.getElementById('photoTitle').value.trim();
+    const is_public = document.getElementById('photoIsPublic').checked;
+    const access_password = document.getElementById('photoPassword').value.trim();
 
     fetch(`/gallery/photo/${photoId}/edit`, {
         method: 'POST',
@@ -556,7 +615,11 @@ function savePhotoTitle() {
             'Content-Type': 'application/json',
             'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         },
-        body: JSON.stringify({ title: title })
+        body: JSON.stringify({
+            title: title,
+            is_public: is_public,
+            access_password: access_password
+        })
     })
     .then(response => response.json())
     .then(data => {
@@ -564,17 +627,65 @@ function savePhotoTitle() {
             const modal = bootstrap.Modal.getInstance(document.getElementById('editTitleModal'));
             modal.hide();
 
-            const photoCard = document.querySelector(`[data-photo-id="${photoId}"]`);
-            const titleElement = photoCard.querySelector('.photo-title');
-            titleElement.textContent = data.display_name;
+            // 更新 photosData 中的数据
+            const photo = photosData.find(p => p.id === parseInt(photoId));
+            if (photo) {
+                photo.title = title;
+                photo.display_name = data.display_name;
+                photo.is_public = data.is_public;
+                photo.has_password = data.has_password;
+            }
 
-            showNotification('success', '主题已更新');
+            // 更新显示的主题
+            const photoCard = document.querySelector(`[data-photo-id="${photoId}"]`);
+            if (photoCard) {
+                const titleElement = photoCard.querySelector('.photo-title');
+                if (titleElement) titleElement.textContent = data.display_name;
+            }
+
+            showNotification('success', '图片信息已更新');
         } else {
             showNotification('danger', data.message);
         }
     })
     .catch(error => {
         showNotification('danger', '保存失败');
+    });
+}
+
+// 验证图片密码
+function verifyPhotoPassword() {
+    const photoId = document.getElementById('passwordPhotoId').value;
+    const password = document.getElementById('photoAccessPassword').value;
+    const passwordInput = document.getElementById('photoAccessPassword');
+    const passwordError = document.getElementById('photoPasswordError');
+
+    passwordInput.classList.remove('is-invalid');
+    passwordError.textContent = '';
+
+    fetch(`/gallery/photo/${photoId}/verify-password`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({ password: password })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('photoPasswordModal'));
+            modal.hide();
+            // 重新加载页面以显示图片
+            window.location.reload();
+        } else {
+            passwordInput.classList.add('is-invalid');
+            passwordError.textContent = data.message || '密码错误';
+        }
+    })
+    .catch(error => {
+        passwordInput.classList.add('is-invalid');
+        passwordError.textContent = '验证失败，请重试';
     });
 }
 
@@ -588,6 +699,16 @@ function showNotification(type, message) {
 
     setTimeout(() => notification.remove(), 3000);
 }
+
+// 显示图片密码验证模态框
+function showPhotoPasswordModal(photoId) {
+    document.getElementById('passwordPhotoId').value = photoId;
+    document.getElementById('photoAccessPassword').value = '';
+    document.getElementById('photoAccessPassword').classList.remove('is-invalid');
+
+    const modal = new bootstrap.Modal(document.getElementById('photoPasswordModal'));
+    modal.show();
+}
 </script>
 
 <style>
@@ -600,6 +721,36 @@ function showNotification(type, message) {
 .photo-title {
     display: block;
     word-break: break-all;
+}
+
+/* 密码保护的图片 */
+.password-protected-photo {
+    position: relative;
+    cursor: pointer;
+}
+
+.password-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-align: center;
+}
+
+.password-overlay i {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.password-overlay p {
+    margin: 0;
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .photo-actions .btn {

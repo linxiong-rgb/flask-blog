@@ -139,6 +139,63 @@ def update_database():
             except Exception as e:
                 print(f"Add title column: {e}")
 
+            # 添加 access_password 列到 gallery_album 表
+            try:
+                if db_type == 'sqlite':
+                    result = conn.execute(text("PRAGMA table_info(gallery_album)"))
+                    columns = [row[1] for row in result]
+                    if 'access_password' not in columns:
+                        conn.execute(text("ALTER TABLE gallery_album ADD COLUMN access_password VARCHAR(100)"))
+                        conn.commit()
+                        print("+ Added gallery_album.access_password column")
+                else:
+                    # PostgreSQL
+                    result = conn.execute(text("""
+                        SELECT column_name FROM information_schema.columns
+                        WHERE table_name = 'gallery_album' AND column_name = 'access_password'
+                    """))
+                    if not result.fetchone():
+                        conn.execute(text("ALTER TABLE gallery_album ADD COLUMN access_password VARCHAR(100)"))
+                        conn.commit()
+                        print("+ Added gallery_album.access_password column")
+            except Exception as e:
+                print(f"Add access_password to album: {e}")
+
+            # 添加 is_public 和 access_password 列到 gallery_photo 表
+            try:
+                if db_type == 'sqlite':
+                    result = conn.execute(text("PRAGMA table_info(gallery_photo)"))
+                    columns = [row[1] for row in result]
+                    if 'is_public' not in columns:
+                        conn.execute(text("ALTER TABLE gallery_photo ADD COLUMN is_public BOOLEAN DEFAULT 0"))
+                        conn.commit()
+                        print("+ Added gallery_photo.is_public column")
+                    if 'access_password' not in columns:
+                        conn.execute(text("ALTER TABLE gallery_photo ADD COLUMN access_password VARCHAR(100)"))
+                        conn.commit()
+                        print("+ Added gallery_photo.access_password column")
+                else:
+                    # PostgreSQL
+                    result = conn.execute(text("""
+                        SELECT column_name FROM information_schema.columns
+                        WHERE table_name = 'gallery_photo' AND column_name = 'is_public'
+                    """))
+                    if not result.fetchone():
+                        conn.execute(text("ALTER TABLE gallery_photo ADD COLUMN is_public BOOLEAN DEFAULT FALSE"))
+                        conn.commit()
+                        print("+ Added gallery_photo.is_public column")
+
+                    result = conn.execute(text("""
+                        SELECT column_name FROM information_schema.columns
+                        WHERE table_name = 'gallery_photo' AND column_name = 'access_password'
+                    """))
+                    if not result.fetchone():
+                        conn.execute(text("ALTER TABLE gallery_photo ADD COLUMN access_password VARCHAR(100)"))
+                        conn.commit()
+                        print("+ Added gallery_photo.access_password column")
+            except Exception as e:
+                print(f"Add public access columns to photo: {e}")
+
         print("\n数据库更新完成！")
         print("请重启应用以使更改生效。")
 

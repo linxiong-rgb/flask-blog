@@ -2,16 +2,22 @@
 相册路由模块
 
 简化的相册功能：
-- 相册列表
-- 相册详情
-- 创建相册
+- 相册列表（我的相册 + 公开相册）
+- 相册详情（支持密码保护）
+- 创建相册（支持公开和密码保护）
 - 上传图片
+- 编辑图片（支持公开和密码保护）
 - 删除图片/相册
+
+访问权限说明：
+- 私有相册/图片：仅所有者可访问
+- 公开相册/图片：所有登录用户可访问
+- 密码保护：需要输入正确密码才能访问
 """
 
 import os
 import uuid
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app, session
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from sqlalchemy.orm import joinedload
@@ -43,16 +49,38 @@ def generate_unique_filename(filename):
 @bp.route('/')
 @login_required
 def index():
-    """相册首页"""
-    albums = Album.query.filter_by(user_id=current_user.id)\
+    """相册首页 - 显示我的相册和公开相册"""
+    # 我的相册
+    my_albums = Album.query.filter_by(user_id=current_user.id)\
         .order_by(Album.updated_at.desc()).all()
-    total_albums = len(albums)
+
+    # 其他用户的公开相册
+    public_albums = Album.query.filter(
+        Album.is_public == True,
+        Album.user_id != current_user.id
+    ).options(joinedload(Album.user)).order_by(Album.updated_at.desc()).all()
+
+    total_albums = len(my_albums)
     total_photos = Photo.query.filter_by(user_id=current_user.id).count()
 
     return render_template('gallery/index.html',
-                          albums=albums,
+                          my_albums=my_albums,
+                          public_albums=public_albums,
                           total_albums=total_albums,
                           total_photos=total_photos)
+
+
+@bp.route('/public')
+@login_required
+def public_albums():
+    """所有公开相册页面"""
+    public_albums = Album.query.filter_by(is_public=True)\
+        .options(joinedload(Album.user))\
+        .order_by(Album.updated_at.desc()).all()
+
+    return render_template('gallery/public_albums.html',
+                          albums=public_albums,
+                          total_albums=len(public_albums))
 
 
 # ==================== 创建相册 ====================
@@ -65,6 +93,7 @@ def new_album():
         name = request.form.get('name', '').strip()
         description = request.form.get('description', '').strip()
         is_public = request.form.get('is_public') == 'on'
+        access_password = request.form.get('access_password', '').strip() or None
 
         if not name:
             flash('相册名称不能为空', 'danger')
@@ -74,7 +103,8 @@ def new_album():
             name=name,
             description=description,
             user_id=current_user.id,
-            is_public=is_public
+            is_public=is_public,
+            access_password=access_password
         )
         db.session.add(album)
         db.session.commit()
@@ -91,19 +121,60 @@ def new_album():
 def view_album(album_id):
     """查看相册详情"""
     album = Album.query.options(joinedload(Album.user)).get_or_404(album_id)
+    is_owner = (album.user_id == current_user.id)
+
+    # 检查是否在 session 中已验证过密码
+    session_key = f'album_password_{album_id}'
+    password_verified = session.get(session_key) == album.access_password
 
     # 权限检查
-    if album.user_id != current_user.id and not album.is_public:
-        flash('您没有权限访问此相册', 'warning')
-        return redirect(url_for('gallery.index'))
+    if not is_owner:
+        if not album.is_public:
+            flash('您没有权限访问此相册', 'warning')
+            return redirect(url_for('gallery.index'))
+        # 密码保护的相册
+        if album.has_password and not password_verified:
+            return render_template('gallery/album_password.html', album=album)
 
-    photos = Photo.query.filter_by(album_id=album_id)\
-        .order_by(Photo.created_at.desc()).all()
+    # 查询相册中的图片
+    # 所有者可以看到所有图片，其他用户只能看到公开的图片
+    if is_owner:
+        photos = Photo.query.filter_by(album_id=album_id)\
+            .order_by(Photo.created_at.desc()).all()
+    else:
+        photos = Photo.query.filter_by(album_id=album_id, is_public=True)\
+            .order_by(Photo.created_at.desc()).all()
+
+    # 获取已验证的图片密码
+    verified_photo_passwords = session.get('verified_photo_passwords', {})
 
     return render_template('gallery/view_album.html',
                           album=album,
                           photos=photos,
-                          is_owner=(album.user_id == current_user.id))
+                          is_owner=is_owner,
+                          verified_photo_passwords=verified_photo_passwords)
+
+
+@bp.route('/album/<int:album_id>/verify-password', methods=['POST'])
+@login_required
+def verify_album_password(album_id):
+    """验证相册访问密码"""
+    album = Album.query.get_or_404(album_id)
+
+    if album.user_id == current_user.id:
+        return jsonify({'success': True, 'message': '所有者无需验证密码'})
+
+    password = request.get_json().get('password', '')
+
+    if not album.has_password:
+        return jsonify({'success': True, 'message': '相册未设置密码'})
+
+    if password == album.access_password:
+        # 在 session 中标记已验证
+        session[f'album_password_{album_id}'] = password
+        return jsonify({'success': True, 'message': '密码验证成功'})
+    else:
+        return jsonify({'success': False, 'message': '密码错误'}), 401
 
 
 # ==================== 编辑相册 ====================
@@ -122,6 +193,7 @@ def edit_album(album_id):
         name = request.form.get('name', '').strip()
         description = request.form.get('description', '').strip()
         is_public = request.form.get('is_public') == 'on'
+        access_password = request.form.get('access_password', '').strip()
 
         if not name:
             flash('相册名称不能为空', 'danger')
@@ -130,6 +202,9 @@ def edit_album(album_id):
         album.name = name
         album.description = description
         album.is_public = is_public
+        # 如果密码为空，保持原密码；否则更新密码
+        if access_password:
+            album.access_password = access_password
         db.session.commit()
         flash('相册更新成功', 'success')
         return redirect(url_for('gallery.view_album', album_id=album_id))
@@ -190,7 +265,8 @@ def upload_photos(album_id):
                 filename=file.filename,
                 file_path=storage.get_url(object_name),
                 album_id=album_id,
-                user_id=current_user.id
+                user_id=current_user.id,
+                is_public=album.is_public  # 继承相册的公开设置
             )
             db.session.add(photo)
             uploaded.append(file.filename)
@@ -203,36 +279,60 @@ def upload_photos(album_id):
     })
 
 
-# ==================== 编辑图片主题 ====================
+# ==================== 编辑图片 ====================
 
-@bp.route('/photo/<int:photo_id>/edit', methods=['GET', 'POST'])
+@bp.route('/photo/<int:photo_id>/edit', methods=['POST'])
 @login_required
+@csrf.exempt
 def edit_photo(photo_id):
-    """编辑图片主题"""
+    """编辑图片信息"""
     photo = Photo.query.get_or_404(photo_id)
 
     if photo.user_id != current_user.id:
         return jsonify({'success': False, 'message': '您没有权限编辑此图片'}), 403
 
-    if request.method == 'POST':
-        data = request.get_json()
-        title = data.get('title', '').strip()
+    data = request.get_json()
+    title = data.get('title', '').strip()
+    is_public = data.get('is_public', False)
+    access_password = data.get('access_password', '').strip() or None
 
-        photo.title = title if title else None
-        db.session.commit()
-
-        return jsonify({
-            'success': True,
-            'message': '主题已更新',
-            'display_name': photo.display_name
-        })
+    photo.title = title if title else None
+    photo.is_public = is_public
+    photo.access_password = access_password
+    db.session.commit()
 
     return jsonify({
         'success': True,
-        'photo_id': photo.id,
-        'title': photo.title or '',
-        'filename': photo.filename
+        'message': '图片信息已更新',
+        'display_name': photo.display_name,
+        'is_public': photo.is_public,
+        'has_password': photo.has_password
     })
+
+
+@bp.route('/photo/<int:photo_id>/verify-password', methods=['POST'])
+@login_required
+def verify_photo_password(photo_id):
+    """验证图片访问密码"""
+    photo = Photo.query.get_or_404(photo_id)
+
+    if photo.user_id == current_user.id:
+        return jsonify({'success': True, 'message': '所有者无需验证密码'})
+
+    password = request.get_json().get('password', '')
+
+    if not photo.has_password:
+        return jsonify({'success': True, 'message': '图片未设置密码'})
+
+    if password == photo.access_password:
+        # 在 session 中标记已验证
+        if 'verified_photo_passwords' not in session:
+            session['verified_photo_passwords'] = {}
+        session['verified_photo_passwords'][str(photo_id)] = password
+        session.modified = True
+        return jsonify({'success': True, 'message': '密码验证成功'})
+    else:
+        return jsonify({'success': False, 'message': '密码错误'}), 401
 
 
 # ==================== 删除图片 ====================

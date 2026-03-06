@@ -1,0 +1,59 @@
+{% extends "gallery/base.html" %}
+
+{% block title %}公开相册 - 云相册{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- 面包屑导航 -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('gallery.index') }}">云相册</a></li>
+            <li class="breadcrumb-item active">公开相册</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-globe"></i> 公开相册</h2>
+        <span class="text-muted">共 {{ total_albums }} 个公开相册</span>
+    </div>
+
+    {% if albums %}
+    <div class="row">
+        {% for album in albums %}
+        <div class="col-md-4 mb-4">
+            <a href="{{ url_for('gallery.view_album', album_id=album.id) }}" class="text-decoration-none">
+                <div class="card album-card h-100">
+                    <img src="{{ album.cover_url }}" alt="{{ album.name }}" class="album-cover" onerror="this.src='/static/img/no-image.png'">
+                    <div class="card-body">
+                        <h5 class="card-title text-dark">{{ album.name }}</h5>
+                        {% if album.description %}
+                        <p class="card-text text-muted small">{{ album.description }}</p>
+                        {% endif %}
+                        <p class="card-text">
+                            <small class="text-muted">
+                                <i class="bi bi-images"></i> {{ album.photo_count }} 张照片
+                                <span class="badge bg-success ms-1"><i class="bi bi-globe"></i> 公开</span>
+                                {% if album.has_password %}
+                                <span class="badge bg-warning ms-1"><i class="bi bi-lock-fill"></i> 密码</span>
+                                {% endif %}
+                            </small>
+                        </p>
+                        <p class="card-text">
+                            <small class="text-muted">
+                                <i class="bi bi-person"></i> {{ album.user.username }}
+                            </small>
+                        </p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-inbox fs-1 text-muted"></i>
+        <p class="text-muted mt-3">暂时没有公开相册</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
