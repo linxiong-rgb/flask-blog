@@ -48,7 +48,7 @@
         <div class="col-md-4 mb-4">
             <a href="{{ url_for('gallery.view_album', album_id=album.id) }}" class="text-decoration-none">
                 <div class="card album-card h-100">
-                    <img src="{{ album.cover_url }}" alt="{{ album.name }}" class="album-cover">
+                    <img src="{{ album.cover_url }}" alt="{{ album.name }}" class="album-cover" onerror="this.src='/static/img/no-image.png'">
                     <div class="card-body">
                         <h5 class="card-title text-dark">{{ album.name }}</h5>
                         {% if album.description %}

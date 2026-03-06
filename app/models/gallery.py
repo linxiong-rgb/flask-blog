@@ -33,6 +33,12 @@ class Album(db.Model):
         """获取相册中的图片数量"""
         return self.photos.count()
 
+    @property
+    def cover_url(self):
+        """获取封面图片URL"""
+        cover = self.photos.order_by(Photo.created_at.desc()).first()
+        return cover.file_path if cover else '/static/img/no-image.png'
+
     def __repr__(self):
         return f'<Album {self.name}>'
 
