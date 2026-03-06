@@ -223,12 +223,15 @@ def edit_album(album_id):
     # 为相册添加安全的属性访问（用于模板显示）
     album._is_public = getattr(album, 'is_public', False)
     album._has_password = getattr(album, 'has_password', False)
+    # 暴露当前密码给模板（用于编辑时显示）
+    album.access_password = getattr(album, 'access_password', '')
 
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
         description = request.form.get('description', '').strip()
         is_public = request.form.get('is_public') == 'on'
         access_password = request.form.get('access_password', '').strip()
+        clear_password = request.form.get('clear_password') == '1'
 
         if not name:
             flash('相册名称不能为空', 'danger')
@@ -237,9 +240,16 @@ def edit_album(album_id):
         album.name = name
         album.description = description
         album.is_public = is_public
-        # 如果密码为空，保持原密码；否则更新密码
-        if access_password:
+
+        # 处理密码更新
+        if clear_password:
+            # 清除密码
+            album.access_password = None
+        elif access_password:
+            # 更新密码
             album.access_password = access_password
+        # 如果密码为空且没有清除标记，保持原密码不变
+
         db.session.commit()
         flash('相册更新成功', 'success')
         return redirect(url_for('gallery.view_album', album_id=album_id))

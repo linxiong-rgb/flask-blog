@@ -28,23 +28,54 @@
                             </label>
                         </div>
                         <div class="mb-3">
-                            <label for="access_password" class="form-label">
+                            <label class="form-label">
                                 <i class="bi bi-key"></i> 访问密码
                             </label>
-                            <div class="input-group">
-                                <input type="password" class="form-control" id="access_password" name="access_password"
-                                       placeholder="留空保持当前密码，输入新密码则更新">
-                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('access_password', this)">
-                                    <i class="bi bi-eye-slash" id="access_password_icon"></i>
+                            {% if album._has_password %}
+                            <!-- 已有密码：显示当前密码和操作按钮 -->
+                            <input type="hidden" id="current_password" value="{{ album.access_password }}">
+                            <div class="input-group mb-2">
+                                <input type="password" class="form-control bg-light" value="{{ album.access_password }}" readonly
+                                       id="current_password_display">
+                                <button class="btn btn-outline-secondary" type="button" onclick="toggleCurrentPassword()" title="查看密码">
+                                    <i class="bi bi-eye" id="current_password_icon"></i>
+                                </button>
+                                <button class="btn btn-outline-secondary" type="button" onclick="enablePasswordEdit()" title="修改密码">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" type="button" onclick="clearPassword()" title="删除密码">
+                                    <i class="bi bi-trash"></i>
                                 </button>
                             </div>
                             <div class="form-text">
-                                {% if album._has_password %}
-                                    <span class="text-warning"><i class="bi bi-lock-fill"></i> 当前已设置密码</span>
-                                {% else %}
-                                    <span class="text-muted">当前未设置密码</span>
-                                {% endif %}
+                                <span class="text-success"><i class="bi bi-check-circle"></i> 当前已设置密码</span>
                             </div>
+                            <!-- 修改密码的输入框（默认隐藏） -->
+                            <div id="password_edit_container" style="display: none;">
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="access_password" name="access_password"
+                                           placeholder="输入新密码">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('access_password', this)">
+                                        <i class="bi bi-eye-slash"></i>
+                                    </button>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="cancelPasswordEdit()">
+                                        <i class="bi bi-x-lg"></i> 取消
+                                    </button>
+                                </div>
+                            </div>
+                            {% else %}
+                            <!-- 无密码：显示输入框 -->
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="access_password" name="access_password"
+                                       placeholder="设置访问密码，留空则无需密码">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('access_password', this)">
+                                    <i class="bi bi-eye-slash"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">
+                                <span class="text-muted">当前未设置密码</span>
+                            </div>
+                            {% endif %}
                         </div>
                         <div class="d-flex justify-content-between">
                             <a href="{{ url_for('gallery.view_album', album_id=album.id) }}" class="btn btn-secondary">取消</a>
@@ -58,6 +89,52 @@
 </div>
 
 <script>
+// 切换当前密码显示/隐藏
+function toggleCurrentPassword() {
+    const input = document.getElementById('current_password_display');
+    const icon = document.getElementById('current_password_icon');
+
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+}
+
+// 启用密码编辑
+function enablePasswordEdit() {
+    document.getElementById('current_password_display').parentElement.style.display = 'none';
+    document.getElementById('password_edit_container').style.display = 'block';
+    document.getElementById('access_password').focus();
+}
+
+// 取消密码编辑
+function cancelPasswordEdit() {
+    document.getElementById('password_edit_container').style.display = 'none';
+    document.getElementById('current_password_display').parentElement.style.display = 'flex';
+    document.getElementById('access_password').value = '';
+}
+
+// 清除密码
+function clearPassword() {
+    if (confirm('确定要删除密码吗？删除后相册将无需密码即可访问。')) {
+        // 创建一个隐藏的 input 来发送清除密码的请求
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'clear_password';
+        input.value = '1';
+        document.querySelector('form').appendChild(input);
+
+        // 提交表单
+        document.querySelector('form').submit();
+    }
+}
+
+// 切换密码输入框显示/隐藏
 function togglePassword(inputId, button) {
     const input = document.getElementById(inputId);
     const icon = button.querySelector('i');
