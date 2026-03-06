@@ -895,6 +895,66 @@ def init_database():
                     """))
                     conn.commit()
                     current_app.logger.info('photo.access_password 列添加成功')
+
+                # 创建新的相册表
+                try:
+                    # 检查表是否存在
+                    result = conn.execute(text("""
+                        SELECT table_name FROM information_schema.tables
+                        WHERE table_name = 'gallery_album'
+                    """))
+                    if not result.fetchone():
+                        conn.execute(text("""
+                            CREATE TABLE gallery_album (
+                                id SERIAL PRIMARY KEY,
+                                name VARCHAR(100) NOT NULL,
+                                description VARCHAR(500),
+                                user_id INTEGER NOT NULL REFERENCES "user"(id),
+                                is_public BOOLEAN DEFAULT FALSE,
+                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                            )
+                        """))
+                        conn.commit()
+                        current_app.logger.info('gallery_album 表创建成功')
+                except Exception as e:
+                    current_app.logger.warning(f'创建 gallery_album 表失败: {e}')
+
+                try:
+                    # 检查表是否存在
+                    result = conn.execute(text("""
+                        SELECT table_name FROM information_schema.tables
+                        WHERE table_name = 'gallery_photo'
+                    """))
+                    if not result.fetchone():
+                        conn.execute(text("""
+                            CREATE TABLE gallery_photo (
+                                id SERIAL PRIMARY KEY,
+                                filename VARCHAR(255) NOT NULL,
+                                file_path VARCHAR(500) NOT NULL,
+                                title VARCHAR(200),
+                                album_id INTEGER NOT NULL REFERENCES gallery_album(id),
+                                user_id INTEGER NOT NULL REFERENCES "user"(id),
+                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                            )
+                        """))
+                        conn.commit()
+                        current_app.logger.info('gallery_photo 表创建成功')
+                except Exception as e:
+                    current_app.logger.warning(f'创建 gallery_photo 表失败: {e}')
+
+                # 为已存在的 gallery_photo 表添加 title 列
+                try:
+                    result = conn.execute(text("""
+                        SELECT column_name FROM information_schema.columns
+                        WHERE table_name = 'gallery_photo' AND column_name = 'title'
+                    """))
+                    if not result.fetchone():
+                        conn.execute(text("ALTER TABLE gallery_photo ADD COLUMN title VARCHAR(200)"))
+                        conn.commit()
+                        current_app.logger.info('gallery_photo.title 列添加成功')
+                except Exception as e:
+                    current_app.logger.warning(f'添加 title 列失败: {e}')
         except Exception as migrate_error:
             current_app.logger.warning(f'迁移检查/执行失败: {str(migrate_error)}')
 
