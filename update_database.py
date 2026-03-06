@@ -95,9 +95,9 @@ def update_database():
                     )
                 """))
                 conn.commit()
-                print("✓ 创建 gallery_album 表")
+                print("+ Created gallery_album table")
             except Exception as e:
-                print(f"gallery_album 表: {e}")
+                print(f"gallery_album table: {e}")
 
             try:
                 conn.execute(text("""
@@ -105,15 +105,39 @@ def update_database():
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         filename VARCHAR(255) NOT NULL,
                         file_path VARCHAR(500) NOT NULL,
+                        title VARCHAR(200),
                         album_id INTEGER NOT NULL REFERENCES gallery_album(id),
                         user_id INTEGER NOT NULL REFERENCES user(id),
                         created_at DATETIME
                     )
                 """))
                 conn.commit()
-                print("✓ 创建 gallery_photo 表")
+                print("+ Created gallery_photo table")
             except Exception as e:
-                print(f"gallery_photo 表: {e}")
+                print(f"gallery_photo table: {e}")
+
+            # 添加 title 列到已存在的表
+            try:
+                if db_type == 'sqlite':
+                    # 检查列是否存在
+                    result = conn.execute(text("PRAGMA table_info(gallery_photo)"))
+                    columns = [row[1] for row in result]
+                    if 'title' not in columns:
+                        conn.execute(text("ALTER TABLE gallery_photo ADD COLUMN title VARCHAR(200)"))
+                        conn.commit()
+                        print("+ Added gallery_photo.title column")
+                else:
+                    # PostgreSQL
+                    result = conn.execute(text("""
+                        SELECT column_name FROM information_schema.columns
+                        WHERE table_name = 'gallery_photo' AND column_name = 'title'
+                    """))
+                    if not result.fetchone():
+                        conn.execute(text("ALTER TABLE gallery_photo ADD COLUMN title VARCHAR(200)"))
+                        conn.commit()
+                        print("+ Added gallery_photo.title column")
+            except Exception as e:
+                print(f"Add title column: {e}")
 
         print("\n数据库更新完成！")
         print("请重启应用以使更改生效。")

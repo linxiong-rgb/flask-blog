@@ -49,13 +49,18 @@
     <div class="photo-grid">
         {% for photo in photos %}
         <div class="photo-card" data-photo-id="{{ photo.id }}">
-            <img src="{{ photo.url }}" alt="{{ photo.filename }}" loading="lazy">
+            <img src="{{ photo.file_path }}" alt="{{ photo.display_name }}" loading="lazy" onerror="this.src='/static/img/no-image.png'">
             <div class="overlay">
-                <small>{{ photo.filename }}</small>
+                <small class="photo-title">{{ photo.display_name }}</small>
                 {% if is_owner %}
-                <button class="btn btn-sm btn-danger float-end" onclick="event.stopPropagation(); deletePhoto({{ photo.id }})">
-                    <i class="bi bi-trash"></i>
-                </button>
+                <div class="photo-actions">
+                    <button class="btn btn-sm btn-light" onclick="event.stopPropagation(); editPhotoTitle({{ photo.id }}, '{{ photo.title or '' }}', '{{ photo.filename }}')">
+                        <i class="bi bi-pencil"></i> 主题
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deletePhoto({{ photo.id }})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
                 {% endif %}
             </div>
         </div>
@@ -78,6 +83,30 @@
 <!-- 隐藏的文件上传输入 -->
 <input type="file" id="photoUploadInput" accept="image/*" multiple style="display: none" onchange="uploadPhotos(this)">
 
+<!-- 编辑主题模态框 -->
+<div class="modal fade" id="editTitleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-pencil"></i> 编辑图片主题</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editPhotoId">
+                <div class="mb-3">
+                    <label for="photoTitle" class="form-label">图片主题</label>
+                    <input type="text" class="form-control" id="photoTitle" placeholder="为图片添加一个主题描述" maxlength="200">
+                    <div class="form-text">原文件名：<span id="photoFilename"></span></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="savePhotoTitle()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // 上传照片
 function uploadPhotos(input) {
@@ -96,7 +125,7 @@ function uploadPhotos(input) {
     fetch('{{ url_for("gallery.upload_photos", album_id=album.id) }}', {
         method: 'POST',
         headers: {
-            'X-CSRFToken': '{{ csrf_token() }}'
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         },
         body: formData
     })
@@ -167,20 +196,78 @@ function deleteAlbum(albumId) {
     });
 }
 
+// 编辑图片主题
+function editPhotoTitle(photoId, currentTitle, filename) {
+    document.getElementById('editPhotoId').value = photoId;
+    document.getElementById('photoTitle').value = currentTitle;
+    document.getElementById('photoFilename').textContent = filename;
+
+    const modal = new bootstrap.Modal(document.getElementById('editTitleModal'));
+    modal.show();
+}
+
+// 保存图片主题
+function savePhotoTitle() {
+    const photoId = document.getElementById('editPhotoId').value;
+    const title = document.getElementById('photoTitle').value.trim();
+
+    fetch(`/gallery/photo/${photoId}/edit`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({ title: title })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 关闭模态框
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editTitleModal'));
+            modal.hide();
+
+            // 更新显示
+            const photoCard = document.querySelector(`[data-photo-id="${photoId}"]`);
+            const titleElement = photoCard.querySelector('.photo-title');
+            titleElement.textContent = data.display_name;
+
+            showNotification('success', '主题已更新');
+        } else {
+            showNotification('danger', data.message);
+        }
+    })
+    .catch(error => {
+        showNotification('danger', '保存失败');
+    });
+}
+
 // 通知提示
 function showNotification(type, message) {
     const notification = document.createElement('div');
     notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
     notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-    notification.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
+    notification.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
     document.body.appendChild(notification);
 
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
+    setTimeout(() => notification.remove(), 3000);
 }
 </script>
+
+<style>
+.photo-actions {
+    display: flex;
+    gap: 5px;
+    margin-top: 5px;
+}
+
+.photo-title {
+    display: block;
+    word-break: break-all;
+}
+
+.photo-actions .btn {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+}
+</style>
 {% endblock %}

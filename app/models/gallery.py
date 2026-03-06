@@ -44,12 +44,18 @@ class Photo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(255), nullable=False)
     file_path = db.Column(db.String(500), nullable=False)
+    title = db.Column(db.String(200))  # 图片主题/标题
     album_id = db.Column(db.Integer, db.ForeignKey('gallery_album.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # 关系
     user = db.relationship('User', backref=db.backref('gallery_photos', lazy='dynamic'))
+
+    @property
+    def display_name(self):
+        """获取显示名称（优先使用标题，否则使用文件名）"""
+        return self.title if self.title else self.filename
 
     def __repr__(self):
         return f'<Photo {self.filename}>'

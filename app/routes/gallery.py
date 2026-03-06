@@ -203,6 +203,38 @@ def upload_photos(album_id):
     })
 
 
+# ==================== 编辑图片主题 ====================
+
+@bp.route('/photo/<int:photo_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_photo(photo_id):
+    """编辑图片主题"""
+    photo = Photo.query.get_or_404(photo_id)
+
+    if photo.user_id != current_user.id:
+        return jsonify({'success': False, 'message': '您没有权限编辑此图片'}), 403
+
+    if request.method == 'POST':
+        data = request.get_json()
+        title = data.get('title', '').strip()
+
+        photo.title = title if title else None
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': '主题已更新',
+            'display_name': photo.display_name
+        })
+
+    return jsonify({
+        'success': True,
+        'photo_id': photo.id,
+        'title': photo.title or '',
+        'filename': photo.filename
+    })
+
+
 # ==================== 删除图片 ====================
 
 @bp.route('/photo/<int:photo_id>/delete', methods=['POST'])
