@@ -955,6 +955,45 @@ def init_database():
                         current_app.logger.info('gallery_photo.title 列添加成功')
                 except Exception as e:
                     current_app.logger.warning(f'添加 title 列失败: {e}')
+
+                # 为 gallery_album 表添加 access_password 列
+                try:
+                    result = conn.execute(text("""
+                        SELECT column_name FROM information_schema.columns
+                        WHERE table_name = 'gallery_album' AND column_name = 'access_password'
+                    """))
+                    if not result.fetchone():
+                        conn.execute(text("ALTER TABLE gallery_album ADD COLUMN access_password VARCHAR(100)"))
+                        conn.commit()
+                        current_app.logger.info('gallery_album.access_password 列添加成功')
+                except Exception as e:
+                    current_app.logger.warning(f'添加 access_password 列到 album 失败: {e}')
+
+                # 为 gallery_photo 表添加 is_public 列
+                try:
+                    result = conn.execute(text("""
+                        SELECT column_name FROM information_schema.columns
+                        WHERE table_name = 'gallery_photo' AND column_name = 'is_public'
+                    """))
+                    if not result.fetchone():
+                        conn.execute(text("ALTER TABLE gallery_photo ADD COLUMN is_public BOOLEAN DEFAULT FALSE"))
+                        conn.commit()
+                        current_app.logger.info('gallery_photo.is_public 列添加成功')
+                except Exception as e:
+                    current_app.logger.warning(f'添加 is_public 列到 photo 失败: {e}')
+
+                # 为 gallery_photo 表添加 access_password 列
+                try:
+                    result = conn.execute(text("""
+                        SELECT column_name FROM information_schema.columns
+                        WHERE table_name = 'gallery_photo' AND column_name = 'access_password'
+                    """))
+                    if not result.fetchone():
+                        conn.execute(text("ALTER TABLE gallery_photo ADD COLUMN access_password VARCHAR(100)"))
+                        conn.commit()
+                        current_app.logger.info('gallery_photo.access_password 列添加成功')
+                except Exception as e:
+                    current_app.logger.warning(f'添加 access_password 列到 photo 失败: {e}')
         except Exception as migrate_error:
             current_app.logger.warning(f'迁移检查/执行失败: {str(migrate_error)}')
 
