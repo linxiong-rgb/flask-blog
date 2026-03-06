@@ -320,15 +320,34 @@ function applyZoom() {
 }
 
 // 下载图片
-function downloadPhoto() {
+async function downloadPhoto() {
     const photo = photosData[currentIndex];
-    const link = document.createElement('a');
-    link.href = photo.url;
-    link.download = photo.filename;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+
+    try {
+        // 获取图片数据
+        const response = await fetch(photo.url);
+        const blob = await response.blob();
+
+        // 创建下载链接
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = photo.filename || 'image.jpg';
+
+        // 触发下载
+        document.body.appendChild(link);
+        link.click();
+
+        // 清理
+        setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        }, 100);
+
+    } catch (error) {
+        console.error('下载失败:', error);
+        // 如果 fetch 失败，尝试直接打开图片
+        window.open(photo.url, '_blank');
+    }
 }
 
 // 拖拽平移功能
