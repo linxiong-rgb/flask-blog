@@ -13,6 +13,7 @@
 
 from datetime import datetime
 from app import db
+from sqlalchemy import inspect
 
 
 class Album(db.Model):
@@ -23,8 +24,10 @@ class Album(db.Model):
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.String(500))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    is_public = db.Column(db.Boolean, default=False)
-    access_password = db.Column(db.String(100))  # 访问密码（可选）
+    # 注意：is_public 和 access_password 字段可能不存在于旧数据库
+    # 这些字段由迁移脚本动态添加
+    is_public = db.Column(db.Boolean, default=False, nullable=True)
+    access_password = db.Column(db.String(100), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

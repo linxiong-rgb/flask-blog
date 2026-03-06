@@ -997,6 +997,80 @@ def init_database():
         except Exception as migrate_error:
             current_app.logger.warning(f'迁移检查/执行失败: {str(migrate_error)}')
 
+        # 添加相册新字段（兼容 SQLite 和 PostgreSQL）
+        try:
+            with db.engine.connect() as conn:
+                db_type = conn.dialect.name
+                current_app.logger.info(f'数据库类型: {db_type}，正在添加相册新字段...')
+
+                # 为 gallery_album 添加 access_password 列
+                try:
+                    if db_type == 'sqlite':
+                        result = conn.execute(text("PRAGMA table_info(gallery_album)"))
+                        columns = [row[1] for row in result]
+                        if 'access_password' not in columns:
+                            conn.execute(text("ALTER TABLE gallery_album ADD COLUMN access_password VARCHAR(100)"))
+                            conn.commit()
+                            current_app.logger.info('✓ gallery_album.access_password 列添加成功 (SQLite)')
+                    else:
+                        result = conn.execute(text("""
+                            SELECT column_name FROM information_schema.columns
+                            WHERE table_name = 'gallery_album' AND column_name = 'access_password'
+                        """))
+                        if not result.fetchone():
+                            conn.execute(text("ALTER TABLE gallery_album ADD COLUMN access_password VARCHAR(100)"))
+                            conn.commit()
+                            current_app.logger.info('✓ gallery_album.access_password 列添加成功 (PostgreSQL)')
+                except Exception as e:
+                    if 'duplicate column' not in str(e).lower() and 'already exists' not in str(e).lower():
+                        current_app.logger.warning(f'gallery_album.access_password: {e}')
+
+                # 为 gallery_photo 添加 is_public 列
+                try:
+                    if db_type == 'sqlite':
+                        result = conn.execute(text("PRAGMA table_info(gallery_photo)"))
+                        columns = [row[1] for row in result]
+                        if 'is_public' not in columns:
+                            conn.execute(text("ALTER TABLE gallery_photo ADD COLUMN is_public BOOLEAN DEFAULT 0"))
+                            conn.commit()
+                            current_app.logger.info('✓ gallery_photo.is_public 列添加成功 (SQLite)')
+                    else:
+                        result = conn.execute(text("""
+                            SELECT column_name FROM information_schema.columns
+                            WHERE table_name = 'gallery_photo' AND column_name = 'is_public'
+                        """))
+                        if not result.fetchone():
+                            conn.execute(text("ALTER TABLE gallery_photo ADD COLUMN is_public BOOLEAN DEFAULT FALSE"))
+                            conn.commit()
+                            current_app.logger.info('✓ gallery_photo.is_public 列添加成功 (PostgreSQL)')
+                except Exception as e:
+                    if 'duplicate column' not in str(e).lower() and 'already exists' not in str(e).lower():
+                        current_app.logger.warning(f'gallery_photo.is_public: {e}')
+
+                # 为 gallery_photo 添加 access_password 列
+                try:
+                    if db_type == 'sqlite':
+                        result = conn.execute(text("PRAGMA table_info(gallery_photo)"))
+                        columns = [row[1] for row in result]
+                        if 'access_password' not in columns:
+                            conn.execute(text("ALTER TABLE gallery_photo ADD COLUMN access_password VARCHAR(100)"))
+                            conn.commit()
+                            current_app.logger.info('✓ gallery_photo.access_password 列添加成功 (SQLite)')
+                    else:
+                        result = conn.execute(text("""
+                            SELECT column_name FROM information_schema.columns
+                            WHERE table_name = 'gallery_photo' AND column_name = 'access_password'
+                        """))
+                        if not result.fetchone():
+                            conn.execute(text("ALTER TABLE gallery_photo ADD COLUMN access_password VARCHAR(100)"))
+                            conn.commit()
+                            current_app.logger.info('✓ gallery_photo.access_password 列添加成功 (PostgreSQL)')
+                except Exception as e:
+                    if 'duplicate column' not in str(e).lower() and 'already exists' not in str(e).lower():
+                        current_app.logger.warning(f'gallery_photo.access_password: {e}')
+        except Exception as e:
+            current_app.logger.error(f'添加相册新字段失败: {e}')
+
         # 检查管理员是否已存在
         admin = User.query.filter_by(username='admin01').first()
         # 用于返回的管理员密码信息
