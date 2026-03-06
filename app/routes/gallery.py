@@ -226,13 +226,50 @@ def test():
 
             user_albums = Album.query.filter_by(user_id=current_user.id).count()
             debug_info['user_album_count'] = user_albums
+
+            # 测试相册查询
+            from sqlalchemy.orm import joinedload
+            root_albums = Album.query.options(
+                joinedload(Album.user)
+            ).filter_by(parent_id=None).all()
+            debug_info['root_albums_count'] = len(root_albums)
+
+            # 检查每个相册的详细信息
+            albums_info = []
+            for album in root_albums:
+                try:
+                    album_data = {
+                        'id': album.id,
+                        'name': album.name,
+                        'user_id': album.user_id,
+                        'has_user': album.user is not None,
+                        'user_username': album.user.username if album.user else None,
+                        'is_private': album.is_private,
+                        'is_public': album.is_public,
+                    }
+
+                    # 尝试获取 photo_count
+                    try:
+                        album_data['photo_count'] = album.photo_count
+                    except Exception as pc_error:
+                        album_data['photo_count_error'] = str(pc_error)
+
+                    albums_info.append(album_data)
+                except Exception as album_error:
+                    albums_info.append({'error': str(album_error)})
+
+            debug_info['albums'] = albums_info
+
         except Exception as db_error:
             debug_info['database_error'] = str(db_error)
+            import traceback
+            debug_info['traceback'] = traceback.format_exc()
 
         return f'<h1>调试信息</h1><pre>{json.dumps(debug_info, indent=2)}</pre>'
 
     except Exception as e:
-        return f'<h1>错误</h1><pre>{str(e)}</pre>'
+        import traceback
+        return f'<h1>错误</h1><pre>{str(e)}\n\n{traceback.format_exc()}</pre>'
 
 
 @bp.route('/album/new', methods=['GET', 'POST'])
