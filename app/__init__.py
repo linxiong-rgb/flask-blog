@@ -112,13 +112,12 @@ def _init_extensions(app):
 
 def _register_blueprints(app):
     """注册所有蓝图"""
-    from app.routes import auth, main, admin, export, gallery
+    from app.routes import auth, main, admin, export
 
     app.register_blueprint(auth.bp)
     app.register_blueprint(main.bp)
     app.register_blueprint(admin.bp)
     app.register_blueprint(export.bp)
-    app.register_blueprint(gallery.bp)
 
 
 def _register_filters(app):

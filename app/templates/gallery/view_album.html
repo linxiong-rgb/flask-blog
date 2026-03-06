@@ -1,201 +1,9 @@
-{% extends "base.html" %}
+{% extends "gallery/base.html" %}
 
 {% block title %}{{ album.name }} - 云相册{% endblock %}
 
-{% block extra_css %}
-<style>
-.image-placeholder {
-    width: 100%;
-    padding-top: 100%;
-    background: #f8f9fa;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #6c757d;
-    position: relative;
-}
-
-.image-placeholder i {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 2rem;
-}
-
-/* 快速公开切换按钮 */
-.visibility-quick-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: #f8f9fa;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.3s;
-    border: 1px solid transparent;
-}
-
-.visibility-quick-toggle:hover {
-    background: #e9ecef;
-    border-color: #dee2e6;
-}
-
-.visibility-quick-toggle.private {
-    background: #fff3cd;
-}
-
-.visibility-quick-toggle.public {
-    background: #d1e7dd;
-}
-
-.toggle-switch {
-    position: relative;
-    width: 44px;
-    height: 24px;
-    background: #dc3545;
-    border-radius: 12px;
-    transition: background 0.3s;
-}
-
-.toggle-switch.public {
-    background: #198754;
-}
-
-.toggle-switch::after {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 20px;
-    height: 20px;
-    background: white;
-    border-radius: 50%;
-    transition: transform 0.3s;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-}
-
-.toggle-switch.public::after {
-    transform: translateX(20px);
-}
-</style>
-<script>
-// 图片加载错误处理（备用URL切换）
-function handleImageErrorMultiCdn(img) {
-    const rawUrl = img.dataset.rawUrl;
-    if (rawUrl && img.src !== rawUrl && !img.dataset.usedRaw) {
-        // 尝试使用备用 URL
-        img.dataset.usedRaw = 'true';
-        img.src = rawUrl;
-    } else {
-        // 都失败了，显示占位图
-        img.outerHTML = '<div class="image-placeholder"><i class="bi bi-image"></i></div>';
-    }
-}
-</script>
-
-<script>
-// 快速切换相册可见性
-async function quickToggleVisibility() {
-    try {
-        const toggleEl = document.getElementById('quickVisibilityToggle');
-        if (!toggleEl) {
-            console.error('快速切换按钮未找到');
-            return;
-        }
-
-        const isCurrentlyPublic = toggleEl.classList.contains('public');
-        const albumId = {{ album.id }};
-        const hasPassword = {{ 'true' if album.access_password else 'false' }};
-
-        // 如果要设为私密，直接切换
-        if (isCurrentlyPublic) {
-            await toggleAlbumVisibility(albumId, false);
-            return;
-        }
-
-        // 如果要设为公开，检查是否有私密照片
-        try {
-            const response = await fetch(`/gallery/album/${albumId}/check-private-photos`);
-            const data = await response.json();
-
-            if (data.private_count > 0) {
-                if (!confirm(`相册中有 ${data.private_count} 张私密照片。\n\n设为公开后，这些照片仍将保持私密状态，不会在共享空间显示。\n\n是否继续设为公开？`)) {
-                    return;
-                }
-            }
-
-            // 如果相册有密码，需要输入密码来验证操作
-            if (hasPassword) {
-                const password = prompt('请输入相册密码以验证操作：');
-                if (!password) {
-                    return;
-                }
-
-                // 验证密码
-                const verifyResponse = await fetch(`/gallery/album/${albumId}/verify-password`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ password: password })
-                });
-
-                if (!verifyResponse.ok) {
-                    alert('密码验证失败，请重试');
-                    return;
-                }
-
-                const verifyData = await verifyResponse.json();
-                if (!verifyData.success) {
-                    alert('密码错误，无法切换到公开状态');
-                    return;
-                }
-            }
-
-            await toggleAlbumVisibility(albumId, true);
-        } catch (error) {
-            console.error('操作失败:', error);
-            alert('切换失败，请重试');
-        }
-    } catch (error) {
-        console.error('快速切换失败:', error);
-        alert('操作失败，请刷新页面重试');
-    }
-}
-
-async function toggleAlbumVisibility(albumId, makePublic) {
-    try {
-        const response = await fetch(`/gallery/album/${albumId}/toggle-visibility`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ is_public: makePublic })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success) {
-                // 刷新页面以更新UI
-                location.reload();
-            } else {
-                alert(data.message || '切换失败');
-            }
-        } else {
-            alert('切换失败，请重试');
-        }
-    } catch (error) {
-        console.error('切换失败:', error);
-        alert('切换失败，请重试');
-    }
-}
-</script>
-{% endblock %}
-
 {% block content %}
-<div class="container-fluid mt-4">
+<div class="container mt-4">
     <!-- 面包屑导航 -->
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
@@ -207,370 +15,70 @@ async function toggleAlbumVisibility(albumId, makePublic) {
     <!-- 相册信息 -->
     <div class="row mb-4">
         <div class="col-md-8">
-            <div class="d-flex align-items-center gap-2 mb-2">
-                <h2 class="mb-0">{{ album.name }}</h2>
-                {% if is_superuser %}
-                <span class="badge bg-danger">超级管理员</span>
-                {% elif album.user_id != current_user.id %}
-                <span class="badge bg-info">浏览模式</span>
-                {% endif %}
-            </div>
-            {% if is_superuser and album.user_id != current_user.id %}
-            <p class="text-muted">
-                <i class="bi bi-person"></i> 所有者：{{ album.user.username }}
-            </p>
-            {% endif %}
+            <h2>{{ album.name }}</h2>
             {% if album.description %}
-                <p class="text-muted">{{ album.description }}</p>
+            <p class="text-muted">{{ album.description }}</p>
             {% endif %}
             <p class="text-muted">
                 <i class="bi bi-images"></i> {{ photos|length }} 张照片
-                {% if album.is_private %}
-                    <span class="badge bg-danger"><i class="bi bi-lock-fill"></i> 私密相册</span>
-                {% elif album.is_public %}
-                    <span class="badge bg-success"><i class="bi bi-globe"></i> 公开相册</span>
-                    {% if album.access_password %}
-                    <span class="badge bg-info"><i class="bi bi-key"></i> 密码保护</span>
-                    {% endif %}
+                {% if album.is_public %}
+                <span class="badge bg-success"><i class="bi bi-globe"></i> 公开</span>
+                {% else %}
+                <span class="badge bg-secondary"><i class="bi bi-lock-fill"></i> 私密</span>
                 {% endif %}
             </p>
         </div>
         <div class="col-md-4 text-end">
+            {% if is_owner %}
             <div class="btn-group">
-                <!-- 快速公开切换按钮 -->
-                {% if album.user_id == current_user.id or is_superuser %}
-                <div class="visibility-quick-toggle {% if album.is_public %}public{% else %}private{% endif}"
-                     onclick="quickToggleVisibility()"
-                     id="quickVisibilityToggle"
-                     title="{% if album.is_public %}点击设为私密{% else %}点击设为公开{% endif %}">
-                    <span id="quickVisibilityIcon">
-                        {% if album.is_public %}
-                        <i class="bi bi-globe"></i> 公开
-                        {% else %}
-                        <i class="bi bi-lock-fill"></i> 私密
-                        {% endif %}
-                    </span>
-                    <div class="toggle-switch {% if album.is_public %}public{% endif %}" id="quickToggleSwitch"></div>
-                </div>
-                {% endif %}
                 <button type="button" class="btn btn-primary" onclick="document.getElementById('photoUploadInput').click()">
                     <i class="bi bi-upload"></i> 上传照片
                 </button>
-                <button type="button" class="btn btn-outline-secondary" id="batchActionsBtn" style="display: none;" onclick="showBatchActions()">
-                    <i class="bi bi-check2-square"></i> 已选 <span id="selectedCount">0</span> 张
+                <a href="{{ url_for('gallery.edit_album', album_id=album.id) }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-pencil"></i> 编辑
+                </a>
+                <button type="button" class="btn btn-outline-danger" onclick="deleteAlbum({{ album.id }})">
+                    <i class="bi bi-trash"></i> 删除
                 </button>
-                <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                    <i class="bi bi-three-dots"></i>
-                </button>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="#" onclick="toggleSelectMode()">
-                        <i class="bi bi-check-square"></i> 批量选择
-                    </a></li>
-                    <li><a class="dropdown-item" href="{{ url_for('gallery.edit_album', album_id=album.id) }}">
-                        <i class="bi bi-pencil"></i> 编辑相册
-                    </a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    {% if album.is_public %}
-                    <li><a class="dropdown-item" href="{{ url_for('gallery.shared_album_detail', album_id=album.id) }}" target="_blank">
-                        <i class="bi bi-box-arrow-up-right"></i> 预览分享页面
-                    </a></li>
-                    {% endif %}
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" href="#" onclick="deleteAlbum({{ album.id }})">
-                        <i class="bi bi-trash"></i> 删除相册
-                    </a></li>
-                </ul>
             </div>
+            {% endif %}
         </div>
     </div>
 
-    <!-- 批量操作栏 -->
-    <div class="batch-actions-bar collapse" id="batchActionsBar">
-        <div class="card bg-light">
-            <div class="card-body py-2">
-                <div class="d-flex align-items-center gap-3">
-                    <span class="text-muted">
-                        已选择 <strong id="selectedCountBar">0</strong> 张照片
-                    </span>
-                    <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-outline-success" onclick="batchSetPublic(true)">
-                            <i class="bi bi-globe"></i> 设为公开
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary" onclick="batchSetPublic(false)">
-                            <i class="bi bi-lock-fill"></i> 设为私密
-                        </button>
-                        <button type="button" class="btn btn-outline-danger" onclick="batchDelete()">
-                            <i class="bi bi-trash"></i> 删除
-                        </button>
-                    </div>
-                    <button type="button" class="btn btn-link btn-sm text-muted ms-auto" onclick="exitSelectMode()">
-                        取消选择
-                    </button>
-                </div>
+    <!-- 照片网格 -->
+    <div class="photo-grid">
+        {% for photo in photos %}
+        <div class="photo-card" data-photo-id="{{ photo.id }}">
+            <img src="{{ photo.url }}" alt="{{ photo.filename }}" loading="lazy">
+            <div class="overlay">
+                <small>{{ photo.filename }}</small>
+                {% if is_owner %}
+                <button class="btn btn-sm btn-danger float-end" onclick="event.stopPropagation(); deletePhoto({{ photo.id }})">
+                    <i class="bi bi-trash"></i>
+                </button>
+                {% endif %}
             </div>
-        </div>
-    </div>
-        </div>
-    </div>
-
-    <!-- 子相册 -->
-    {% if child_albums %}
-    <div class="row mb-4">
-        <div class="col-12">
-            <h5><i class="bi bi-folder"></i> 子相册</h5>
-        </div>
-        {% for child in child_albums %}
-        <div class="col-md-3 mb-3">
-            <a href="{{ url_for('gallery.view_album', album_id=child.id) }}" class="text-decoration-none">
-                <div class="card h-100 hover-shadow">
-                    <div class="card-body text-center">
-                        <i class="bi bi-folder-fill text-warning fs-1"></i>
-                        <h6 class="mt-2">{{ child.name }}</h6>
-                        <small class="text-muted">{{ child.photo_count }} 张照片</small>
-                    </div>
-                </div>
-            </a>
         </div>
         {% endfor %}
     </div>
-    {% endif %}
 
-    <!-- 照片网格 -->
-    <div class="photo-grid" id="photoGrid">
-        {% if photos %}
-            {% for photo in photos %}
-            <div class="photo-item" data-photo-id="{{ photo.id }}">
-                <div class="photo-select-checkbox" style="display: none;">
-                    <input type="checkbox" class="form-check-input photo-checkbox" value="{{ photo.id }}" onchange="updateSelection()">
-                </div>
-                <div class="photo-card" onclick="openLightbox({{ loop.index0 }})">
-                    <img src="{{ photo.file_path }}"
-                         data-raw-url="{{ photo.backup_url }}"
-                         alt="{{ photo.title or photo.filename }}"
-                         loading="lazy" class="photo-img"
-                         onerror="handleImageErrorMultiCdn(this)">
-                    <div class="photo-overlay">
-                        <div class="photo-info">
-                            {% if photo.title %}
-                                <h6>{{ photo.title }}</h6>
-                            {% endif %}
-                            <p class="mb-0">
-                                <i class="bi bi-eye"></i> {{ photo.views }}
-                                {% if photo.is_public %}
-                                <span class="badge bg-success ms-1"><i class="bi bi-globe"></i> 公开</span>
-                                {% else %}
-                                <span class="badge bg-secondary ms-1"><i class="bi bi-lock-fill"></i> 私密</span>
-                                {% endif %}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div class="photo-actions">
-                    <button type="button" class="btn btn-sm btn-light"
-                            data-photo-id="{{ photo.id }}"
-                            data-photo-title="{{ photo.title or '' }}"
-                            data-photo-description="{{ photo.description or '' }}"
-                            data-photo-is-public="{{ 'true' if photo.is_public else 'false' }}"
-                            data-photo-has-password="{{ 'true' if photo.access_password else 'false' }}"
-                            onclick="event.stopPropagation(); editPhotoInfo(this)"
-                            title="编辑信息（标题、描述、密码）">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-light" onclick="event.stopPropagation(); togglePhotoPublic({{ photo.id }}, this)"
-                            title="{% if photo.is_public %}设为私密{% else %}设为公开{% endif %}">
-                        <i class="bi bi-{% if photo.is_public %}lock-fill{% else %}globe{% endif %}"></i>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-light" onclick="event.stopPropagation(); toggleShare({{ photo.id }})" title="分享">
-                        <i class="bi bi-share"></i>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deletePhoto({{ photo.id }})" title="删除">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
-            </div>
-            {% endfor %}
-        {% else %}
-        <div class="col-12 text-center py-5">
-            <i class="bi bi-images fs-1 text-muted"></i>
-            <p class="text-muted mt-3">还没有照片，上传第一张吧！</p>
-            <button type="button" class="btn btn-primary" onclick="document.getElementById('photoUploadInput').click()">
-                <i class="bi bi-upload"></i> 上传照片
-            </button>
-        </div>
+    {% if not photos %}
+    <div class="text-center py-5">
+        <i class="bi bi-images fs-1 text-muted"></i>
+        <p class="text-muted mt-3">还没有照片，上传第一张吧！</p>
+        {% if is_owner %}
+        <button type="button" class="btn btn-primary" onclick="document.getElementById('photoUploadInput').click()">
+            <i class="bi bi-upload"></i> 上传照片
+        </button>
         {% endif %}
     </div>
+    {% endif %}
 </div>
 
 <!-- 隐藏的文件上传输入 -->
 <input type="file" id="photoUploadInput" accept="image/*" multiple style="display: none" onchange="uploadPhotos(this)">
 
-<!-- 图片灯箱 -->
-<div id="lightbox" class="lightbox" style="display: none;">
-    <div class="lightbox-overlay" onclick="closeLightbox()"></div>
-    <div class="lightbox-content">
-        <button class="lightbox-close" onclick="closeLightbox()">
-            <i class="bi bi-x-lg"></i>
-        </button>
-        <button class="lightbox-prev" onclick="showPrevPhoto()">
-            <i class="bi bi-chevron-left"></i>
-        </button>
-        <img id="lightboxImage" src="" alt="" class="lightbox-img">
-        <button class="lightbox-next" onclick="showNextPhoto()">
-            <i class="bi bi-chevron-right"></i>
-        </button>
-        <div class="lightbox-caption" id="lightboxCaption"></div>
-    </div>
-</div>
-
-<!-- 分享模态框 -->
-<div class="modal fade" id="shareModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-share"></i> 分享图片</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <!-- 加载状态 -->
-                <div id="shareLoading" class="text-center py-4" style="display: none;">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">加载中...</span>
-                    </div>
-                    <p class="mt-2 text-muted">正在生成分享链接...</p>
-                </div>
-
-                <!-- 分享链接显示 -->
-                <div id="shareResult" style="display: none;">
-                    <div class="mb-3">
-                        <label class="form-label">
-                            <i class="bi bi-link-45deg"></i> 图片链接
-                        </label>
-                        <div class="input-group input-group-lg">
-                            <input type="text" class="form-control font-monospace" id="shareUrl" readonly
-                                   onclick="this.select()">
-                            <button class="btn btn-primary" onclick="copyShareUrl()">
-                                <i class="bi bi-clipboard"></i> 复制链接
-                            </button>
-                        </div>
-                        <div class="form-text">直接复制图片链接即可在微信、QQ等平台分享</div>
-                    </div>
-
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i>
-                        这是图片的直接链接，可以直接在支持图片的平台预览
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- 密码设置模态框 -->
-<div class="modal fade" id="passwordModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-lock-fill"></i> 设置访问密码</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label for="accessPassword" class="form-label">访问密码</label>
-                    <input type="password" class="form-control" id="accessPassword" placeholder="留空则无需密码">
-                    <div class="form-text">设置后，在共享空间查看此图片需要输入密码</div>
-                </div>
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="removePassword">
-                    <label class="form-check-label" for="removePassword">
-                        移除密码保护
-                    </label>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                <button type="button" class="btn btn-primary" onclick="savePassword()">
-                    <i class="bi bi-check-lg"></i> 保存
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- 图片信息编辑模态框 -->
-<div class="modal fade" id="photoInfoModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-pencil"></i> 编辑图片信息</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="editPhotoId">
-                <div class="mb-3">
-                    <label for="photoTitle" class="form-label">
-                        <i class="bi bi-type"></i> 图片标题
-                    </label>
-                    <input type="text" class="form-control" id="photoTitle" placeholder="为图片起个名字">
-                </div>
-                <div class="mb-3">
-                    <label for="photoDescription" class="form-label">
-                        <i class="bi bi-card-text"></i> 图片介绍
-                    </label>
-                    <textarea class="form-control" id="photoDescription" rows="3" placeholder="添加图片描述、故事背景或说明"></textarea>
-                    <div class="form-text">图片介绍会在共享空间展示给其他用户</div>
-                </div>
-                <hr>
-                <div class="mb-3">
-                    <label for="photoAccessPassword" class="form-label">
-                        <i class="bi bi-key"></i> 访问密码
-                    </label>
-                    <div class="input-group">
-                        <input type="password" class="form-control" id="photoAccessPassword" placeholder="设置访问密码（留空则无需密码）">
-                        <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('photoAccessPassword')">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                    </div>
-                    <div class="form-text">
-                        设置密码后，其他用户在共享空间查看此图片需要输入密码
-                        <span id="currentPasswordIndicator" class="ms-2"></span>
-                    </div>
-                </div>
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="removePhotoPassword">
-                    <label class="form-check-label" for="removePhotoPassword">
-                        移除密码保护
-                    </label>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                <button type="button" class="btn btn-primary" onclick="savePhotoInfo()">
-                    <i class="bi bi-check-lg"></i> 保存
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
-// 照片数据
-const photos = [
-    {% for photo in photos %}
-    {
-        id: {{ photo.id }},
-        url: {{ photo.url | tojson }},
-        backupUrl: {{ photo.backup_url | tojson }},
-        title: {{ (photo.title or photo.filename) | tojson }},
-        description: {{ photo.description | tojson }}
-    }{% if not loop.last %},{% endif %}
-    {% endfor %}
-];
-let currentPhotoIndex = 0;
-let currentPhotoId = null;
-
 // 上传照片
 function uploadPhotos(input) {
     const files = input.files;
@@ -581,7 +89,6 @@ function uploadPhotos(input) {
         formData.append('photos', file);
     }
 
-    // 显示上传进度
     const uploadBtn = document.querySelector('button[onclick*="photoUploadInput"]');
     uploadBtn.disabled = true;
     uploadBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> 上传中...';
@@ -612,65 +119,9 @@ function uploadPhotos(input) {
     });
 }
 
-// 打开灯箱
-function openLightbox(index) {
-    currentPhotoIndex = index;
-    showCurrentPhoto();
-    document.getElementById('lightbox').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-}
-
-// 关闭灯箱
-function closeLightbox() {
-    document.getElementById('lightbox').style.display = 'none';
-    document.body.style.overflow = '';
-}
-
-// 显示当前照片
-function showCurrentPhoto() {
-    if (photos.length === 0) return;
-    const photo = photos[currentPhotoIndex];
-    const lightboxImage = document.getElementById('lightboxImage');
-    lightboxImage.src = photo.url;
-    // 添加错误处理，自动切换到备用URL
-    lightboxImage.onerror = function() {
-        if (this.src !== photo.backupUrl) {
-            this.src = photo.backupUrl;
-        }
-    };
-    document.getElementById('lightboxCaption').textContent = photo.title;
-}
-
-// 上一张
-function showPrevPhoto() {
-    currentPhotoIndex = (currentPhotoIndex - 1 + photos.length) % photos.length;
-    showCurrentPhoto();
-}
-
-// 下一张
-function showNextPhoto() {
-    currentPhotoIndex = (currentPhotoIndex + 1) % photos.length;
-    showCurrentPhoto();
-}
-
-// 键盘事件
-document.addEventListener('keydown', (e) => {
-    if (document.getElementById('lightbox').style.display === 'flex') {
-        if (e.key === 'Escape') closeLightbox();
-        if (e.key === 'ArrowLeft') showPrevPhoto();
-        if (e.key === 'ArrowRight') showNextPhoto();
-    }
-});
-
 // 删除照片
 function deletePhoto(photoId) {
-    if (!confirm('确定要删除这张照片吗？此操作不可恢复！')) return;
-
-    const photoItem = document.querySelector(`[data-photo-id="${photoId}"]`);
-    if (photoItem) {
-        photoItem.style.opacity = '0.5';
-        photoItem.style.pointerEvents = 'none';
-    }
+    if (!confirm('确定要删除这张照片吗？')) return;
 
     fetch(`/gallery/photo/${photoId}/delete`, {
         method: 'POST',
@@ -678,350 +129,23 @@ function deletePhoto(photoId) {
             'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         }
     })
-    .then(response => {
-        // 先检查 HTTP 状态
-        if (response.ok) {
-            return response.json();
-        } else {
-            // 尝试解析错误消息
-            return response.json().then(err => {
-                throw new Error(err.message || `HTTP ${response.status}`);
-            }).catch(() => {
-                throw new Error(`HTTP ${response.status}`);
-            });
-        }
-    })
-    .then(data => {
-        if (data && data.success) {
-            showNotification('success', data.message || '图片已删除');
-            if (photoItem) {
-                photoItem.remove();
-            }
-            photos = photos.filter(p => p.id !== photoId);
-        } else {
-            showNotification('danger', data?.message || '删除失败');
-            if (photoItem) {
-                photoItem.style.opacity = '1';
-                photoItem.style.pointerEvents = 'auto';
-            }
-        }
-    })
-    .catch(error => {
-        // 如果是网络错误或解析错误，但图片已被删除，认为成功
-        console.error('删除请求错误:', error);
-        if (photoItem && photoItem.parentNode) {
-            // 如果图片元素还在页面上，说明可能真的失败了
-            showNotification('danger', '删除失败，请重试');
-            photoItem.style.opacity = '1';
-            photoItem.style.pointerEvents = 'auto';
-        } else {
-            // 图片已被移除，可能后端成功了但响应有问题
-            showNotification('success', '图片已删除');
-            photos = photos.filter(p => p.id !== photoId);
-        }
-    });
-}
-
-// 切换照片公开/私密状态
-function togglePhotoPublic(photoId, btn) {
-    const icon = btn.querySelector('i');
-    const isCurrentlyPublic = icon.classList.contains('bi-lock-fill');
-
-    // 如果设为公开，显示密码设置选项
-    if (!isCurrentlyPublic) {
-        currentPhotoId = photoId;
-        // 清空密码输入框
-        document.getElementById('accessPassword').value = '';
-        document.getElementById('removePassword').checked = false;
-        // 显示密码模态框
-        const modal = new bootstrap.Modal(document.getElementById('passwordModal'));
-        modal.show();
-    } else {
-        // 直接设为私密
-        fetch(`/gallery/photo/${photoId}/toggle-public`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token() }}'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                icon.classList.remove('bi-lock-fill');
-                icon.classList.add('bi-globe');
-                btn.title = '设为公开';
-                showNotification('info', '已设为私密');
-
-                // 更新照片卡片上的状态标签
-                const photoItem = document.querySelector(`[data-photo-id="${photoId}"]`);
-                if (photoItem) {
-                    const badge = photoItem.querySelector('.badge');
-                    if (badge) {
-                        badge.className = 'badge bg-secondary ms-1';
-                        badge.innerHTML = '<i class="bi bi-lock-fill"></i> 私密';
-                    }
-                }
-            } else {
-                showNotification('danger', data.message);
-            }
-        })
-        .catch(error => {
-            showNotification('danger', '操作失败: ' + error.message);
-        });
-    }
-}
-
-// 保存密码设置
-function savePassword() {
-    const photoId = currentPhotoId;
-    const password = document.getElementById('accessPassword').value;
-    const removePassword = document.getElementById('removePassword').checked;
-
-    // 设置为公开
-    fetch(`/gallery/photo/${photoId}/public`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token() }}'
-        },
-        body: JSON.stringify({
-            is_public: true,
-            access_password: removePassword ? '' : (password || null)
-        })
-    })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // 关闭模态框
-            const modal = bootstrap.Modal.getInstance(document.getElementById('passwordModal'));
-            modal.hide();
-
-            // 更新按钮图标
-            const photoItem = document.querySelector(`[data-photo-id="${photoId}"]`);
-            if (photoItem) {
-                const btn = photoItem.querySelector('button[onclick*="togglePhotoPublic"]');
-                const icon = btn.querySelector('i');
-                if (icon) {
-                    icon.classList.remove('bi-globe');
-                    icon.classList.add('bi-lock-fill');
-                    btn.title = '设为私密';
-                }
-
-                // 更新状态标签
-                const badge = photoItem.querySelector('.badge');
-                if (badge) {
-                    badge.className = 'badge bg-success ms-1';
-                    let badgeText = '<i class="bi bi-globe"></i> 公开';
-                    if (data.has_password) {
-                        badgeText += ' <i class="bi bi-lock-fill"></i>';
-                    }
-                    badge.innerHTML = badgeText;
-                }
-            }
-
-            const msg = password ? '✓ 已设为公开（密码保护）' : '✓ 已设为公开';
-            showNotification('success', msg);
+            showNotification('success', data.message);
+            document.querySelector(`[data-photo-id="${photoId}"]`).remove();
         } else {
             showNotification('danger', data.message);
         }
     })
     .catch(error => {
-        showNotification('danger', '操作失败: ' + error.message);
-    });
-}
-
-// 分享照片
-function toggleShare(photoId) {
-    currentPhotoId = photoId;
-
-    // 显示模态框
-    const modal = new bootstrap.Modal(document.getElementById('shareModal'));
-    modal.show();
-
-    // 直接使用图片URL作为分享链接
-    const photo = photos.find(p => p.id === photoId);
-    if (photo) {
-        document.getElementById('shareUrl').value = photo.url;
-        document.getElementById('shareResult').style.display = 'block';
-
-        // 自动选中链接文本
-        document.getElementById('shareUrl').select();
-    }
-}
-
-// 创建分享
-function createShare() {
-    const photoId = currentPhotoId;
-
-    fetch(`/gallery/photo/${photoId}/share`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token() }}'
-        },
-        body: JSON.stringify({
-            expires_days: null,  // 永久有效
-            access_password: null  // 无密码
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById('shareLoading').style.display = 'none';
-
-        if (data.success) {
-            document.getElementById('shareUrl').value = data.share_url;
-            document.getElementById('shareResult').style.display = 'block';
-
-            // 自动选中链接文本
-            document.getElementById('shareUrl').select();
-        } else {
-            showNotification('danger', data.message || '创建分享链接失败');
-        }
-    })
-    .catch(error => {
-        document.getElementById('shareLoading').style.display = 'none';
-        showNotification('danger', '网络错误: ' + error.message);
-    });
-}
-
-// 复制分享链接
-function copyShareUrl() {
-    const shareUrlInput = document.getElementById('shareUrl');
-
-    // 使用现代API
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(shareUrlInput.value).then(() => {
-            showNotification('success', '✓ 链接已复制到剪贴板！');
-
-            // 更新按钮状态
-            const copyBtn = document.querySelector('#shareResult .btn-primary');
-            const originalText = copyBtn.innerHTML;
-            copyBtn.innerHTML = '<i class="bi bi-check"></i> 已复制';
-            copyBtn.classList.remove('btn-primary');
-            copyBtn.classList.add('btn-success');
-
-            setTimeout(() => {
-                copyBtn.innerHTML = originalText;
-                copyBtn.classList.remove('btn-success');
-                copyBtn.classList.add('btn-primary');
-            }, 2000);
-        }).catch(() => {
-            // 降级方案
-            shareUrlInput.select();
-            document.execCommand('copy');
-            showNotification('success', '✓ 链接已复制到剪贴板！');
-        });
-    } else {
-        // 降级方案
-        shareUrlInput.select();
-        document.execCommand('copy');
-        showNotification('success', '✓ 链接已复制到剪贴板！');
-    }
-}
-
-// 编辑图片信息
-function editPhotoInfo(button) {
-    const photoId = button.getAttribute('data-photo-id');
-    const title = button.getAttribute('data-photo-title');
-    const description = button.getAttribute('data-photo-description');
-    const hasPassword = button.getAttribute('data-photo-has-password') === 'true';
-
-    currentPhotoId = photoId;
-    document.getElementById('editPhotoId').value = photoId;
-    document.getElementById('photoTitle').value = title || '';
-    document.getElementById('photoDescription').value = description || '';
-
-    // 密码字段
-    document.getElementById('photoAccessPassword').value = '';
-    document.getElementById('removePhotoPassword').checked = false;
-
-    // 显示当前密码状态
-    const passwordIndicator = document.getElementById('currentPasswordIndicator');
-    if (hasPassword) {
-        passwordIndicator.innerHTML = '<span class="badge bg-warning"><i class="bi bi-lock-fill"></i> 当前已设置密码</span>';
-    } else {
-        passwordIndicator.innerHTML = '';
-    }
-
-    const modal = new bootstrap.Modal(document.getElementById('photoInfoModal'));
-    modal.show();
-}
-
-// 切换密码可见性
-function togglePasswordVisibility(inputId) {
-    const input = document.getElementById(inputId);
-    const button = input.nextElementSibling;
-    const icon = button.querySelector('i');
-
-    if (input.type === 'password') {
-        input.type = 'text';
-        icon.classList.remove('bi-eye');
-        icon.classList.add('bi-eye-slash');
-    } else {
-        input.type = 'password';
-        icon.classList.remove('bi-eye-slash');
-        icon.classList.add('bi-eye');
-    }
-}
-
-// 保存图片信息
-function savePhotoInfo() {
-    const photoId = currentPhotoId;
-    const title = document.getElementById('photoTitle').value;
-    const description = document.getElementById('photoDescription').value;
-    const password = document.getElementById('photoAccessPassword').value;
-    const removePassword = document.getElementById('removePhotoPassword').checked;
-
-    const requestData = {
-        title: title,
-        description: description
-    };
-
-    // 只有在设置了新密码或选择了移除密码时才发送密码相关数据
-    if (removePassword) {
-        requestData.access_password = '';
-    } else if (password) {
-        requestData.access_password = password;
-    }
-
-    fetch(`/gallery/photo/${photoId}/edit-info`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token() }}'
-        },
-        body: JSON.stringify(requestData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // 关闭模态框
-            const modal = bootstrap.Modal.getInstance(document.getElementById('photoInfoModal'));
-            modal.hide();
-
-            showNotification('success', '✓ 图片信息已更新');
-
-            // 更新照片数据
-            const photo = photos.find(p => p.id === photoId);
-            if (photo) {
-                photo.title = title || photo.title;
-                photo.description = description;
-            }
-
-            // 刷新页面以显示更新后的信息
-            setTimeout(() => location.reload(), 500);
-        } else {
-            showNotification('danger', data.message || '更新失败');
-        }
-    })
-    .catch(error => {
-        showNotification('danger', '操作失败: ' + error.message);
+        showNotification('danger', '删除失败');
     });
 }
 
 // 删除相册
 function deleteAlbum(albumId) {
-    if (!confirm('确定要删除这个相册吗？相册中的所有照片也会被删除！此操作不可恢复！')) return;
+    if (!confirm('确定要删除这个相册吗？相册中的所有照片也会被删除！')) return;
 
     fetch(`/gallery/album/${albumId}/delete`, {
         method: 'POST',
@@ -1032,20 +156,19 @@ function deleteAlbum(albumId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showNotification('success', data.message || '相册已删除');
+            showNotification('success', data.message);
             setTimeout(() => location.href = '/gallery', 1000);
         } else {
-            showNotification('danger', data.message || '删除失败');
+            showNotification('danger', data.message);
         }
     })
     .catch(error => {
-        showNotification('danger', '删除失败，请重试');
+        showNotification('danger', '删除失败');
     });
 }
 
 // 通知提示
 function showNotification(type, message) {
-    // 创建通知元素
     const notification = document.createElement('div');
     notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
     notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
@@ -1055,382 +178,9 @@ function showNotification(type, message) {
     `;
     document.body.appendChild(notification);
 
-    // 3秒后自动关闭
     setTimeout(() => {
         notification.remove();
     }, 3000);
 }
-
-// ==================== 批量操作功能 ====================
-
-let selectMode = false;
-
-// 切换选择模式
-function toggleSelectMode() {
-    selectMode = !selectMode;
-    const checkboxes = document.querySelectorAll('.photo-select-checkbox');
-    const photoCards = document.querySelectorAll('.photo-card');
-
-    if (selectMode) {
-        // 进入选择模式
-        checkboxes.forEach(cb => cb.style.display = 'block');
-        photoCards.forEach(card => card.style.cursor = 'default');
-        showNotification('info', '已进入批量选择模式，点击照片复选框进行选择');
-    } else {
-        exitSelectMode();
-    }
-}
-
-// 退出选择模式
-function exitSelectMode() {
-    selectMode = false;
-    const checkboxes = document.querySelectorAll('.photo-select-checkbox');
-    const photoCards = document.querySelectorAll('.photo-card');
-
-    // 取消所有选中
-    document.querySelectorAll('.photo-checkbox').forEach(cb => cb.checked = false);
-
-    // 隐藏复选框
-    checkboxes.forEach(cb => cb.style.display = 'none');
-    photoCards.forEach(card => card.style.cursor = 'pointer');
-
-    // 隐藏批量操作栏
-    document.getElementById('batchActionsBar').classList.remove('show');
-    document.getElementById('batchActionsBtn').style.display = 'none';
-
-    // 恢复照片卡片点击事件
-    updateSelection();
-}
-
-// 更新选择状态
-function updateSelection() {
-    const checkedCount = document.querySelectorAll('.photo-checkbox:checked').length;
-
-    // 更新计数显示
-    document.getElementById('selectedCount').textContent = checkedCount;
-    document.getElementById('selectedCountBar').textContent = checkedCount;
-
-    // 显示/隐藏批量操作按钮
-    const batchBtn = document.getElementById('batchActionsBtn');
-    const batchBar = document.getElementById('batchActionsBar');
-
-    if (checkedCount > 0) {
-        batchBtn.style.display = 'inline-flex';
-        batchBar.classList.add('show');
-    } else {
-        batchBtn.style.display = 'none';
-        batchBar.classList.remove('show');
-    }
-
-    // 禁用/启用照片卡片点击
-    const photoCards = document.querySelectorAll('.photo-card');
-    photoCards.forEach(card => {
-        const checkbox = card.closest('.photo-item').querySelector('.photo-checkbox');
-        if (checkbox && checkbox.checked) {
-            card.style.opacity = '0.7';
-            card.style.cursor = 'default';
-        } else {
-            card.style.opacity = '1';
-            card.style.cursor = selectMode ? 'default' : 'pointer';
-        }
-    });
-}
-
-// 获取选中的照片ID
-function getSelectedPhotoIds() {
-    return Array.from(document.querySelectorAll('.photo-checkbox:checked')).map(cb => parseInt(cb.value));
-}
-
-// 批量设置公开/私密
-function batchSetPublic(isPublic) {
-    const photoIds = getSelectedPhotoIds();
-    if (photoIds.length === 0) {
-        showNotification('warning', '请先选择照片');
-        return;
-    }
-
-    const action = isPublic ? '公开' : '私密';
-    if (!confirm(`确定要将选中的 ${photoIds.length} 张照片设为${action}吗？`)) return;
-
-    fetch('/gallery/batch/share', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token() }}'
-        },
-        body: JSON.stringify({
-            photo_ids: photoIds,
-            is_public: isPublic
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showNotification('success', `✓ ${data.message}`);
-            // 更新照片卡片状态
-            photoIds.forEach(id => {
-                const photoItem = document.querySelector(`[data-photo-id="${id}"]`);
-                if (photoItem) {
-                    const badge = photoItem.querySelector('.badge');
-                    if (badge) {
-                        if (isPublic) {
-                            badge.className = 'badge bg-success ms-1';
-                            badge.innerHTML = '<i class="bi bi-globe"></i> 公开';
-                        } else {
-                            badge.className = 'badge bg-secondary ms-1';
-                            badge.innerHTML = '<i class="bi bi-lock-fill"></i> 私密';
-                        }
-                    }
-                }
-            });
-            // 退出选择模式
-            exitSelectMode();
-        } else {
-            showNotification('danger', data.message);
-        }
-    })
-    .catch(error => {
-        showNotification('danger', '操作失败: ' + error.message);
-    });
-}
-
-// 批量删除
-function batchDelete() {
-    const photoIds = getSelectedPhotoIds();
-    if (photoIds.length === 0) {
-        showNotification('warning', '请先选择照片');
-        return;
-    }
-
-    if (!confirm(`确定要删除选中的 ${photoIds.length} 张照片吗？此操作不可恢复！`)) return;
-
-    fetch('/gallery/batch/delete', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token() }}'
-        },
-        body: JSON.stringify({
-            photo_ids: photoIds
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showNotification('success', `✓ ${data.message}`);
-            // 移除已删除的照片
-            photoIds.forEach(id => {
-                const photoItem = document.querySelector(`[data-photo-id="${id}"]`);
-                if (photoItem) {
-                    photoItem.remove();
-                }
-            });
-            // 退出选择模式
-            exitSelectMode();
-        } else {
-            showNotification('danger', data.message);
-        }
-    })
-    .catch(error => {
-        showNotification('danger', '操作失败: ' + error.message);
-    });
-}
-
-// 显示批量操作栏
-function showBatchActions() {
-    const batchBar = document.getElementById('batchActionsBar');
-    batchBar.classList.toggle('show');
-}
 </script>
-
-<style>
-.photo-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 15px;
-}
-
-.photo-item {
-    position: relative;
-}
-
-.photo-select-checkbox {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    z-index: 10;
-}
-
-.photo-select-checkbox .form-check-input {
-    width: 1.3rem;
-    height: 1.3rem;
-    cursor: pointer;
-}
-
-.photo-card {
-    position: relative;
-    border-radius: 8px;
-    overflow: hidden;
-    cursor: pointer;
-    aspect-ratio: 1;
-    background: #f8f9fa;
-}
-
-.photo-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s;
-}
-
-.photo-card:hover .photo-img {
-    transform: scale(1.05);
-}
-
-.photo-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(transparent, rgba(0,0,0,0.7));
-    color: white;
-    padding: 10px;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-.photo-card:hover .photo-overlay {
-    opacity: 1;
-}
-
-.photo-actions {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-.photo-item:hover .photo-actions {
-    opacity: 1;
-}
-
-/* 灯箱样式 */
-.lightbox {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.9);
-    z-index: 9999;
-    display: none;
-    align-items: center;
-    justify-content: center;
-}
-
-.lightbox-content {
-    position: relative;
-    max-width: 90%;
-    max-height: 90%;
-}
-
-.lightbox-img {
-    max-width: 100%;
-    max-height: 80vh;
-    border-radius: 4px;
-}
-
-.lightbox-close,
-.lightbox-prev,
-.lightbox-next {
-    position: absolute;
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.3s;
-}
-
-.lightbox-close {
-    top: -50px;
-    right: 0;
-}
-
-.lightbox-prev {
-    left: -60px;
-    top: 50%;
-    transform: translateY(-50%);
-}
-
-.lightbox-next {
-    right: -60px;
-    top: 50%;
-    transform: translateY(-50%);
-}
-
-.lightbox-close:hover,
-.lightbox-prev:hover,
-.lightbox-next:hover {
-    background: rgba(255, 255, 255, 0.4);
-}
-
-.lightbox-caption {
-    position: absolute;
-    bottom: -40px;
-    left: 0;
-    right: 0;
-    text-align: center;
-    color: white;
-}
-
-/* 分享链接样式 */
-#shareUrl {
-    background-color: #f8f9fa;
-    color: #495057;
-    font-size: 0.9rem;
-}
-
-#shareUrl:focus {
-    background-color: #e9ecef;
-    box-shadow: none;
-}
-
-#shareResult .btn-primary {
-    transition: all 0.2s;
-}
-
-#shareResult .btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
-}
-
-/* 批量操作栏样式 */
-.batch-actions-bar {
-    position: sticky;
-    top: 70px;
-    z-index: 100;
-    margin-bottom: 20px;
-}
-
-.batch-actions-bar .card {
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-#batchActionsBtn {
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.8; }
-}
-</style>
 {% endblock %}

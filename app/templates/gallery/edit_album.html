@@ -3,227 +3,32 @@
 {% block title %}编辑相册 - 云相册{% endblock %}
 
 {% block content %}
-<style>
-/* 切换开关样式 */
-.visibility-switch {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem;
-    background: #f8f9fa;
-    border-radius: 12px;
-    margin-bottom: 1rem;
-}
-
-.switch-container {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.switch {
-    position: relative;
-    display: inline-block;
-    width: 60px;
-    height: 30px;
-}
-
-.switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #dc3545;
-    transition: .4s;
-    border-radius: 30px;
-}
-
-.slider:before {
-    position: absolute;
-    content: "";
-    height: 22px;
-    width: 22px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: .4s;
-    border-radius: 50%;
-}
-
-input:checked + .slider {
-    background-color: #198754;
-}
-
-input:checked + .slider:before {
-    transform: translateX(30px);
-}
-
-.visibility-label {
-    display: flex;
-    flex-direction: column;
-}
-
-.visibility-status {
-    font-size: 0.85rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-}
-
-.visibility-desc {
-    font-size: 0.75rem;
-    color: #666;
-}
-
-.visibility-private .visibility-status {
-    color: #dc3545;
-}
-
-.visibility-public .visibility-status {
-    color: #198754;
-}
-
-/* 警告提示 */
-.alert-warning {
-    background: #fff3cd;
-    border: 1px solid #ffc107;
-    border-radius: 8px;
-    padding: 0.75rem 1rem;
-    margin-bottom: 1rem;
-    font-size: 0.85rem;
-}
-
-.alert-warning i {
-    color: #ffc107;
-    margin-right: 0.5rem;
-}
-
-/* 隐藏原始的 is_private checkbox */
-#is_private {
-    display: none;
-}
-</style>
-
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
-                    <h4><i class="bi bi-pencil"></i> 编辑相册</h4>
+                    <h4 class="mb-0"><i class="bi bi-pencil"></i> 编辑相册</h4>
                 </div>
                 <div class="card-body">
-                    <form method="POST" id="albumForm">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                        <input type="hidden" name="is_private" id="is_private_hidden" value="{% if album.is_private %}true{% else %}false{% endif %}">
-                        <input type="hidden" name="is_public" id="is_public_hidden" value="{% if album.is_public %}true{% else %}false{% endif %}">
-
+                    <form method="POST">
                         <div class="mb-3">
                             <label for="name" class="form-label">相册名称 <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="name" name="name"
-                                   value="{{ album.name }}" required>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ album.name }}" required autofocus>
                         </div>
-
                         <div class="mb-3">
-                            <label for="description" class="form-label">描述</label>
+                            <label for="description" class="form-label">相册描述</label>
                             <textarea class="form-control" id="description" name="description" rows="3">{{ album.description or '' }}</textarea>
                         </div>
-
-                        <div class="mb-3">
-                            <label for="parent_id" class="form-label">父相册（可选）</label>
-                            <select class="form-select" id="parent_id" name="parent_id">
-                                <option value="">根目录（不选择父相册）</option>
-                                {% for parent_album in parent_albums %}
-                                    <option value="{{ parent_album.id }}"
-                                            {% if album.parent_id == parent_album.id %}selected{% endif %}>
-                                        {{ parent_album.path }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                            <div class="form-text">选择父相册可创建多级目录结构</div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="is_public" name="is_public" {% if album.is_public %}checked{% endif %}>
+                            <label class="form-check-label" for="is_public">
+                                公开相册（其他用户可以访问）
+                            </label>
                         </div>
-
-                        <hr>
-
-                        <h5 class="mb-3"><i class="bi bi-shield-lock"></i> 相册可见性</h5>
-
-                        <!-- 可见性切换开关 -->
-                        <div class="visibility-switch visibility-{% if album.is_private %}private{% else %}public{% endif %}" id="visibilitySwitch">
-                            <div class="visibility-label">
-                                <div class="visibility-status" id="visibilityStatus">
-                                    {% if album.is_private %}
-                                        <i class="bi bi-lock-fill"></i> 私密相册
-                                    {% else %}
-                                        <i class="bi bi-globe"></i> 公开相册
-                                    {% endif %}
-                                </div>
-                                <div class="visibility-desc" id="visibilityDesc">
-                                    {% if album.is_private %}
-                                        只有您和超级管理员可以查看
-                                    {% else %}
-                                        所有人可查看，出现在共享空间
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="switch-container">
-                                <span class="me-2 text-muted small">私密</span>
-                                <label class="switch">
-                                    <input type="checkbox" id="visibilityToggle" {% if not album.is_private %}checked{% endif %}>
-                                    <span class="slider"></span>
-                                </label>
-                                <span class="ms-2 text-muted small">公开</span>
-                            </div>
-                        </div>
-
-                        <!-- 私密照片警告 -->
-                        <div id="privatePhotosWarning" style="display: none;" class="alert-warning">
-                            <i class="bi bi-exclamation-triangle-fill"></i>
-                            <span id="privatePhotosCount"></span>
-                        </div>
-
-                        <hr>
-
-                        <h5 class="mb-3"><i class="bi bi-key"></i> 访问密码（可选）</h5>
-                        <p class="text-muted small mb-3">设置密码后，其他用户在共享空间查看此相册时需要输入密码</p>
-
-                        <div class="mb-3">
-                            <label for="access_password" class="form-label">密码</label>
-                            <div class="input-group">
-                                <input type="password" class="form-control" id="access_password" name="access_password"
-                                       placeholder="留空则无需密码" value="{{ album.access_password or '' }}">
-                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility()">
-                                    <i class="bi bi-eye" id="passwordToggleIcon"></i>
-                                </button>
-                            </div>
-                            {% if album.access_password %}
-                            <div class="form-text">
-                                <span class="badge bg-warning"><i class="bi bi-lock-fill"></i> 当前已设置密码</span>
-                            </div>
-                            {% endif %}
-                        </div>
-
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input type="checkbox" class="form-check-input" id="remove_password" name="remove_password">
-                                <label class="form-check-label" for="remove_password">
-                                    移除访问密码
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary" id="submitBtn">
-                                <i class="bi bi-check-lg"></i> 保存
-                            </button>
-                            <a href="{{ url_for('gallery.view_album', album_id=album.id) }}" class="btn btn-outline-secondary">
-                                <i class="bi bi-x-lg"></i> 取消
-                            </a>
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('gallery.view_album', album_id=album.id) }}" class="btn btn-secondary">取消</a>
+                            <button type="submit" class="btn btn-primary">保存更改</button>
                         </div>
                     </form>
                 </div>
@@ -231,107 +36,4 @@ input:checked + .slider:before {
         </div>
     </div>
 </div>
-
-<script>
-// 相册中私密照片数量
-const privatePhotosCount = {{ album.photos.filter_by(is_public=False).count() if album.photos else 0 }};
-
-// 初始化
-document.addEventListener('DOMContentLoaded', function() {
-    updateVisibilityUI();
-    checkPrivatePhotos();
-});
-
-// 切换可见性
-document.getElementById('visibilityToggle').addEventListener('change', function() {
-    const isPublic = this.checked;
-
-    // 如果要设为公开，检查是否有私密照片
-    if (isPublic && privatePhotosCount > 0) {
-        const confirmMsg = `相册中有 ${privatePhotosCount} 张私密照片。\n\n` +
-                          `设为公开后，这些照片仍将保持私密状态，不会在共享空间显示。\n\n` +
-                          `是否继续设为公开？`;
-
-        if (!confirm(confirmMsg)) {
-            // 用户取消，恢复开关状态
-            this.checked = false;
-            return;
-        }
-    }
-
-    updateVisibilityUI();
-});
-
-// 表单提交前确保隐藏字段是最新的
-document.getElementById('albumForm').addEventListener('submit', function(e) {
-    // 在提交前再次更新隐藏字段，确保状态同步
-    updateVisibilityUI();
-});
-
-// 更新可见性UI
-function updateVisibilityUI() {
-    const isPublic = document.getElementById('visibilityToggle').checked;
-    const switchDiv = document.getElementById('visibilitySwitch');
-    const statusDiv = document.getElementById('visibilityStatus');
-    const descDiv = document.getElementById('visibilityDesc');
-    const isPrivateHidden = document.getElementById('is_private_hidden');
-    const isPublicHidden = document.getElementById('is_public_hidden');
-
-    if (isPublic) {
-        // 公开状态
-        switchDiv.classList.remove('visibility-private');
-        switchDiv.classList.add('visibility-public');
-        statusDiv.innerHTML = '<i class="bi bi-globe"></i> 公开相册';
-        descDiv.textContent = '所有人可查看，出现在共享空间';
-        isPrivateHidden.value = 'false';
-        isPublicHidden.value = 'true';
-    } else {
-        // 私密状态
-        switchDiv.classList.remove('visibility-public');
-        switchDiv.classList.add('visibility-private');
-        statusDiv.innerHTML = '<i class="bi bi-lock-fill"></i> 私密相册';
-        descDiv.textContent = '只有您和超级管理员可以查看';
-        isPrivateHidden.value = 'true';
-        isPublicHidden.value = 'false';
-    }
-}
-
-// 检查私密照片
-function checkPrivatePhotos() {
-    const warningDiv = document.getElementById('privatePhotosWarning');
-    const countSpan = document.getElementById('privatePhotosCount');
-
-    if (privatePhotosCount > 0) {
-        countSpan.textContent = `注意：相册中有 ${privatePhotosCount} 张私密照片，这些照片不会在共享空间显示`;
-        warningDiv.style.display = 'block';
-    }
-}
-
-// 密码可见性切换
-function togglePasswordVisibility() {
-    const input = document.getElementById('access_password');
-    const icon = document.getElementById('passwordToggleIcon');
-
-    if (input.type === 'password') {
-        input.type = 'text';
-        icon.classList.remove('bi-eye');
-        icon.classList.add('bi-eye-slash');
-    } else {
-        input.type = 'password';
-        icon.classList.remove('bi-eye-slash');
-        icon.classList.add('bi-eye');
-    }
-}
-
-// 移除密码时清空输入框
-document.getElementById('remove_password').addEventListener('change', function() {
-    const passwordInput = document.getElementById('access_password');
-    if (this.checked) {
-        passwordInput.value = '';
-        passwordInput.disabled = true;
-    } else {
-        passwordInput.disabled = false;
-    }
-});
-</script>
 {% endblock %}
