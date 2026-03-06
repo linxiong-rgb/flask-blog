@@ -21,7 +21,7 @@
             {% endif %}
             <p class="text-muted">
                 <i class="bi bi-images"></i> {{ photos|length }} 张照片
-                {% if album.is_public %}
+                {% if album._is_public %}
                 <span class="badge bg-success"><i class="bi bi-globe"></i> 公开</span>
                 {% else %}
                 <span class="badge bg-secondary"><i class="bi bi-lock-fill"></i> 私密</span>
@@ -49,7 +49,7 @@
     <div class="photo-grid">
         {% for photo in photos %}
         <div class="photo-card" data-photo-id="{{ photo.id }}">
-            {% if not is_owner and photo.has_password and (photo.id|string not in verified_photo_passwords) %}
+            {% if not is_owner and photo._has_password and (photo.id|string not in verified_photo_passwords) %}
             <!-- 密码保护的图片 -->
             <div class="password-protected-photo" onclick="showPhotoPasswordModal({{ photo.id }})">
                 <img src="{{ photo.file_path }}"
@@ -225,8 +225,8 @@ const photosData = [
         title: '{{ photo.title or '' }}',
         filename: '{{ photo.filename }}',
         display_name: '{{ photo.display_name }}',
-        is_public: {{ 'true' if photo.is_public else 'false' }},
-        has_password: {{ 'true' if photo.has_password else 'false' }}
+        is_public: {{ 'true' if photo._is_public else 'false' }},
+        has_password: {{ 'true' if photo._has_password else 'false' }}
     }{% if not loop.last %},{% endif %}
     {% endfor %}
 ];

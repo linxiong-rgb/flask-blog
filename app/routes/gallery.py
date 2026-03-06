@@ -54,14 +54,23 @@ def index():
     my_albums = Album.query.filter_by(user_id=current_user.id)\
         .order_by(Album.updated_at.desc()).all()
 
-    # 其他用户的公开相册
-    public_albums = Album.query.filter(
-        Album.is_public == True,
-        Album.user_id != current_user.id
-    ).options(joinedload(Album.user)).order_by(Album.updated_at.desc()).all()
+    # 其他用户的相册（需要在 Python 中过滤公开相册）
+    all_other_albums = Album.query.filter(Album.user_id != current_user.id)\
+        .options(joinedload(Album.user))\
+        .order_by(Album.updated_at.desc()).all()
+    # 过滤出公开的相册
+    public_albums = []
+    for album in all_other_albums:
+        if getattr(album, 'is_public', False):
+            public_albums.append(album)
 
     total_albums = len(my_albums)
     total_photos = Photo.query.filter_by(user_id=current_user.id).count()
+
+    # 为所有相册添加安全的属性访问
+    for album in my_albums + public_albums:
+        album._is_public = getattr(album, 'is_public', False)
+        album._has_password = getattr(album, 'has_password', False)
 
     return render_template('gallery/index.html',
                           my_albums=my_albums,
@@ -74,13 +83,20 @@ def index():
 @login_required
 def public_albums():
     """所有公开相册页面"""
-    public_albums = Album.query.filter_by(is_public=True)\
-        .options(joinedload(Album.user))\
+    all_albums = Album.query.options(joinedload(Album.user))\
         .order_by(Album.updated_at.desc()).all()
 
+    # 过滤出公开的相册
+    albums = []
+    for album in all_albums:
+        if getattr(album, 'is_public', False):
+            album._is_public = True
+            album._has_password = getattr(album, 'has_password', False)
+            albums.append(album)
+
     return render_template('gallery/public_albums.html',
-                          albums=public_albums,
-                          total_albums=len(public_albums))
+                          albums=albums,
+                          total_albums=len(albums))
 
 
 # ==================== 创建相册 ====================
@@ -123,17 +139,23 @@ def view_album(album_id):
     album = Album.query.options(joinedload(Album.user)).get_or_404(album_id)
     is_owner = (album.user_id == current_user.id)
 
-    # 检查是否在 session 中已验证过密码
+    # 为相册添加安全的属性访问
+    album._is_public = getattr(album, 'is_public', False)
+    album._has_password = getattr(album, 'has_password', False)
+
+    # 安全地获取访问密码
+    album_password = getattr(album, 'access_password', None)
     session_key = f'album_password_{album_id}'
-    password_verified = session.get(session_key) == album.access_password
+    password_verified = session.get(session_key) == album_password
 
     # 权限检查
     if not is_owner:
-        if not album.is_public:
+        album_is_public = getattr(album, 'is_public', False)
+        if not album_is_public:
             flash('您没有权限访问此相册', 'warning')
             return redirect(url_for('gallery.index'))
         # 密码保护的相册
-        if album.has_password and not password_verified:
+        if album._has_password and not password_verified:
             return render_template('gallery/album_password.html', album=album)
 
     # 查询相册中的图片
@@ -142,11 +164,18 @@ def view_album(album_id):
         photos = Photo.query.filter_by(album_id=album_id)\
             .order_by(Photo.created_at.desc()).all()
     else:
-        photos = Photo.query.filter_by(album_id=album_id, is_public=True)\
+        photos = Photo.query.filter_by(album_id=album_id)\
             .order_by(Photo.created_at.desc()).all()
+        # 过滤出公开的图片
+        photos = [p for p in photos if getattr(p, 'is_public', False)]
 
     # 获取已验证的图片密码
     verified_photo_passwords = session.get('verified_photo_passwords', {})
+
+    # 为每张照片添加安全的属性访问
+    for photo in photos:
+        photo._is_public = getattr(photo, 'is_public', False)
+        photo._has_password = getattr(photo, 'has_password', False)
 
     return render_template('gallery/view_album.html',
                           album=album,
@@ -169,7 +198,9 @@ def verify_album_password(album_id):
     if not album.has_password:
         return jsonify({'success': True, 'message': '相册未设置密码'})
 
-    if password == album.access_password:
+    # 安全地获取密码
+    album_password = getattr(album, 'access_password', None)
+    if password == album_password:
         # 在 session 中标记已验证
         session[f'album_password_{album_id}'] = password
         return jsonify({'success': True, 'message': '密码验证成功'})
@@ -188,6 +219,10 @@ def edit_album(album_id):
     if album.user_id != current_user.id:
         flash('您没有权限编辑此相册', 'danger')
         return redirect(url_for('gallery.index'))
+
+    # 为相册添加安全的属性访问（用于模板显示）
+    album._is_public = getattr(album, 'is_public', False)
+    album._has_password = getattr(album, 'has_password', False)
 
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
@@ -266,7 +301,7 @@ def upload_photos(album_id):
                 file_path=storage.get_url(object_name),
                 album_id=album_id,
                 user_id=current_user.id,
-                is_public=album.is_public  # 继承相册的公开设置
+                is_public=getattr(album, 'is_public', False)  # 继承相册的公开设置
             )
             db.session.add(photo)
             uploaded.append(file.filename)
@@ -324,7 +359,9 @@ def verify_photo_password(photo_id):
     if not photo.has_password:
         return jsonify({'success': True, 'message': '图片未设置密码'})
 
-    if password == photo.access_password:
+    # 安全地获取密码
+    photo_password = getattr(photo, 'access_password', None)
+    if password == photo_password:
         # 在 session 中标记已验证
         if 'verified_photo_passwords' not in session:
             session['verified_photo_passwords'] = {}

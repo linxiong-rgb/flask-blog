@@ -48,7 +48,10 @@ class Album(db.Model):
     @property
     def has_password(self):
         """是否设置了访问密码"""
-        return bool(self.access_password)
+        try:
+            return bool(getattr(self, 'access_password', None))
+        except:
+            return False
 
     def can_access(self, user):
         """检查用户是否有权限访问此相册"""
@@ -56,7 +59,11 @@ class Album(db.Model):
         if user.is_authenticated and user.id == self.user_id:
             return True
         # 私有相册只有所有者可访问
-        if not self.is_public:
+        try:
+            is_public = getattr(self, 'is_public', False)
+        except:
+            is_public = False
+        if not is_public:
             return False
         # 公开相册所有登录用户可访问
         return user.is_authenticated
@@ -90,7 +97,10 @@ class Photo(db.Model):
     @property
     def has_password(self):
         """是否设置了访问密码"""
-        return bool(self.access_password)
+        try:
+            return bool(getattr(self, 'access_password', None))
+        except:
+            return False
 
     def can_access(self, user, session_passwords=None):
         """
@@ -112,7 +122,11 @@ class Photo(db.Model):
             return True
 
         # 私有图片只有所有者可访问
-        if not self.is_public:
+        try:
+            is_public = getattr(self, 'is_public', False)
+        except:
+            is_public = False
+        if not is_public:
             return False
 
         # 公开图片所有登录用户可访问

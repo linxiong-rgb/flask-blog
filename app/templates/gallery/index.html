@@ -65,12 +65,12 @@
                         <p class="card-text">
                             <small class="text-muted">
                                 <i class="bi bi-images"></i> {{ album.photo_count }} 张照片
-                                {% if album.is_public %}
+                                {% if album._is_public %}
                                 <span class="badge bg-success ms-1"><i class="bi bi-globe"></i> 公开</span>
                                 {% else %}
                                 <span class="badge bg-secondary ms-1"><i class="bi bi-lock-fill"></i> 私密</span>
                                 {% endif %}
-                                {% if album.has_password %}
+                                {% if album._has_password %}
                                 <span class="badge bg-warning ms-1"><i class="bi bi-key"></i> 密码</span>
                                 {% endif %}
                             </small>
@@ -111,7 +111,7 @@
                             <small class="text-muted">
                                 <i class="bi bi-images"></i> {{ album.photo_count }} 张照片
                                 <span class="badge bg-success ms-1"><i class="bi bi-globe"></i> 公开</span>
-                                {% if album.has_password %}
+                                {% if album._has_password %}
                                 <span class="badge bg-warning ms-1"><i class="bi bi-lock-fill"></i> 密码</span>
                                 {% endif %}
                             </small>

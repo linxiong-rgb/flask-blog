@@ -22,7 +22,7 @@
                             <textarea class="form-control" id="description" name="description" rows="3">{{ album.description or '' }}</textarea>
                         </div>
                         <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="is_public" name="is_public" {% if album.is_public %}checked{% endif %}>
+                            <input type="checkbox" class="form-check-input" id="is_public" name="is_public" {% if album._is_public %}checked{% endif %}>
                             <label class="form-check-label" for="is_public">
                                 <i class="bi bi-globe"></i> 公开相册（其他用户可以访问）
                             </label>
@@ -34,7 +34,7 @@
                             <input type="password" class="form-control" id="access_password" name="access_password"
                                    placeholder="留空保持当前密码，输入新密码则更新">
                             <div class="form-text">
-                                {% if album.has_password %}
+                                {% if album._has_password %}
                                     <span class="text-warning"><i class="bi bi-lock-fill"></i> 当前已设置密码</span>
                                 {% else %}
                                     <span class="text-muted">当前未设置密码</span>
