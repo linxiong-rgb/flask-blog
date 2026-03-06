@@ -131,8 +131,13 @@ def index():
     显示当前用户的所有相册（树形结构）
     超级管理员可以查看所有用户的相册
     """
+    is_superuser = getattr(current_user, 'is_superuser', False)
+    root_albums = []
+    total_photos = 0
+    total_albums = 0
+
     try:
-        is_superuser = getattr(current_user, 'is_superuser', False)
+        current_app.logger.info(f'Loading gallery index for user {current_user.id}, is_superuser={is_superuser}')
 
         if is_superuser:
             # 超级管理员查看所有相册 - 预加载 user 关系
@@ -143,6 +148,7 @@ def index():
             ).all()
             total_photos = Photo.query.count()
             total_albums = Album.query.count()
+            current_app.logger.info(f'Superuser query: {len(root_albums)} albums, {total_photos} photos')
         else:
             # 普通用户只查看自己的相册 - 预加载 user 关系
             root_albums = Album.query.options(
@@ -153,13 +159,27 @@ def index():
             ).order_by(Album.sort_order, Album.name).all()
             total_photos = Photo.query.filter_by(user_id=current_user.id).count()
             total_albums = Album.query.filter_by(user_id=current_user.id).count()
+            current_app.logger.info(f'User query: {len(root_albums)} albums, {total_photos} photos')
 
+    except Exception as e:
+        current_app.logger.error(f'Database query error in gallery index: {str(e)}', exc_info=True)
+        import traceback
+        current_app.logger.error(traceback.format_exc())
+        flash(f'查询相册数据时出错: {str(e)}', 'danger')
+        # 出错时返回空数据
+        root_albums = []
+        total_photos = 0
+        total_albums = 0
+
+    try:
         # 安全处理：确保 photo_count 不会导致错误
         for album in root_albums:
             try:
-                _ = album.photo_count
-            except Exception:
-                # 如果 photo_count 失败，继续
+                count = album.photo_count
+                current_app.logger.debug(f'Album {album.id} has {count} photos')
+            except Exception as e:
+                # 如果 photo_count 失败，记录并继续
+                current_app.logger.warning(f'Failed to count photos for album {album.id}: {str(e)}')
                 pass
 
         return render_template('gallery/index.html',
@@ -167,18 +187,19 @@ def index():
                               total_photos=total_photos,
                               total_albums=total_albums,
                               is_superuser=is_superuser)
+
     except Exception as e:
-        current_app.logger.error(f'Error in gallery index: {str(e)}', exc_info=True)
+        current_app.logger.error(f'Template rendering error in gallery index: {str(e)}', exc_info=True)
         import traceback
         current_app.logger.error(traceback.format_exc())
-        flash(f'加载相册时出错: {str(e)}', 'danger')
+        flash(f'渲染页面时出错: {str(e)}', 'danger')
 
         # 返回简化的页面
         return render_template('gallery/index.html',
                               root_albums=[],
                               total_photos=0,
                               total_albums=0,
-                              is_superuser=getattr(current_user, 'is_superuser', False))
+                              is_superuser=is_superuser)
 
 
 @bp.route('/album/new', methods=['GET', 'POST'])
