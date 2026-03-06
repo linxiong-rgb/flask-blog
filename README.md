@@ -30,22 +30,26 @@
 - **分类标签** - 完善的分类和标签系统
 - **夜间模式** - 护眼的深色主题
 - **数据统计** - 文章浏览量统计
+- **定时发布** - 设置文章发布时间，自动发布
+- **收藏功能** - 收藏喜欢的文章
+- **数据导出** - 支持 Markdown/HTML 格式导出
 
 ### 🖼️ 云相册系统
-- **多级相册** - 支持文件夹式相册管理
-- **图片上传** - 批量上传，自动生成缩略图
-- **图片管理** - 编辑标题、描述、权限设置
-- **共享空间** - 社区图片分享与发现
-- **密码保护** - 图片访问密码功能
-- **图片查看器** - 缩放、旋转、全屏查看
-- **GitHub 图床** - 免费图床，CDN 加速
+- **相册管理** - 创建和管理个人相册
+- **图片上传** - 批量上传图片到 GitHub 存储
+- **图片主题** - 为图片添加主题描述
+- **权限设置** - 公开/私密相册切换
+- **图片查看器** - 支持缩放、拖拽、全屏查看
+- **图片下载** - 一键下载高清原图
+- **GitHub 存储** - 免费 GitHub 图床，CDN 加速
+- **响应式设计** - 完美适配移动端
 
 ### 🎨 界面特色
 - **响应式设计** - 完美适配手机、平板和电脑
 - **渐变配色** - 紫色渐变主题，时尚美观
 - **卡片式布局** - Material Design 风格
 - **流畅动画** - 过渡和悬停动画效果
-- **阅读体验** - Typora 风格，目录导航，阅读进度条
+- **阅读体验** - 目录导航，阅读进度条
 
 ### 🔒 安全特性
 - **CSRF 保护** - 所有表单 CSRF 保护
@@ -66,8 +70,9 @@
 | **用户认证** | Flask-Login | 0.6.3 |
 | **CSRF 保护** | Flask-WTF | 1.2.1 |
 | **Markdown** | Python-Markdown | 3.5.1 |
-| **图片处理** | Pillow | 10.1.0+ |
-| **WSI 服务器** | Gunicorn | 21.2.0 |
+| **环境变量** | python-dotenv | 1.0.0+ |
+| **缓存** | Flask-Caching | 2.1.0 |
+| **WSGI 服务器** | Gunicorn | 21.2.0 |
 | **前端框架** | Bootstrap | 5.3.0 |
 | **图标库** | Bootstrap Icons | 1.11.0 |
 
@@ -79,14 +84,13 @@
 
 | 功能 | 描述 |
 |:---|:---|
-| **相册管理** | 多级文件夹式相册，支持拖拽排序 |
-| **图片上传** | 批量上传，支持 PNG/JPG/GIF/WebP/BMP |
-| **缩略图生成** | 自动生成 200x200 缩略图 |
-| **图片编辑** | 标题、描述、可见性、访问密码 |
-| **共享空间** | 社区公开图片分享与浏览 |
-| **密码保护** | 图片访问密码，session 验证 |
-| **图片查看器** | 缩放、旋转、拖拽、全屏 |
-| **图片分享** | 直接图片链接，一键复制 |
+| **相册管理** | 创建相册，设置名称、描述、可见性 |
+| **图片上传** | 批量上传，支持多种图片格式 |
+| **图片主题** | 为图片添加主题描述文字 |
+| **权限设置** | 公开/私密相册切换 |
+| **图片查看器** | 缩放(10%-500%)、拖拽平移、键盘快捷键 |
+| **图片下载** | 支持跨域图片下载 |
+| **GitHub 存储** | 免费 GitHub 图床，CDN 加速 |
 
 ### 博客功能
 
@@ -96,7 +100,9 @@
 | **文章权限** | 公开、私密、密码保护 |
 | **分类系统** | 多级分类，SEO 友好 |
 | **标签系统** | 多标签，标签云展示 |
-| **文章归档** | 按日期浏览，时间线展示 |
+| **定时发布** | 设置未来时间自动发布 |
+| **文章收藏** | 用户收藏喜欢的文章 |
+| **数据导出** | Markdown/HTML 格式导出 |
 | **友情链接** | 友链管理与展示 |
 | **RSS 订阅** | 自动生成 RSS Feed |
 | **Sitemap** | 自动生成站点地图 |
@@ -110,8 +116,8 @@
 | **Markdown 导入** | 单个/批量导入 .md 文件 |
 | **封面图生成** | 一键生成简约封面 |
 | **收藏管理** | 用户收藏列表 |
-| **数据导出** | Markdown/HTML 导出 |
 | **友链管理** | 后台管理友情链接 |
+| **定时任务** | 查看和管理定时发布的文章 |
 
 ---
 
@@ -139,10 +145,14 @@ source venv/bin/activate
 # 3. 安装依赖
 pip install -r requirements.txt
 
-# 4. 初始化数据库
+# 4. 配置环境变量（可选）
+cp .env.example .env
+# 编辑 .env 文件，设置 SECRET_KEY 等变量
+
+# 5. 初始化数据库
 python reset_database.py
 
-# 5. 运行应用
+# 6. 运行应用
 python run.py
 ```
 
@@ -165,47 +175,61 @@ flask-blog/
 ├── app/
 │   ├── __init__.py              # 应用工厂
 │   ├── models/                  # 数据模型
+│   │   ├── __init__.py
 │   │   ├── user.py              # 用户模型
-│   │   ├── post.py              # 文章模型
-│   │   ├── album.py             # 相册/图片模型
-│   │   ├── category.py          # 分类模型
-│   │   ├── tag.py               # 标签模型
-│   │   └── friend_link.py       # 友链模型
+│   │   ├── post.py              # 文章、分类、标签模型
+│   │   ├── gallery.py           # 相册、图片模型
+│   │   ├── friend_link.py       # 友链模型
+│   │   └── post_bookmark.py     # 收藏模型
 │   ├── routes/                  # 路由
-│   │   ├── main.py              # 主路由
-│   │   ├── auth.py              # 认证路由
-│   │   ├── admin.py             # 管理路由
+│   │   ├── __init__.py
+│   │   ├── main.py              # 主路由（首页、文章、搜索等）
+│   │   ├── auth.py              # 认证路由（登录、注册）
+│   │   ├── admin.py             # 管理后台路由
 │   │   ├── gallery.py           # 云相册路由
 │   │   └── export.py            # 导出路由
-│   ├── templates/               # 模板
+│   ├── templates/               # Jinja2 模板
 │   │   ├── base.html            # 基础模板
 │   │   ├── index.html           # 首页
 │   │   ├── post.html            # 文章详情
 │   │   ├── gallery/             # 云相册模板
-│   │   │   ├── index.html       # 相册首页
-│   │   │   ├── view_album.html  # 相册详情
-│   │   │   ├── shared_space.html # 共享空间
-│   │   │   └── shared_photo_detail.html # 图片详情
-│   │   └── admin/               # 管理模板
+│   │   │   ├── base.html        # 相册基础模板
+│   │   │   ├── index.html       # 相册列表
+│   │   │   ├── view_album.html  # 相册详情（含图片查看器）
+│   │   │   ├── new_album.html   # 创建相册
+│   │   │   └── edit_album.html  # 编辑相册
+│   │   └── admin/               # 管理后台模板
 │   ├── static/                  # 静态文件
-│   │   ├── css/                 # 样式文件
+│   │   ├── css/                 # 自定义样式
+│   │   ├── js/                  # JavaScript 文件
 │   │   ├── vendor/              # 第三方库
-│   │   ├── fonts/               # 字体文件
-│   │   ├── img/                 # 默认图片
-│   │   └── uploads/             # 上传文件
-│   ├── forms.py                 # 表单类
+│   │   └── img/                 # 默认图片
+│   ├── forms.py                 # WTForms 表单类
 │   ├── utils/                   # 工具函数
-│   │   ├── storage.py           # 存储后端
-│   │   └── image_generator.py   # 封面图生成器
+│   │   ├── storage.py           # GitHub 存储后端
+│   │   ├── image_generator.py   # 封面图生成器
+│   │   ├── text.py              # 文本处理工具
+│   │   └── scheduler.py         # 定时任务调度器
 │   └── security.py              # 安全配置
-├── instance/                    # 实例文件夹
-├── requirements.txt             # 依赖列表
+├── instance/                    # 实例文件夹（数据库等）
+├── logs/                        # 日志文件
+├── docs/                        # 项目文档
+│   ├── GITHUB_STORAGE.md        # GitHub 图床配置指南
+│   └── GALLERY_DESIGN_REFERENCE.md  # 相册设计参考（已废弃）
+├── requirements.txt             # Python 依赖
 ├── run.py                       # 启动脚本
 ├── reset_database.py            # 数据库重置脚本
+├── update_database.py           # 数据库更新脚本
+├── .env                         # 环境变量（需自行创建）
+├── .env.example                 # 环境变量示例
+├── .gitignore                   # Git 忽略文件
 ├── README.md                    # 项目文档
 ├── CHANGELOG.md                 # 更新日志
 ├── DEPLOY.md                    # 部署文档
-└── CONTRIBUTING.md              # 贡献指南
+├── CONTRIBUTING.md              # 贡献指南
+├── Procfile                     # Render 部署配置
+├── runtime.txt                  # Python 版本
+└── LICENSE                      # MIT 开源协议
 ```
 
 ---
@@ -214,23 +238,27 @@ flask-blog/
 
 ### 环境变量
 
-| 变量名 | 说明 | 默认值 |
-|:-------|:-----|:-------|
-| `SECRET_KEY` | Flask 密钥 | 自动生成 |
-| `DATABASE_URL` | 数据库连接 | `sqlite:///blog.db` |
-| `DEBUG` | 调试模式 | `True` |
-| `GITHUB_TOKEN` | GitHub Token | 无（可选）|
-| `GITHUB_REPO` | GitHub 仓库 | 无（可选）|
-| `GITHUB_BRANCH` | GitHub 分支 | `main` |
-| `GITHUB_PATH` | 图片存储路径 | `images` |
+| 变量名 | 说明 | 默认值 | 必需 |
+|:-------|:-----|-------|:----:|
+| `SECRET_KEY` | Flask 密钥 | 自动生成 | ✅ |
+| `DATABASE_URL` | 数据库连接 | `sqlite:///blog.db` | ❌ |
+| `DEBUG` | 调试模式 | `False` | ❌ |
+| `GITHUB_TOKEN` | GitHub Token | 无 | ❌ |
+| `GITHUB_REPO` | GitHub 仓库 | 无 | ❌ |
+| `GITHUB_BRANCH` | GitHub 分支 | `main` | ❌ |
+| `GITHUB_PATH` | 图片存储路径 | `images` | ❌ |
 
 ### 配置 GitHub 图床（推荐）
 
 使用 GitHub 作为免费图床，享受 jsDelivr CDN 加速：
 
-1. 创建 GitHub 仓库存放图片
-2. 生成 Personal Access Token
-3. 配置环境变量：`GITHUB_TOKEN`、`GITHUB_REPO`
+1. 创建 GitHub 仓库存放图片（如：`username/blog-images`）
+2. 生成 Personal Access Token（需要 `repo` 权限）
+3. 配置环境变量：
+   - `GITHUB_TOKEN`: `ghp_xxxxxxxxxxxx`
+   - `GITHUB_REPO`: `username/blog-images`
+   - `GITHUB_BRANCH`: `main`
+   - `GITHUB_PATH`: `images`
 
 详见：[docs/GITHUB_STORAGE.md](docs/GITHUB_STORAGE.md)
 
@@ -247,10 +275,15 @@ flask-blog/
 </div>
 
 1. **Fork 本仓库**
-2. **创建 PostgreSQL 数据库**（免费套餐）
-3. **创建 Web Service**，配置环境变量
-4. **初始化数据库** - 访问 `/init-db`
-5. **配置 GitHub 图床**（可选）
+2. **在 Render 创建 PostgreSQL 数据库**（免费套餐）
+3. **创建 Web Service**，连接代码仓库
+4. **配置环境变量**：
+   - `SECRET_KEY`: 随机字符串
+   - `DATABASE_URL`: Render 提供的 PostgreSQL URL
+   - `GITHUB_TOKEN`: GitHub Token（可选）
+   - `GITHUB_REPO`: GitHub 仓库（可选）
+5. **部署完成后访问 `/init-db`** 初始化数据库
+6. **使用 `/check-db`** 检查数据库状态
 
 详细步骤请查看：[DEPLOY.md](DEPLOY.md)
 
@@ -285,15 +318,23 @@ python reset_database.py
 ### 图片上传失败
 
 确保：
-1. `uploads/` 目录存在且有写入权限
-2. 图片格式支持（PNG、JPG、GIF、WebP、BMP）
-3. 图片大小不超过限制（默认 50MB）
+1. GitHub 仓库配置正确（Token、仓库名）
+2. GitHub Token 有 `repo` 权限
+3. 图片格式支持（PNG、JPG、GIF、WebP、BMP）
+4. 图片大小不超过限制（默认 50MB）
 
 ### 部署后无法登录
 
 1. 访问 `/init-db` 初始化数据库
 2. 使用 `/check-db` 检查用户状态
 3. 查看应用日志获取错误信息
+
+### 数据库错误
+
+如果遇到数据库表不存在或字段缺失：
+```bash
+python update_database.py
+```
 
 ---
 
@@ -313,29 +354,28 @@ python reset_database.py
 
 ## 📝 更新日志
 
-### v2.0.0 (最新)
+### v2.1.0 (2024-03)
 
-**云相册系统**
-- ✨ 新增多级相册管理
-- ✨ 新增图片批量上传
-- ✨ 新增共享空间功能
-- ✨ 新增图片密码保护
-- ✨ 新增图片查看器（缩放/旋转/全屏）
-- ✨ 新增 GitHub 图床支持
-- 🎨 优化相册 UI 设计
-- 🎨 优化共享空间布局
-
-**博客系统**
-- ✨ 新增文章密码保护
-- ✨ 新增文章收藏功能
+**云相册系统重构**
+- ✨ 简化相册系统，移除复杂功能
+- ✨ 新增图片主题描述功能
+- ✨ 新增高级图片查看器（缩放/拖拽/下载）
+- ✨ 优化图片下载，支持跨域图片
+- 🎨 重新设计相册 UI
+- 🐛 修复灯箱按钮点击问题
 - 🐛 修复图片加载问题
-- 🐛 修复 JavaScript 转义问题
 
-### v1.5.0
+**博客系统优化**
+- ✨ 新增定时发布功能
+- ✨ 新增文章收藏功能
+- 🎨 优化移动端体验
 
-- ✨ 新增文章浏览权限
-- ✨ 新增数据库迁移功能
-- 🐛 修复缺少新列导致的 500 错误
+### v2.0.0
+
+- ✨ 新增云相册系统
+- ✨ 新增 GitHub 图床支持
+- ✨ 新增文章密码保护
+- ✨ 新增数据导出功能
 
 ---
 
