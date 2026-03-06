@@ -208,100 +208,75 @@ def index():
 def test():
     """测试路由 - 诊断相册功能"""
     try:
-        import json
-        debug_info = {
-            'user_id': current_user.id,
-            'username': current_user.username if hasattr(current_user, 'username') else 'N/A',
-            'is_superuser': getattr(current_user, 'is_superuser', False),
-            'database_url': 'configured' if current_app.config.get('SQLALCHEMY_DATABASE_URI') else 'not configured',
-        }
+        from sqlalchemy.orm import joinedload
 
-        # 测试数据库连接
-        try:
-            album_count = Album.query.count()
-            debug_info['album_count'] = album_count
+        # 查询相册数据
+        root_albums = Album.query.options(
+            joinedload(Album.user)
+        ).filter_by(parent_id=None).all()
 
-            photo_count = Photo.query.count()
-            debug_info['photo_count'] = photo_count
+        # 预计算 photo_count
+        for album in root_albums:
+            try:
+                album._photo_count = album.photo_count
+            except:
+                album._photo_count = 0
 
-            user_albums = Album.query.filter_by(user_id=current_user.id).count()
-            debug_info['user_album_count'] = user_albums
+        # 直接使用实际模板渲染
+        return render_template('gallery/index.html',
+                              root_albums=root_albums,
+                              total_photos=len(root_albums),
+                              total_albums=len(root_albums),
+                              is_superuser=getattr(current_user, 'is_superuser', False))
 
-            # 测试相册查询
-            from sqlalchemy.orm import joinedload
-            root_albums = Album.query.options(
-                joinedload(Album.user)
-            ).filter_by(parent_id=None).all()
-            debug_info['root_albums_count'] = len(root_albums)
+    except Exception as e:
+        import traceback
+        return f'<h1>渲染错误</h1><pre>{str(e)}\n\n{traceback.format_exc()}</pre>'
 
-            # 检查每个相册的详细信息
-            albums_info = []
-            for album in root_albums:
-                try:
-                    album_data = {
-                        'id': album.id,
-                        'name': album.name,
-                        'user_id': album.user_id,
-                        'has_user': album.user is not None,
-                        'user_username': album.user.username if album.user else None,
-                        'is_private': album.is_private,
-                        'is_public': album.is_public,
-                    }
 
-                    # 尝试获取 photo_count
-                    try:
-                        album_data['photo_count'] = album.photo_count
-                    except Exception as pc_error:
-                        album_data['photo_count_error'] = str(pc_error)
+@bp.route('/debug')
+@login_required
+def debug():
+    """调试路由 - 显示原始数据"""
+    try:
+        from sqlalchemy.orm import joinedload
 
-                    albums_info.append(album_data)
-                except Exception as album_error:
-                    albums_info.append({'error': str(album_error)})
+        # 查询相册数据
+        root_albums = Album.query.options(
+            joinedload(Album.user)
+        ).filter_by(parent_id=None).all()
 
-            debug_info['albums'] = albums_info
+        output = ['<h1>调试信息</h1>']
+        output.append(f'<p>相册数量: {len(root_albums)}</p>')
+        output.append('<ul>')
 
-        except Exception as db_error:
-            debug_info['database_error'] = str(db_error)
-            import traceback
-            debug_info['traceback'] = traceback.format_exc()
+        for album in root_albums:
+            output.append(f'<li>相册 {album.id}: {album.name}')
+            output.append(f'  - user_id: {album.user_id}')
+            output.append(f'  - has_user: {album.user is not None}')
+            if album.user:
+                output.append(f'  - username: {album.user.username}')
+            output.append(f'  - is_private: {album.is_private}')
+            output.append(f'  - is_public: {album.is_public}')
 
-        # 测试模板渲染
-        try:
-            from flask import render_template_string
-            test_template = '''
-            <html>
-            <head><title>测试</title></head>
-            <body>
-                <h1>模板渲染测试</h1>
-                {% if albums %}
-                <p>相册数量: {{ albums|length }}</p>
-                <ul>
-                {% for album in albums %}
-                <li>{{ album.name }} - {{ album._photo_count if album._photo_count is defined else 0 }} 张</li>
-                {% endfor %}
-                </ul>
-                {% else %}
-                <p>没有相册</p>
-                {% endif %}
-            </body>
-            </html>
-            '''
+            try:
+                count = album.photo_count
+                output.append(f'  - photo_count: {count}')
+            except Exception as e:
+                output.append(f'  - photo_count_error: {str(e)}')
 
-            # 预计算 _photo_count
-            for album in root_albums:
-                try:
-                    album._photo_count = album.photo_count
-                except:
-                    album._photo_count = 0
+            output.append('</li>')
 
-            html = render_template_string(test_template, albums=root_albums)
-            return html
+        output.append('</ul>')
 
-        except Exception as template_error:
-            import traceback
-            return f'<h1>模板错误</h1><pre>{str(template_error)}\n\n{traceback.format_exc()}</pre>'
+        # 显示 current_user 信息
+        output.append('<h2>当前用户</h2>')
+        output.append(f'<p>user_id: {current_user.id}</p>')
+        output.append(f'<p>username: {current_user.username if hasattr(current_user, "username") else "N/A"}</p>')
+        output.append(f'<p>is_authenticated: {current_user.is_authenticated}</p>')
+        output.append(f'<p>is_superuser: {getattr(current_user, "is_superuser", False)}</p>')
 
-        return f'<h1>调试信息</h1><pre>{json.dumps(debug_info, indent=2)}</pre>'
+        return '\n'.join(output)
 
     except Exception as e:
         import traceback
