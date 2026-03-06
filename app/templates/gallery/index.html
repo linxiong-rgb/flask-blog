@@ -85,7 +85,7 @@
                                 {% endif %}
                                 <span class="badge bg-secondary">{{ album.photo_count }} 张</span>
                                 {% if album.is_private %}
-                                    <span class="badge bg-warning"><i class="bi bi-lock-fill"></i></span>
+                                    <span class="badge bg-danger"><i class="bi bi-lock-fill"></i></span>
                                 {% elif album.is_public %}
                                     <span class="badge bg-success"><i class="bi bi-globe"></i></span>
                                 {% endif %}
