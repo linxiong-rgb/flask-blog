@@ -135,15 +135,19 @@ def index():
         is_superuser = getattr(current_user, 'is_superuser', False)
 
         if is_superuser:
-            # 超级管理员查看所有相册
-            root_albums = Album.query.filter_by(parent_id=None).order_by(
+            # 超级管理员查看所有相册 - 预加载 user 关系
+            root_albums = Album.query.options(
+                joinedload(Album.user)
+            ).filter_by(parent_id=None).order_by(
                 Album.sort_order, Album.name
             ).all()
             total_photos = Photo.query.count()
             total_albums = Album.query.count()
         else:
-            # 普通用户只查看自己的相册
-            root_albums = Album.query.filter_by(
+            # 普通用户只查看自己的相册 - 预加载 user 关系
+            root_albums = Album.query.options(
+                joinedload(Album.user)
+            ).filter_by(
                 user_id=current_user.id,
                 parent_id=None
             ).order_by(Album.sort_order, Album.name).all()
@@ -238,11 +242,15 @@ def view_album(album_id):
                 # 私密相册，拒绝访问
                 flash('您没有权限访问此相册', 'warning')
                 return redirect(url_for('gallery.index'))
-            # 公开相册，只显示公开的图片
-            photos = Photo.query.filter_by(album_id=album_id, is_public=True).order_by(Photo.created_at.desc()).all()
+            # 公开相册，只显示公开的图片 - 预加载 user 关系
+            photos = Photo.query.options(
+                joinedload(Photo.user)
+            ).filter_by(album_id=album_id, is_public=True).order_by(Photo.created_at.desc()).all()
         else:
-            # 所有者或超级管理员，显示所有图片
-            photos = Photo.query.filter_by(album_id=album_id).order_by(Photo.created_at.desc()).all()
+            # 所有者或超级管理员，显示所有图片 - 预加载 user 关系
+            photos = Photo.query.options(
+                joinedload(Photo.user)
+            ).filter_by(album_id=album_id).order_by(Photo.created_at.desc()).all()
 
         # 获取子相册
         child_albums = Album.query.options(joinedload(Album.user)).filter_by(parent_id=album_id).order_by(Album.sort_order, Album.name).all()
