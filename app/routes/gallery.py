@@ -172,15 +172,16 @@ def index():
         total_albums = 0
 
     try:
-        # 安全处理：确保 photo_count 不会导致错误
+        # 预计算每个相册的照片数量，避免模板中调用 @property 时出错
         for album in root_albums:
             try:
-                count = album.photo_count
-                current_app.logger.debug(f'Album {album.id} has {count} photos')
+                # 将计算结果存储为普通属性 _photo_count
+                album._photo_count = album.photo_count
+                current_app.logger.debug(f'Album {album.id} has {album._photo_count} photos')
             except Exception as e:
-                # 如果 photo_count 失败，记录并继续
+                # 如果 photo_count 失败，设置为 0
                 current_app.logger.warning(f'Failed to count photos for album {album.id}: {str(e)}')
-                pass
+                album._photo_count = 0
 
         return render_template('gallery/index.html',
                               root_albums=root_albums,
