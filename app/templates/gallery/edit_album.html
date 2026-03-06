@@ -31,8 +31,13 @@
                             <label for="access_password" class="form-label">
                                 <i class="bi bi-key"></i> 访问密码
                             </label>
-                            <input type="password" class="form-control" id="access_password" name="access_password"
-                                   placeholder="留空保持当前密码，输入新密码则更新">
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="access_password" name="access_password"
+                                       placeholder="留空保持当前密码，输入新密码则更新">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('access_password', this)">
+                                    <i class="bi bi-eye-slash" id="access_password_icon"></i>
+                                </button>
+                            </div>
                             <div class="form-text">
                                 {% if album._has_password %}
                                     <span class="text-warning"><i class="bi bi-lock-fill"></i> 当前已设置密码</span>
@@ -51,4 +56,21 @@
         </div>
     </div>
 </div>
+
+<script>
+function togglePassword(inputId, button) {
+    const input = document.getElementById(inputId);
+    const icon = button.querySelector('i');
+
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    }
+}
+</script>
 {% endblock %}
