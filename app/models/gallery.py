@@ -12,7 +12,7 @@ from app import db
 
 class Album(db.Model):
     """相册模型"""
-    __tablename__ = 'album'
+    __tablename__ = 'gallery_album'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -48,7 +48,7 @@ class Album(db.Model):
 
 class Photo(db.Model):
     """图片模型"""
-    __tablename__ = 'photo'
+    __tablename__ = 'gallery_photo'
 
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(255), nullable=False)
@@ -57,7 +57,7 @@ class Photo(db.Model):
     width = db.Column(db.Integer)
     height = db.Column(db.Integer)
     mime_type = db.Column(db.String(50))
-    album_id = db.Column(db.Integer, db.ForeignKey('album.id'), nullable=False)
+    album_id = db.Column(db.Integer, db.ForeignKey('gallery_album.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
